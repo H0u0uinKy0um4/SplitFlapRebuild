@@ -34,16 +34,19 @@ def _clean_name(value: Any) -> str:
 
 
 def _schema(defaults: dict[str, str]) -> vol.Schema:
+    # Keep the schema serializable for the Home Assistant frontend.  Custom
+    # validator functions cannot be converted by voluptuous_serialize, so the
+    # values are cleaned again after the form is submitted.
     return vol.Schema(
         {
             vol.Required(
                 CONF_TOPIC_PREFIX,
                 default=defaults.get(CONF_TOPIC_PREFIX, DEFAULT_TOPIC_PREFIX),
-            ): vol.All(str, _clean_prefix),
+            ): str,
             vol.Optional(
                 CONF_NAME,
                 default=defaults.get(CONF_NAME, DEFAULT_DEVICE_NAME),
-            ): vol.All(str, _clean_name),
+            ): str,
         }
     )
 
@@ -60,11 +63,20 @@ class SplitFlapOSConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="single_instance_allowed")
 
         if user_input is not None:
+            try:
+                prefix = _clean_prefix(user_input[CONF_TOPIC_PREFIX])
+            except vol.Invalid:
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=_schema(user_input),
+                    errors={CONF_TOPIC_PREFIX: "invalid_prefix"},
+                )
+            name = _clean_name(user_input[CONF_NAME])
             return self.async_create_entry(
-                title=user_input[CONF_NAME],
+                title=name,
                 data={
-                    CONF_TOPIC_PREFIX: user_input[CONF_TOPIC_PREFIX],
-                    CONF_NAME: user_input[CONF_NAME],
+                    CONF_TOPIC_PREFIX: prefix,
+                    CONF_NAME: name,
                 },
             )
 
@@ -85,12 +97,20 @@ class SplitFlapOSOptionsFlow(OptionsFlow):
         entry = self.config_entry
 
         if user_input is not None:
-            name = user_input[CONF_NAME]
+            try:
+                prefix = _clean_prefix(user_input[CONF_TOPIC_PREFIX])
+            except vol.Invalid:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=_schema(user_input),
+                    errors={CONF_TOPIC_PREFIX: "invalid_prefix"},
+                )
+            name = _clean_name(user_input[CONF_NAME])
             self.hass.config_entries.async_update_entry(entry, title=name)
             return self.async_create_entry(
                 title="",
                 data={
-                    CONF_TOPIC_PREFIX: user_input[CONF_TOPIC_PREFIX],
+                    CONF_TOPIC_PREFIX: prefix,
                     CONF_NAME: name,
                 },
             )
