@@ -1,0 +1,97 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Split-Flap OS",
+        "description": "Enter the MQTT topic prefix used by the ESP32 master. The default firmware uses `splitflap`.",
+        "data": {
+          "topic_prefix": "MQTT topic prefix",
+          "name": "Display name"
+        },
+        "data_description": {
+          "topic_prefix": "Status is read from <prefix>/status and commands are sent to <prefix>/command/*.",
+          "name": "Name shown in Home Assistant and on the sidebar panel."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Split-Flap OS is already configured. Only one display can be managed per Home Assistant instance."
+    },
+    "error": {
+      "invalid_prefix": "Use a non-empty MQTT prefix without + or # wildcards."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Split-Flap OS options",
+        "description": "Change the MQTT prefix or display name. The integration reloads after saving.",
+        "data": {
+          "topic_prefix": "MQTT topic prefix",
+          "name": "Display name"
+        }
+      }
+    },
+    "error": {
+      "invalid_prefix": "Use a non-empty MQTT prefix without + or # wildcards."
+    }
+  },
+  "services": {
+    "send_text": {
+      "name": "Send text",
+      "description": "Send wrapped text to the split-flap display."
+    },
+    "play_playlist": {
+      "name": "Play playlist",
+      "description": "Play a list of pages, optionally looping."
+    },
+    "start_app": {
+      "name": "Start app",
+      "description": "Start a data app."
+    },
+    "stop_app": {
+      "name": "Stop app",
+      "description": "Stop the active app or playlist."
+    },
+    "sync": {
+      "name": "Sync state",
+      "description": "Ask the master to republish its current state."
+    },
+    "scan": {
+      "name": "Scan bus",
+      "description": "Scan the RS485 bus for modules."
+    },
+    "update": {
+      "name": "Update modules",
+      "description": "Refresh known modules without a full scan."
+    },
+    "calibrate": {
+      "name": "Calibrate module",
+      "description": "Send a calibration command to one module."
+    },
+    "home_all": {
+      "name": "Home all",
+      "description": "Home every known module."
+    },
+    "record_all": {
+      "name": "Record all",
+      "description": "Record one drum index on every known module."
+    },
+    "save_playlist": {
+      "name": "Save playlist",
+      "description": "Save a named playlist."
+    },
+    "delete_playlist": {
+      "name": "Delete playlist",
+      "description": "Delete a saved playlist."
+    },
+    "run_saved_playlist": {
+      "name": "Run saved playlist",
+      "description": "Run a named playlist in a loop."
+    },
+    "set_settings": {
+      "name": "Set settings",
+      "description": "Merge and persist Split-Flap OS settings."
+    }
+  }
+}

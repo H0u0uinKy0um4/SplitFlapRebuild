@@ -1,0 +1,260 @@
+send_text:
+  name: Send text
+  description: Send wrapped text to the split-flap display.
+  fields:
+    text:
+      name: Text
+      description: Text to display. Newlines start a new row.
+      required: true
+      example: HELLO WORLD
+      selector:
+        text:
+          multiline: true
+    start:
+      name: Start column
+      description: 1-based column offset (use 1 for no offset).
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 512
+          mode: box
+    style:
+      name: Send order
+      description: Animation order used when the characters are sent to the modules.
+      default: ltr
+      selector:
+        select:
+          options:
+            - ltr
+            - rtl
+            - columns
+            - center_out
+            - outside_in
+            - diagonal
+            - random
+            - rain
+            - spiral
+    speed:
+      name: Speed
+      description: Delay in milliseconds per module. Forwarded with the display command; current master firmware ignores it.
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 500
+          unit_of_measurement: ms
+          mode: box
+    stop:
+      name: Stop current app
+      description: Stop any running app or playlist before showing the text.
+      default: true
+      selector:
+        boolean:
+    raw:
+      name: Raw board
+      description: Treat the text as complete board data and do not wrap or upper-case it.
+      default: false
+      selector:
+        boolean:
+
+play_playlist:
+  name: Play playlist
+  description: Play a list of pages, optionally looping.
+  fields:
+    pages:
+      name: Pages
+      description: A JSON array of page strings or page objects with text, delay, style and speed keys.
+      required: true
+      example: '["HELLO", {"text": "WORLD", "delay": 3}]'
+      selector:
+        text:
+          multiline: true
+    delay:
+      name: Delay
+      description: Seconds to wait after each page has finished moving.
+      default: 5
+      selector:
+        number:
+          min: 0.1
+          max: 120
+          step: 0.1
+          unit_of_measurement: s
+          mode: box
+    loop:
+      name: Loop
+      description: Repeat the playlist until it is stopped.
+      default: true
+      selector:
+        boolean:
+
+start_app:
+  name: Start app
+  description: Start a data app.
+  fields:
+    app:
+      name: App
+      description: App key such as clock, weather, stocks, crypto, sports, metro, countdown, world_clock, iss or animations.
+      required: true
+      example: clock
+      selector:
+        text:
+
+stop_app:
+  name: Stop app
+  description: Stop the active app or playlist.
+
+sync:
+  name: Sync state
+  description: Ask the master to republish its current state.
+
+scan:
+  name: Scan bus
+  description: Scan the RS485 bus for modules.
+
+update:
+  name: Update modules
+  description: Refresh known modules without a full scan.
+
+calibrate:
+  name: Calibrate module
+  description: Send a calibration command to one module.
+  fields:
+    module:
+      name: Module
+      description: Module id.
+      required: true
+      example: 1
+      selector:
+        text:
+    action:
+      name: Action
+      description: Calibration action.
+      required: true
+      selector:
+        select:
+          options:
+            - goto
+            - home
+            - step
+            - record
+            - apply
+            - clear_map
+            - get_pos
+    index:
+      name: Drum index
+      description: Zero-based flap index.
+      selector:
+        number:
+          min: 0
+          max: 63
+          mode: box
+    flap:
+      name: Flap
+      description: Character to move to when action is goto and index is not set.
+      selector:
+        text:
+    home_offset:
+      name: Home offset
+      description: Steps from the hall sensor to the first flap (action apply).
+      selector:
+        number:
+          min: 0
+          max: 65535
+          mode: box
+    positions:
+      name: Position map
+      description: Mapping of drum index to absolute step position (action apply).
+      selector:
+        object:
+    clear_map:
+      name: Clear map
+      description: Clear the EEPROM position map before applying (action apply).
+      default: false
+      selector:
+        boolean:
+    steps:
+      name: Steps
+      description: Relative steps; the integration converts this to an absolute position from the module's last reported step.
+      selector:
+        number:
+          min: -65535
+          max: 65535
+          mode: box
+
+home_all:
+  name: Home all
+  description: Home every known module.
+
+record_all:
+  name: Record all
+  description: Record one drum index on every known module.
+  fields:
+    index:
+      name: Drum index
+      description: Zero-based flap index to record.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 63
+          mode: box
+
+save_playlist:
+  name: Save playlist
+  description: Save a named playlist.
+  fields:
+    name:
+      name: Name
+      required: true
+      selector:
+        text:
+    pages:
+      name: Pages
+      description: A JSON array of page strings or page objects.
+      required: true
+      selector:
+        text:
+          multiline: true
+    delay:
+      name: Delay
+      description: Seconds between pages.
+      default: 5
+      selector:
+        number:
+          min: 0.1
+          max: 120
+          step: 0.1
+          unit_of_measurement: s
+          mode: box
+
+delete_playlist:
+  name: Delete playlist
+  description: Delete a saved playlist.
+  fields:
+    name:
+      name: Name
+      required: true
+      selector:
+        text:
+
+run_saved_playlist:
+  name: Run saved playlist
+  description: Run a named playlist in a loop.
+  fields:
+    name:
+      name: Name
+      required: true
+      selector:
+        text:
+
+set_settings:
+  name: Set settings
+  description: Merge and persist Split-Flap OS settings.
+  fields:
+    settings:
+      name: Settings
+      description: Settings keys and values to merge.
+      required: true
+      selector:
+        object:
