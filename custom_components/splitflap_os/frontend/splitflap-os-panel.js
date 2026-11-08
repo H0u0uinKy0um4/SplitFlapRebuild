@@ -104,7 +104,7 @@ const PANEL_I18N = {
     settings_saved: "Settings saved",
     backup_downloaded: "Backup downloaded",
     backup_restored: "Backup restored",
-    compose_message_first: "Compose a message before adding it",
+    compose_message_first: "Nejprve slož zprávu:",
     enter_drum_index: "Enter a drum index",
     enter_nonzero_steps: "Enter a non-zero step count",
     enter_index_step_pair: "Enter at least one index:step pair",
@@ -355,7 +355,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
   async _send(type, payload = {}) {
     if (!this._hass || !this._hass.connection) {
-      throw new Error("Home Assistant is not connected");
+      throw new Error("Home Asistent není připojen");
     }
     try {
       return await this._hass.connection.sendMessagePromise({
@@ -885,7 +885,7 @@ class SplitFlapOSPanel extends HTMLElement {
               </div>
               <div class="char-map" id="charMap" style="margin-top:12px"></div>
               <p class="muted" style="margin-bottom:0">
-                Click a character to move the selected module there. Gold cells already have a stored EEPROM position.
+                Kliknutím na znak přesuňte vybraný modul tam. Gold cells already have a stored EEPROM position.
               </p>
             </div>
           </section>
@@ -911,7 +911,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
               <div class="layout-alert" id="layoutError"></div>
               <p class="muted" style="margin-bottom:0">
-                Module IDs run left to right, then top to bottom. Blank cells are
+                Module IDs run left to right, then top to bottom. Prázdné buňky jsou
                 dashed; short rows sit in the middle of the frame.
               </p>
             </div>
@@ -948,7 +948,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
         <div class="modal hidden" id="modal">
           <div class="modal-card">
-            <h3 id="modalTitle">App settings</h3>
+            <h3 id="modalTitle">Nastavení aplikace</h3>
             <div id="modalFields"></div>
             <div class="actions">
               <button class="btn" data-action="save-app-settings">${this._t("save")}</button>
@@ -1267,7 +1267,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (!node) return;
     if (!this._builder.length) {
       node.innerHTML =
-        '<div class="empty">Add composed messages here to build a playlist.</div>';
+        '<div class="empty">Sem přidejte složené zprávy pro vytvoření playlistu.</div>';
       return;
     }
     node.innerHTML = this._builder
@@ -1528,7 +1528,7 @@ class SplitFlapOSPanel extends HTMLElement {
       const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
       for (let col = 0; col < board.cols; col += 1) {
         if (col < offset || col >= offset + count) {
-          html += '<div class="mod void" title="Blank frame cell"></div>';
+          html += '<div class="mod void" title="Prázdná buňka rámu"></div>';
           continue;
         }
         const slot = slotBase + col - offset;
@@ -2148,7 +2148,7 @@ class SplitFlapOSPanel extends HTMLElement {
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     const status = this.shadowRoot.getElementById("backupStatus");
-    if (status) status.textContent = `Backup downloaded at ${new Date().toLocaleTimeString()}`;
+    if (status) status.textContent = `Záloha stažena v ${new Date().toLocaleTimeString()}`;
     this._toast(this._t("backup_downloaded"));
   }
 
@@ -2159,7 +2159,7 @@ class SplitFlapOSPanel extends HTMLElement {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!data || typeof data !== "object" || Array.isArray(data)) {
-        throw new Error("Backup must be a JSON object");
+        throw new Error("Záloha musí být: JSON object");
       }
       await this._send("restore", { data });
       const status = this.shadowRoot.getElementById("backupStatus");
