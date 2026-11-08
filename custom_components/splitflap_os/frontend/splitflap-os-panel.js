@@ -304,12 +304,12 @@ class SplitFlapOSPanel extends HTMLElement {
         .grid { display: grid; gap: 3px; grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr)); }
         .flap {
           position: relative; aspect-ratio: 2 / 3; min-width: 0;
-          max-width: 48px; justify-self: center;
+          max-width: var(--flap-max, 48px); justify-self: center;
           display: flex; align-items: center; justify-content: center;
           background: #101010; border: 1px solid #292929; border-radius: 3px;
           color: #f5f5f5; font-family: "Roboto Mono", "Courier New", monospace;
           font-weight: 700; line-height: 1;
-          font-size: clamp(8px, 2.15vw, 28px);
+          font-size: var(--flap-font, clamp(8px, 2.15vw, 28px));
           text-shadow: 0 1px 2px #000; overflow: hidden;
         }
         .flap::after {
@@ -452,15 +452,15 @@ class SplitFlapOSPanel extends HTMLElement {
         }
         .mod {
           aspect-ratio: 1; min-width: 0; border-radius: 5px; cursor: pointer;
-          max-width: 56px; justify-self: center;
+          max-width: var(--mod-max, 56px); justify-self: center;
           border: 1px solid var(--divider-color, #ccc);
           background: var(--secondary-background-color, #f2f2f2);
           color: inherit; display: flex; flex-direction: column;
           align-items: center; justify-content: center; gap: 1px;
           font-family: "Roboto Mono", monospace; padding: 2px;
         }
-        .mod .mid { font-size: .55rem; opacity: .5; line-height: 1; }
-        .mod .mchar { font-size: .9rem; font-weight: 700; line-height: 1; }
+        .mod .mid { font-size: var(--mod-id, .55rem); opacity: .5; line-height: 1; }
+        .mod .mchar { font-size: var(--mod-char, .9rem); font-weight: 700; line-height: 1; }
         .mod.selected { border-color: var(--primary-color, #03a9f4); box-shadow: inset 0 0 0 1px var(--primary-color, #03a9f4); }
         .mod.offline { opacity: .45; }
         .mod.empty { cursor: default; opacity: .3; }
@@ -539,7 +539,7 @@ class SplitFlapOSPanel extends HTMLElement {
         .modal-card label.field { margin-bottom: 12px; }
         @media (max-width: 560px) {
           .app { padding: 12px 10px 48px; }
-          .flap { font-size: clamp(7px, 3vw, 18px); }
+          .flap { font-size: var(--flap-font, clamp(7px, 3vw, 18px)); }
           .tab { padding: 10px 11px; }
           .card { padding: 13px; }
         }
@@ -928,6 +928,22 @@ class SplitFlapOSPanel extends HTMLElement {
     }</span>`;
   }
 
+  _uiScale() {
+    const engine = this._engine();
+    const settings = (engine && engine.settings) || {};
+    const raw = Number(settings.ui_scale);
+    if (!Number.isFinite(raw) || raw <= 0) return 1;
+    return Math.max(0.5, Math.min(2, raw / 100));
+  }
+
+  _previewCell() {
+    return Math.round(48 * this._uiScale());
+  }
+
+  _moduleCell() {
+    return Math.round(56 * this._uiScale());
+  }
+
   _gridMaxWidth(cols, maxCell, gap) {
     const count = Math.max(1, Number(cols) || 1);
     return Math.round(count * maxCell + Math.max(0, count - 1) * gap);
@@ -967,15 +983,17 @@ class SplitFlapOSPanel extends HTMLElement {
       slotBase += count;
     }
     if (animate) this._lastChars = chars;
-    const width = this._gridMaxWidth(board.cols, 48, 3);
-    return `<div class="grid" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
+    const maxCell = this._previewCell();
+    const width = this._gridMaxWidth(board.cols, maxCell, 3);
+    const fontSize = Math.max(8, Math.round(maxCell * 0.55));
+    return `<div class="grid" style="--cols:${board.cols};--flap-max:${maxCell}px;--flap-font:${fontSize}px;max-width:${width}px;margin:0 auto">${html}</div>`;
   }
 
   _renderLive() {
     const board = this._board();
     const engine = this._engine();
     const html = this._previewHtml(this._lines(), true);
-    const width = this._gridMaxWidth(board.cols, 48, 3);
+    const width = this._gridMaxWidth(board.cols, this._previewCell(), 3);
     const meta = `${engine.mode || "idle"}${
       engine.current_page_count
         ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
@@ -1062,7 +1080,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const preview = this.shadowRoot.getElementById("composePreview");
     if (preview) {
       preview.innerHTML = this._previewHtml(lines, false);
-      this._fitPreview(preview, this._gridMaxWidth(board.cols, 48, 3));
+      this._fitPreview(preview, this._gridMaxWidth(board.cols, this._previewCell(), 3));
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
@@ -1232,7 +1250,17 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       matrix.style.setProperty("--cols", String(board.cols));
       if (modules.length) {
-        const width = this._gridMaxWidth(board.cols, 56, 4);
+        const maxCell = this._moduleCell();
+        const width = this._gridMaxWidth(board.cols, maxCell, 4);
+        matrix.style.setProperty("--mod-max", `${maxCell}px`);
+        matrix.style.setProperty(
+          "--mod-char",
+          `${Math.max(10, Math.round(maxCell * 0.26))}px`
+        );
+        matrix.style.setProperty(
+          "--mod-id",
+          `${Math.max(8, Math.round(maxCell * 0.13))}px`
+        );
         matrix.style.maxWidth = `${width}px`;
         matrix.style.marginLeft = "auto";
         matrix.style.marginRight = "auto";
@@ -1346,8 +1374,11 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       slotBase += count;
     }
-    const width = this._gridMaxWidth(board.cols, 56, 4);
-    node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
+    const maxCell = this._moduleCell();
+    const width = this._gridMaxWidth(board.cols, maxCell, 4);
+    const charFont = Math.max(10, Math.round(maxCell * 0.26));
+    const idFont = Math.max(8, Math.round(maxCell * 0.13));
+    node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};--mod-max:${maxCell}px;--mod-char:${charFont}px;--mod-id:${idFont}px;max-width:${width}px;margin:0 auto">${html}</div>`;
     this._fitPreview(node, width);
 
     if (summary) {

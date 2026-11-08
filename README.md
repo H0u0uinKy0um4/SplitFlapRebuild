@@ -127,6 +127,8 @@ available from the panel. Important keys include:
   one comma-separated module count per row, for example `3,3,1`. Blank means
   automatic layout. `rows` and `cols` are the frame dimensions; `0` means
   derive them from the detected module count.
+- `ui_scale` — panel preview scale in percent (`50`–`200`, default `100`).
+  Increase it to make a small physical display easier to see in the panel.
 - `timezone`, `units`, `page_delay`.
 - `weather_entity` (preferred), `zip_code` + `weather_api_key` (OpenWeather
   fallback).

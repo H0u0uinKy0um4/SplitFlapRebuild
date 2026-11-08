@@ -297,6 +297,11 @@ class AppEngine:
                 except ValueError as err:
                     raise ValueError(str(err)) from err
                 cleaned[key] = ",".join(str(count) for count in counts)
+            elif key == "ui_scale":
+                try:
+                    cleaned[key] = max(50, min(200, int(float(value))))
+                except (TypeError, ValueError):
+                    continue
             elif key == "page_delay":
                 try:
                     cleaned[key] = max(0.1, min(120.0, float(value)))

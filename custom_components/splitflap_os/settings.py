@@ -51,6 +51,19 @@ DISPLAY_FIELDS = (
         help="Physical frame width. Leave 0 to derive it from the display.",
     ),
     SettingField(
+        key="ui_scale",
+        label="Preview scale (%)",
+        type="number",
+        default=100,
+        minimum=50,
+        maximum=200,
+        step=5,
+        help=(
+            "Scales the flap and module previews in the panel. "
+            "100% is the default; use a larger value for small displays."
+        ),
+    ),
+    SettingField(
         key="timezone",
         label="Timezone",
         type="timezone",
@@ -128,6 +141,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "row_counts": "",
     "rows": 0,
     "cols": 0,
+    "ui_scale": 100,
     "timezone": "",
     "units": "auto",
     "page_delay": 5,
