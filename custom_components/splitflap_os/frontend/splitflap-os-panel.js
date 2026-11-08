@@ -1147,15 +1147,15 @@ class SplitFlapOSPanel extends HTMLElement {
     const engine = this._engine();
     const board = this._board();
     const online = Boolean(coordinator.online);
-    pill.textContent = online ? "ONLINE" : "OFFLINE";
+    pill.textContent = online ? (this._lang()==='cs'?"ONLINE":"ONLINE") : (this._lang()==='cs'?"OFFLINE":"OFFLINE");
     pill.className = `pill ${online ? "online" : "offline"}`;
 
     const prefix = coordinator.prefix || "—";
     const mode =
       engine.active_app ||
       (engine.mode === "playlist" ? "playlist" : engine.mode || "idle");
-    subtitle.textContent = `${prefix} • ${board.rows}×${board.cols} • ${board.modules} modules • ${mode}${
-      board.error ? " • LAYOUT ERROR" : ""
+    subtitle.textContent = `${prefix} • ${board.rows}×${board.cols} • ${board.modules} ${this._lang()==='cs'?'modulů':'modules'} • ${mode}${
+      board.error ? (this._lang()==='cs'?" • CHYBA ROZLOŽENÍ":" • LAYOUT ERROR") : ""
     }`;
   }
 
@@ -1402,13 +1402,15 @@ class SplitFlapOSPanel extends HTMLElement {
         const running = engine.active_app === app.key;
         const requirement = !available
           ? app.unavailable_reason ||
-            `Needs ${Number(app.min_rows) || 1} rows × ${Number(app.min_cols) || 1} columns`
+            (this._lang()==='cs'
+              ? `Vyžaduje ${Number(app.min_rows) || 1} řádků × ${Number(app.min_cols) || 1} sloupců`
+              : `Needs ${Number(app.min_rows) || 1} rows × ${Number(app.min_cols) || 1} columns`)
           : "";
         return `
           <div class="app-card${running ? " running" : ""}${available ? "" : " disabled"}"
                ${available ? `data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0"` : 'aria-disabled="true"'}
                title="${escapeAttr(requirement || app.description || "")}">
-            <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="Settings">⚙</button>
+            <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="${this._lang()==='cs'?'Nastavení':'Settings'}">⚙</button>
             <div class="app-icon">${escapeHtml(app.icon || "▦")}</div>
             <div class="app-name">${escapeHtml(app.name)}</div>
             <div class="app-desc">${escapeHtml(app.description || "")}</div>
