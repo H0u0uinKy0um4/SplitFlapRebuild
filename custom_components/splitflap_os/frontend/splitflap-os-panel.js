@@ -712,7 +712,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="mark">▦</div>
             <div>
               <h1>SPLIT-FLAP OS</h1>
-              <div class="sub" id="subtitle">Connecting to Home Assistant…</div>
+              <div class="sub" id="subtitle">${this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…'}</div>
             </div>
           </div>
           <div class="conn">
@@ -759,7 +759,7 @@ class SplitFlapOSPanel extends HTMLElement {
                 <label class="field"><span>${this._t('send_order')}</span>
                   <select id="styleSelect">${STYLE_OPTIONS}</select>
                 </label>
-                <label class="field"><span>SPEED (MS/MODULE)</span>
+                <label class="field"><span>${this._lang()==='cs'?'RYCHLOST (MS/MODUL)':'SPEED (MS/MODULE)'}</span>
                   <input id="speedInput" type="number" min="0" max="500" step="5" value="15">
                 </label>
               </div>
@@ -767,7 +767,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="muted" id="composeMeta" style="margin-top:8px"></div>
               <div class="actions">
                 <button class="btn" data-action="push-text">${this._t('push_to_display')}</button>
-                <button class="btn secondary" data-action="add-playlist">+ ADD TO PLAYLIST</button>
+                <button class="btn secondary" data-action="add-playlist">${this._lang()==='cs'?'+ PŘIDAT DO PLAYLISTU':'+ ADD TO PLAYLIST'}</button>
                 <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
               </div>
             </div>
@@ -775,7 +775,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <div class="row between">
                 <h2 style="margin:0">${this._t('playlist_builder')}</h2>
-                <label class="field" style="max-width:120px"><span>DELAY (S)</span>
+                <label class="field" style="max-width:120px"><span>${this._lang()==='cs'?'PRODLEVA (S)':'DELAY (S)'}</span>
                   <input id="builderDelay" type="number" min="0.1" max="120" step="0.5" value="5">
                 </label>
               </div>
@@ -869,7 +869,7 @@ class SplitFlapOSPanel extends HTMLElement {
                   <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
                 </div>
               </div>
-              <label class="field" style="margin-top:12px"><span>POSITION MAP (index:step, one per line)</span>
+              <label class="field" style="margin-top:12px"><span>${this._lang()==='cs'?'MAPA POZIC (index:krok, jeden na řádek)':'POSITION MAP (index:step, one per line)'}</span>
                 <textarea id="posMap" rows="3" placeholder="0:2832&#10;1:2896"></textarea>
               </label>
               <div class="actions">
@@ -925,7 +925,7 @@ class SplitFlapOSPanel extends HTMLElement {
             </div>
 
             <div class="card">
-              <h2>BACKUP &amp; RESTORE</h2>
+              <h2>${this._lang()==='cs'?'ZÁLOHA A OBNOVA':'BACKUP &amp; RESTORE'}</h2>
               <p class="muted" style="margin-top:0">
                 ${this._lang()==='cs'?'Obnovení sloučí nastavení a nahradí playlisty.':'Exports settings, playlists and the last module snapshot.'}
               </p>
@@ -1073,7 +1073,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (!this._state) {
       pill.textContent = "CONNECTING";
       pill.className = "pill connecting";
-      subtitle.textContent = "Connecting to Home Assistant…";
+      subtitle.textContent = "${this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…'}";
       return;
     }
 
