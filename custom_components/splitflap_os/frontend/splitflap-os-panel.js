@@ -8,7 +8,7 @@
  */
 
 const DOMAIN = "splitflap_os";
-const VERSION = "0.1.1";
+const VERSION = "0.1.3";
 
 const STYLES = [
   "ltr",
@@ -843,7 +843,7 @@ class SplitFlapOSPanel extends HTMLElement {
           <div class="brand">
             <div class="mark">▦</div>
             <div>
-              <h1>SPLIT-FLAP OS</h1>
+              <h1>SPLIT-FLAP OS <span style="font-size:.58rem;opacity:.45;font-weight:600;vertical-align:middle">v${VERSION}</span></h1>
               <div class="sub" id="subtitle">${this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…'}</div>
             </div>
           </div>
