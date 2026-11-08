@@ -403,7 +403,7 @@ class SplitFlapCoordinator:
             manufacturer="DIY",
             model="ESP32-C3 RS485 Split-Flap Master",
             sw_version="MQTT",
-            configuration_url=f"/{PANEL_URL_PATH}",
+            configuration_url=f"homeassistant://{PANEL_URL_PATH}",
         )
 
     @property
