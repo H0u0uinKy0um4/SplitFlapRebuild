@@ -248,6 +248,23 @@ const PANEL_I18N = {
 };
 
 
+const APPS_I18N = {
+  cs: {
+    clock: { name: "Hodiny", description: "Místní čas" },
+    date: { name: "Datum", description: "Den, datum a čas" },
+    dashboard: { name: "Přehled", description: "Datum a pak počasí" },
+    weather: { name: "Počasí", description: "Aktuální stav" },
+    stocks: { name: "Akcie", description: "Živé ceny" },
+    crypto: { name: "Krypto", description: "Ceny kryptoměn" },
+    sports: { name: "Sport", description: "Výsledky NHL" },
+    metro: { name: "Metro", description: "Příjezdy MHD" },
+    countdown: { name: "Odpočítávání", description: "Časovač do události" },
+    world_clock: { name: "Světové hodiny", description: "Více časových pásem" },
+    iss: { name: "ISS", description: "Poloha vesmírné stanice" },
+    animations: { name: "Animace", description: "Barevné efekty" },
+  },
+};
+
 const SETTINGS_I18N = {
   groups: {
     display: "🖥️ Displej",
@@ -1391,16 +1408,49 @@ class SplitFlapOSPanel extends HTMLElement {
       .join("");
   }
 
+  _appI18n(key) {
+    if (this._lang() !== "cs") return null;
+    return (APPS_I18N.cs && APPS_I18N.cs[key]) || null;
+  }
+
   _appName(key) {
     const apps = (this._engine() && this._engine().apps) || [];
     const app = apps.find((item) => item.key === key);
-    return app ? app.name : key || "Idle";
+    const fallback = app ? app.name : key || (this._lang()==='cs' ? "Nečinnost" : "Idle");
+    const t = this._appI18n(key);
+    return (t && t.name) || fallback;
+  }
+
+  _appDescription(app) {
+    if (!app) return "";
+    const t = this._appI18n(app.key);
+    return (t && t.description) || app.description || "";
+  }
+
+  _appRequirement(app, board) {
+    if (!app || app.available !== false) return "";
+    const needRows = Math.max(1, Number(app.min_rows) || 1);
+    const needCols = Math.max(1, Number(app.min_cols) || 1);
+    const rows = Number(board && board.rows) || 0;
+    const minCols = Number(board && (board.minCols ?? board.min_cols)) || 0;
+    const layoutError = board && board.error ? String(board.error) : "";
+    if (this._lang() === "cs") {
+      if (layoutError && (needRows > 1 || needCols > 1)) return `Nejprve opravte rozložení displeje: ${layoutError}`;
+      if (rows < needRows) return `Vyžaduje ${needRows} řádků; toto rozložení má ${rows}`;
+      if (minCols < needCols) return `Vyžaduje, aby každý řádek měl alespoň ${needCols} sloupců; nejkratší řádek má ${minCols}`;
+      return app.unavailable_reason || "";
+    }
+    if (layoutError && (needRows > 1 || needCols > 1)) return `Fix the display layout first: ${layoutError}`;
+    if (rows < needRows) return `Needs ${needRows} rows; this layout has ${rows}`;
+    if (minCols < needCols) return `Needs every row to be at least ${needCols} columns; the narrowest row has ${minCols}`;
+    return app.unavailable_reason || "";
   }
 
   _renderApps() {
     const node = this.shadowRoot.getElementById("appsGrid");
     if (!node) return;
     const engine = this._engine();
+    const board = this._board();
     const apps = engine.apps || [];
     if (!apps.length) {
       node.innerHTML = this._lang()==='cs'
@@ -1412,20 +1462,16 @@ class SplitFlapOSPanel extends HTMLElement {
       .map((app) => {
         const available = app.available !== false;
         const running = engine.active_app === app.key;
-        const requirement = !available
-          ? app.unavailable_reason ||
-            (this._lang()==='cs'
-              ? `Vyžaduje ${Number(app.min_rows) || 1} řádků × ${Number(app.min_cols) || 1} sloupců`
-              : `Needs ${Number(app.min_rows) || 1} rows × ${Number(app.min_cols) || 1} columns`)
-          : "";
+        const requirement = this._appRequirement(app, board);
+        const description = this._appDescription(app);
         return `
           <div class="app-card${running ? " running" : ""}${available ? "" : " disabled"}"
                ${available ? `data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0"` : 'aria-disabled="true"'}
-               title="${escapeAttr(requirement || app.description || "")}">
+               title="${escapeAttr(requirement || description)}">
             <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="${this._lang()==='cs'?'Nastavení':'Settings'}">⚙</button>
             <div class="app-icon">${escapeHtml(app.icon || "▦")}</div>
-            <div class="app-name">${escapeHtml(app.name)}</div>
-            <div class="app-desc">${escapeHtml(app.description || "")}</div>
+            <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
+            <div class="app-desc">${escapeHtml(description)}</div>
             ${available ? "" : `<div class="app-req">${escapeHtml(requirement)}</div>`}
           </div>`;
       })
@@ -1443,11 +1489,15 @@ class SplitFlapOSPanel extends HTMLElement {
     }
     banner.classList.remove("hidden");
     if (engine.active_app) {
-      text.textContent = `${this._appName(engine.active_app)} is running`;
+      text.textContent = this._lang()==='cs'
+        ? `${this._appName(engine.active_app)} běží`
+        : `${this._appName(engine.active_app)} is running`;
     } else if (engine.mode === "playlist") {
       const total = engine.current_page_count || (engine.playlist || []).length || 0;
       const current = total ? Number(engine.current_page_index || 0) + 1 : 0;
-      text.textContent = `Playlist běží${total ? ` • ${current}/${total}` : ""}`;
+      text.textContent = this._lang()==='cs'
+        ? `Playlist běží${total ? ` • ${current}/${total}` : ""}`
+        : `Playlist running${total ? ` • ${current}/${total}` : ""}`;
     } else {
       text.textContent = String(engine.mode || "idle");
     }
@@ -1878,10 +1928,8 @@ class SplitFlapOSPanel extends HTMLElement {
         const apps = (this._engine() && this._engine().apps) || [];
         const app = apps.find((item) => item.key === target.dataset.app);
         if (app && app.available === false) {
-          this._toast(
-            `${app.name} cannot run: ${app.unavailable_reason || "display too small"}`,
-            "warn"
-          );
+          const reason = this._appRequirement(app, this._board()) || (this._lang()==='cs' ? "displej je příliš malý" : "display too small");
+          this._toast(`${this._appName(target.dataset.app)}: ${reason}`, "warn");
           break;
         }
         await this._send("start_app", { app: target.dataset.app });
@@ -1986,7 +2034,9 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
       loop: true,
     });
-    this._toast(`Přehrávání playlistu (${this._builder.length} stránek)`);
+    this._toast(this._lang()==='cs'
+      ? `Přehrávání playlistu (${this._builder.length} stránek)`
+      : `Playing playlist (${this._builder.length} pages)`);
   }
 
   async _saveBuilder() {
@@ -2008,20 +2058,21 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
     });
     nameNode.value = "";
-    this._toast(`Uložen playlist „${name}“`);
+    this._toast(this._lang()==='cs' ? `Uložen playlist „${name}“` : `Saved playlist "${name}"`);
   }
 
   async _runSaved(name) {
     if (!name) return;
     await this._send("run_saved_playlist", { name });
-    this._toast(`Spuštěno „${name}“`);
+    this._toast(this._lang()==='cs' ? `Spuštěno „${name}“` : `Started "${name}"`);
   }
 
   async _deleteSaved(name) {
     if (!name) return;
-    if (!window.confirm(`Delete playlist "${name}"?`)) return;
+    const msg = this._lang()==='cs' ? `Smazat playlist „${name}“?` : `Delete playlist "${name}"?`;
+    if (!window.confirm(msg)) return;
     await this._send("delete_playlist", { name });
-    this._toast(`Smazáno „${name}“`);
+    this._toast(this._lang()==='cs' ? `Smazáno „${name}“` : `Deleted "${name}"`);
   }
 
   _openAppSettings(key) {
@@ -2031,7 +2082,9 @@ class SplitFlapOSPanel extends HTMLElement {
     this._modalApp = key;
     const settings = (this._engine() && this._engine().settings) || {};
     const fields = app.fields || [];
-    this.shadowRoot.getElementById("modalTitle").textContent = `${app.name} settings`;
+    this.shadowRoot.getElementById("modalTitle").textContent = this._lang()==='cs'
+      ? `Nastavení: ${this._appName(key)}`
+      : `${this._appName(key)} settings`;
     this.shadowRoot.getElementById("modalFields").innerHTML = fields.length
       ? fields.map((field) => this._fieldHtml(field, settings[field.key])).join("")
       : (this._lang()==='cs'?'<p class="muted">Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.</p>':'<p class="muted">This app has no options of its own. It uses the display and data settings from the Settings tab.</p>');
@@ -2076,7 +2129,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const settings = this._collectSettings(root);
     await this._send("set_settings", { settings });
     this._closeModal();
-    this._toast(`${this._appName(key)} settings saved`);
+    this._toast(this._lang()==='cs'
+      ? `Nastavení aplikace ${this._appName(key)} uloženo`
+      : `${this._appName(key)} settings saved`);
   }
 
   _moduleValue(id) {
