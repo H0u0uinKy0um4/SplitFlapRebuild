@@ -157,7 +157,11 @@ class SplitFlapOSPanel extends HTMLElement {
   }
 
   set hass(hass) {
+    const previousLanguage = this._lang();
     this._hass = hass;
+    if (previousLanguage !== this._lang() && this._state) {
+      this._renderAll();
+    }
     if (this.isConnected) this._connect();
   }
 
@@ -890,8 +894,10 @@ class SplitFlapOSPanel extends HTMLElement {
   }
 
   _lang() {
-    const lang = (this._hass && this._hass.language) || "en";
-    return lang.toLowerCase().startsWith("cs") ? "cs" : "en";
+    const lang =
+      (this._hass && (this._hass.language || (this._hass.locale && this._hass.locale.language))) ||
+      "en";
+    return String(lang).toLowerCase().startsWith("cs") ? "cs" : "en";
   }
 
   _t(key) {
