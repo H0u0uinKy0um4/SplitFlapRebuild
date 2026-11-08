@@ -145,6 +145,7 @@ class SplitFlapOSPanel extends HTMLElement {
     this._charSignature = "";
     this._lastChars = [];
     this._modalApp = null;
+    this._shellRendered = false;
 
     try {
       const saved = window.localStorage.getItem(`${DOMAIN}_tab`);
@@ -152,15 +153,19 @@ class SplitFlapOSPanel extends HTMLElement {
     } catch (err) {
       /* localStorage can be unavailable in private windows. */
     }
-
-    this._renderShell();
   }
 
   set hass(hass) {
     const previousLanguage = this._lang();
     this._hass = hass;
-    if (previousLanguage !== this._lang() && this._state) {
-      this._renderAll();
+    const newLanguage = this._lang();
+    if (!this._shellRendered) {
+      this._renderShell();
+      this._shellRendered = true;
+    } else if (previousLanguage !== newLanguage) {
+      this._renderShell();
+      this._shellRendered = true;
+      if (this._state) this._renderAll();
     }
     if (this.isConnected) this._connect();
   }
@@ -170,6 +175,10 @@ class SplitFlapOSPanel extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._shellRendered) {
+      this._renderShell();
+      this._shellRendered = true;
+    }
     if (this._hass) this._connect();
   }
 
