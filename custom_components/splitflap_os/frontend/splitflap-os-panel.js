@@ -23,14 +23,14 @@ const STYLES = [
 ];
 
 const PALETTE = [
-  ["\u{1F7E5}", "Red"],
-  ["\u{1F7E7}", "Orange"],
-  ["\u{1F7E8}", "Yellow"],
-  ["\u{1F7E9}", "Green"],
-  ["\u{1F7E6}", "Blue"],
-  ["\u{1F7EA}", "Purple"],
-  ["\u2B1C", "White"],
-  ["\u2B1B", "Black"],
+  ["\u{1F7E5}", "r"],
+  ["\u{1F7E7}", "o"],
+  ["\u{1F7E8}", "y"],
+  ["\u{1F7E9}", "g"],
+  ["\u{1F7E6}", "b"],
+  ["\u{1F7EA}", "p"],
+  ["\u2B1C", "w"],
+  ["\u2B1B", "k"],
 ];
 
 const COLOR_MAP = {
@@ -165,6 +165,14 @@ const PANEL_I18N = {
     blank: "(blank)",
     sync: "SYNC",
     total_steps: "TOTAL STEPS",
+    color_r: "Red",
+    color_o: "Orange",
+    color_y: "Yellow",
+    color_g: "Green",
+    color_b: "Blue",
+    color_p: "Purple",
+    color_w: "White",
+    color_k: "Black",
   },
   cs: {
     tab_control: "OVLÁDÁNÍ",
@@ -244,6 +252,14 @@ const PANEL_I18N = {
     blank: "(prázdné)",
     sync: "SYNCHRONIZOVAT",
     total_steps: "CELKEM KROKŮ",
+    color_r: "Červená",
+    color_o: "Oranžová",
+    color_y: "Žlutá",
+    color_g: "Zelená",
+    color_b: "Modrá",
+    color_p: "Fialová",
+    color_w: "Bílá",
+    color_k: "Černá",
   },
 };
 
@@ -644,9 +660,17 @@ class SplitFlapOSPanel extends HTMLElement {
         .palette { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
         .palette button {
           width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
-          border: 1px solid var(--divider-color, #ccc);
-          background: var(--card-background-color, #fff); font-size: 1rem;
+          border: 2px solid var(--divider-color, #ccc);
+          padding: 0; display: inline-block;
         }
+        .palette .palette-r { background: #b71c1c; border-color: #e53935; }
+        .palette .palette-o { background: #e65100; border-color: #fb8c00; }
+        .palette .palette-y { background: #f9a825; border-color: #fdd835; }
+        .palette .palette-g { background: #2e7d32; border-color: #43a047; }
+        .palette .palette-b { background: #1565c0; border-color: #1e88e5; }
+        .palette .palette-p { background: #6a1b9a; border-color: #8e24aa; }
+        .palette .palette-w { background: #eceff1; border-color: #b0bec5; }
+        .palette .palette-k { background: #1a1a1a; border-color: #555; }
         .options {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
           gap: 10px; margin: 12px 0;
@@ -856,8 +880,8 @@ class SplitFlapOSPanel extends HTMLElement {
                 placeholder="${this._lang()==='cs'?'Napiš zprávu — nové řádky začnou novou řadu':'Type a message — new lines become rows'}"></textarea>
               <div class="palette">
                 ${PALETTE.map(
-                  ([emoji, label]) =>
-                    `<button data-action="insert-color" data-char="${emoji}" title="${label}">${emoji}</button>`
+                  ([emoji, code]) =>
+                    `<button class="palette-${code}" data-action="insert-color" data-char="${emoji}" title="${escapeAttr(this._t('color_' + code))}" aria-label="${escapeAttr(this._t('color_' + code))}"></button>`
                 ).join("")}
               </div>
               <div class="options">
