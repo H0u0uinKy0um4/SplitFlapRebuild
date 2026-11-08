@@ -26,7 +26,7 @@ async def async_setup_entry(
 class SplitFlapAppSelect(SplitFlapEntity, SelectEntity):
     """Start an app, or turn the display engine off."""
 
-    _attr_name = "App"
+    _attr_translation_key = "app"
     _attr_icon = "mdi:apps"
 
     def __init__(self, runtime: dict[str, Any]) -> None:

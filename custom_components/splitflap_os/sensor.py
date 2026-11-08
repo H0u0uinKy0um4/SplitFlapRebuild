@@ -36,7 +36,7 @@ async def async_setup_entry(
 class SplitFlapStatusSensor(SplitFlapEntity, SensorEntity):
     """Online/offline state of the ESP32 master."""
 
-    _attr_name = "Status"
+    _attr_translation_key = "status"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["online", "offline"]
 
@@ -65,7 +65,7 @@ class SplitFlapStatusSensor(SplitFlapEntity, SensorEntity):
 class SplitFlapModuleCountSensor(SplitFlapEntity, SensorEntity):
     """Number of modules reported by the master."""
 
-    _attr_name = "Module count"
+    _attr_translation_key = "module_count"
     _attr_icon = "mdi:dots-grid"
     _attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -80,7 +80,7 @@ class SplitFlapModuleCountSensor(SplitFlapEntity, SensorEntity):
 class SplitFlapDisplaySensor(SplitFlapEntity, SensorEntity):
     """The last text the integration sent to the display."""
 
-    _attr_name = "Display text"
+    _attr_translation_key = "display_text"
     _attr_icon = "mdi:format-text"
 
     def __init__(self, runtime: dict[str, Any]) -> None:
@@ -106,7 +106,7 @@ class SplitFlapDisplaySensor(SplitFlapEntity, SensorEntity):
 class SplitFlapActiveAppSensor(SplitFlapEntity, SensorEntity):
     """The app or mode currently driving the display."""
 
-    _attr_name = "Active app"
+    _attr_translation_key = "active_app"
     _attr_icon = "mdi:play-box-multiple"
 
     def __init__(self, runtime: dict[str, Any]) -> None:

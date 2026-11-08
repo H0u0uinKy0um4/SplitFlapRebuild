@@ -25,7 +25,7 @@ async def async_setup_entry(
 class SplitFlapDisplayText(SplitFlapEntity, TextEntity):
     """Write a value here to push it to the split-flap board."""
 
-    _attr_name = "Set display text"
+    _attr_translation_key = "set_display_text"
     _attr_icon = "mdi:format-text"
     _attr_mode = TextMode.TEXT
     _attr_native_min = 0

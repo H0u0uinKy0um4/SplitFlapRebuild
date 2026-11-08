@@ -208,5 +208,48 @@
         }
       }
     }
+  },
+  "entity": {
+    "button": {
+      "home_all": {
+        "name": "Najet domů"
+      },
+      "scan_bus": {
+        "name": "Prohledat sběrnici"
+      },
+      "sync_state": {
+        "name": "Synchronizovat stav"
+      },
+      "refresh_modules": {
+        "name": "Obnovit moduly"
+      },
+      "stop_display": {
+        "name": "Zastavit displej"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stav"
+      },
+      "module_count": {
+        "name": "Počet modulů"
+      },
+      "display_text": {
+        "name": "Text na displeji"
+      },
+      "active_app": {
+        "name": "Aktivní aplikace"
+      }
+    },
+    "select": {
+      "app": {
+        "name": "Aplikace"
+      }
+    },
+    "text": {
+      "set_display_text": {
+        "name": "Nastavit text displeje"
+      }
+    }
   }
 }

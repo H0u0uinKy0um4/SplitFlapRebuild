@@ -33,7 +33,7 @@ async def async_setup_entry(
 class SplitFlapActionButton(SplitFlapEntity, ButtonEntity):
     """Base class for one-shot hardware actions."""
 
-    _attr_name: str
+    _attr_translation_key: str
     _attr_icon: str
 
     def __init__(self, runtime: dict[str, Any], key: str) -> None:
@@ -49,7 +49,7 @@ class SplitFlapActionButton(SplitFlapEntity, ButtonEntity):
 class SplitFlapHomeAllButton(SplitFlapActionButton):
     """Home every module."""
 
-    _attr_name = "Home all"
+    _attr_translation_key = "home_all"
     _attr_icon = "mdi:home-import-outline"
 
     def __init__(self, runtime: dict[str, Any]) -> None:
@@ -62,7 +62,7 @@ class SplitFlapHomeAllButton(SplitFlapActionButton):
 class SplitFlapScanButton(SplitFlapActionButton):
     """Scan the RS485 bus for modules."""
 
-    _attr_name = "Scan bus"
+    _attr_translation_key = "scan_bus"
     _attr_icon = "mdi:radar"
 
     def __init__(self, runtime: dict[str, Any]) -> None:
@@ -75,7 +75,7 @@ class SplitFlapScanButton(SplitFlapActionButton):
 class SplitFlapSyncButton(SplitFlapActionButton):
     """Ask the master to republish its current state."""
 
-    _attr_name = "Sync state"
+    _attr_translation_key = "sync_state"
     _attr_icon = "mdi:sync"
 
     def __init__(self, runtime: dict[str, Any]) -> None:
@@ -88,7 +88,7 @@ class SplitFlapSyncButton(SplitFlapActionButton):
 class SplitFlapRefreshButton(SplitFlapActionButton):
     """Refresh the known modules without a full bus scan."""
 
-    _attr_name = "Refresh modules"
+    _attr_translation_key = "refresh_modules"
     _attr_icon = "mdi:refresh"
 
     def __init__(self, runtime: dict[str, Any]) -> None:
@@ -101,7 +101,7 @@ class SplitFlapRefreshButton(SplitFlapActionButton):
 class SplitFlapStopButton(SplitFlapActionButton):
     """Stop the app or playlist and leave the current text showing."""
 
-    _attr_name = "Stop display"
+    _attr_translation_key = "stop_display"
     _attr_icon = "mdi:stop"
 
     def __init__(self, runtime: dict[str, Any]) -> None:

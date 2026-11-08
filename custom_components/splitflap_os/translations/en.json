@@ -93,5 +93,48 @@
       "name": "Set settings",
       "description": "Merge and persist Split-Flap OS settings."
     }
+  },
+  "entity": {
+    "button": {
+      "home_all": {
+        "name": "Home all"
+      },
+      "scan_bus": {
+        "name": "Scan bus"
+      },
+      "sync_state": {
+        "name": "Sync state"
+      },
+      "refresh_modules": {
+        "name": "Refresh modules"
+      },
+      "stop_display": {
+        "name": "Stop display"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "module_count": {
+        "name": "Module count"
+      },
+      "display_text": {
+        "name": "Display text"
+      },
+      "active_app": {
+        "name": "Active app"
+      }
+    },
+    "select": {
+      "app": {
+        "name": "App"
+      }
+    },
+    "text": {
+      "set_display_text": {
+        "name": "Set display text"
+      }
+    }
   }
 }
