@@ -745,7 +745,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <h2>${this._t('compose')}</h2>
               <textarea id="compose" class="compose-input" rows="3"
-                placeholder="Napiš zprávu — new lines become rows"></textarea>
+                placeholder="${this._lang()==='cs'?'Napiš zprávu — nové řádky začnou novou řadu':'Type a message — new lines become rows'}"></textarea>
               <div class="palette">
                 ${PALETTE.map(
                   ([emoji, label]) =>
@@ -803,7 +803,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <h2>${this._t('available_apps')}</h2>
               <div class="apps-grid" id="appsGrid"></div>
               <p class="muted" style="margin-bottom:0">
-                Kliknutím na aplikaci ji spustíte. Použij ozubené kolečko pro úpravu nastavení, která aplikace čte.
+                ${this._lang()==='cs'?'Kliknutím na aplikaci ji spustíte. Použij ozubené kolečko pro úpravu nastavení, která aplikace čte.':'Tap an app to launch it. Use the gear to edit the settings that app reads.'}
               </p>
             </div>
           </section>
@@ -885,7 +885,7 @@ class SplitFlapOSPanel extends HTMLElement {
               </div>
               <div class="char-map" id="charMap" style="margin-top:12px"></div>
               <p class="muted" style="margin-bottom:0">
-                Kliknutím na znak přesuňte vybraný modul tam. Zlaté buňky již mají uložený EEPROM position.
+                ${this._lang()==='cs'?'Kliknutím na znak přesuňte vybraný modul tam. Zlaté buňky již mají uložený EEPROM position.':'Click a character to move the selected module there. Gold cells already have a stored position.'}
               </p>
             </div>
           </section>
@@ -911,7 +911,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
               <div class="layout-alert" id="layoutError"></div>
               <p class="muted" style="margin-bottom:0">
-                Module ID se řadí zleva doprava, then top to bottom. Prázdné buňky jsou
+                ${this._lang()==='cs'?'ID se řadí zleva doprava, pak shora dolů. Prázdné buňky jsou':'Module IDs run left to right, then top to bottom. Blank cells are'}
                 dashed; short rows sit in the middle of the frame.
               </p>
             </div>
@@ -927,7 +927,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <h2>BACKUP &amp; RESTORE</h2>
               <p class="muted" style="margin-top:0">
-                Exports settings, playlists and the last module snapshot. Obnovení sloučí nastavení a nahradí playlisty.
+                ${this._lang()==='cs'?'Obnovení sloučí nastavení a nahradí playlisty.':'Exports settings, playlists and the last module snapshot.'}
               </p>
               <div class="actions">
                 <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
@@ -939,7 +939,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <h2>${this._t('connection')}</h2>
-              <div class="muted" id="connectionInfo">Čekání na stav…</div>
+              <div class="muted" id="connectionInfo">${this._lang()==='cs'?'Čekání na stav…':'Waiting for state…'}</div>
             </div>
           </section>
         </main>
@@ -948,7 +948,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
         <div class="modal hidden" id="modal">
           <div class="modal-card">
-            <h3 id="modalTitle">Nastavení aplikace</h3>
+            <h3 id="modalTitle">${this._lang()==='cs'?'Nastavení aplikace':'App settings'}</h3>
             <div id="modalFields"></div>
             <div class="actions">
               <button class="btn" data-action="save-app-settings">${this._t("save")}</button>
@@ -1266,8 +1266,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const node = this.shadowRoot.getElementById("builderList");
     if (!node) return;
     if (!this._builder.length) {
-      node.innerHTML =
-        '<div class="empty">Sem přidejte složené zprávy pro vytvoření playlistu.</div>';
+      node.innerHTML = this._lang()==='cs'
+        ? '<div class="empty">Sem přidejte složené zprávy pro vytvoření playlistu.</div>'
+        : '<div class="empty">Add composed messages here to build a playlist.</div>';
       return;
     }
     node.innerHTML = this._builder
@@ -1290,7 +1291,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const playlists = this._engine().saved_playlists || {};
     const names = Object.keys(playlists);
     if (!names.length) {
-      node.innerHTML = '<div class="empty">Zatím žádné uložené playlisty.</div>';
+      node.innerHTML = this._lang()==='cs'
+        ? '<div class="empty">Zatím žádné uložené playlisty.</div>'
+        : '<div class="empty">No saved playlists yet.</div>';
       return;
     }
     node.innerHTML = names
@@ -1322,7 +1325,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const engine = this._engine();
     const apps = engine.apps || [];
     if (!apps.length) {
-      node.innerHTML = '<div class="empty">Žádné registrované aplikace.</div>';
+      node.innerHTML = this._lang()==='cs'
+        ? '<div class="empty">Žádné registrované aplikace.</div>'
+        : '<div class="empty">No apps registered.</div>';
       return;
     }
     node.innerHTML = apps
@@ -1443,7 +1448,9 @@ class SplitFlapOSPanel extends HTMLElement {
         matrix.style.marginLeft = "";
         matrix.style.marginRight = "";
       }
-      matrix.innerHTML = html || '<div class="empty">Nebyly nalezeny žádné moduly. Spustit prohledání sběrnice.</div>';
+      matrix.innerHTML = html || (this._lang()==='cs'
+        ? '<div class="empty">Nebyly nalezeny žádné moduly. Spustit prohledání sběrnice.</div>'
+        : '<div class="empty">No modules detected. Run a bus scan.</div>');
     }
 
     if (meta) {
@@ -1528,7 +1535,7 @@ class SplitFlapOSPanel extends HTMLElement {
       const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
       for (let col = 0; col < board.cols; col += 1) {
         if (col < offset || col >= offset + count) {
-          html += '<div class="mod void" title="Prázdná buňka rámu"></div>';
+          html += this._lang()==='cs'?'<div class="mod void" title="Prázdná buňka rámu"></div>':'<div class="mod void" title="Blank frame cell"></div>';
           continue;
         }
         const slot = slotBase + col - offset;
@@ -1571,7 +1578,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (!node) return;
     if (!module) {
       if (title) title.textContent = "Select a module";
-      node.innerHTML = '<div class="empty">Vyber modul výše pro ladění znaků.</div>';
+      node.innerHTML = this._lang()==='cs'?'<div class="empty">Vyber modul výše pro ladění znaků.</div>':'<div class="empty">Select a module above to tune characters.</div>';
       this._charSignature = "";
       return;
     }
@@ -1947,7 +1954,7 @@ class SplitFlapOSPanel extends HTMLElement {
     this.shadowRoot.getElementById("modalTitle").textContent = `${app.name} settings`;
     this.shadowRoot.getElementById("modalFields").innerHTML = fields.length
       ? fields.map((field) => this._fieldHtml(field, settings[field.key])).join("")
-      : '<p class="muted">Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Settings tab.</p>';
+      : (this._lang()==='cs'?'<p class="muted">Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.</p>':'<p class="muted">This app has no options of its own. It uses the display and data settings from the Settings tab.</p>');
     this.shadowRoot.getElementById("modal").classList.remove("hidden");
   }
 
@@ -2024,7 +2031,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
     if (sub === "home") {
       await this._send("calibrate", { module, action: "home" });
-      this._toast(`Modul ${module} najíždí`);
+      this._toast(this._lang()==='cs'?`Modul ${module} najíždí`:`Module ${module} homing`);
       return;
     }
     if (sub === "get_pos") {
@@ -2073,12 +2080,12 @@ class SplitFlapOSPanel extends HTMLElement {
         return;
       }
       await this._send("calibrate", { module, action: "record", index });
-      this._toast(`Zaznamenán modul ${module}, index ${index}`);
+      this._toast(this._lang()==='cs'?`Zaznamenán modul ${module}, index ${index}`:`Recorded module ${module} index ${index}`);
       return;
     }
     if (sub === "clear_map") {
       await this._send("calibrate", { module, action: "clear_map" });
-      this._toast(`Vymazána mapa EEPROM pro modul ${module}`);
+      this._toast(this._lang()==='cs'?`Vymazána mapa EEPROM pro modul ${module}`:`Cleared the EEPROM map for module ${module}`);
       return;
     }
     if (sub === "apply_offset") {
@@ -2092,7 +2099,7 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         home_offset: offset,
       });
-      this._toast(`Aplikován offset ${offset}; modul najíždí`);
+      this._toast(this._lang()==='cs'?`Aplikován offset ${offset}; modul najíždí`:`Applied offset ${offset}; module is homing`);
       return;
     }
     if (sub === "apply_map") {
@@ -2106,7 +2113,7 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         positions,
       });
-      this._toast(`Aplikováno ${Object.keys(positions).length} záznamů mapy; modul najíždí`);
+      this._toast(this._lang()==='cs'?`Aplikováno ${Object.keys(positions).length} záznamů mapy; modul najíždí`:`Applied ${Object.keys(positions).length} map entries; module is homing`);
     }
   }
 
@@ -2148,7 +2155,7 @@ class SplitFlapOSPanel extends HTMLElement {
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     const status = this.shadowRoot.getElementById("backupStatus");
-    if (status) status.textContent = `Záloha stažena v ${new Date().toLocaleTimeString()}`;
+    if (status) status.textContent = this._lang()==='cs'?`Záloha stažena v ${new Date().toLocaleTimeString()}`:`Backup downloaded at ${new Date().toLocaleTimeString()}`;
     this._toast(this._t("backup_downloaded"));
   }
 
@@ -2159,7 +2166,7 @@ class SplitFlapOSPanel extends HTMLElement {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!data || typeof data !== "object" || Array.isArray(data)) {
-        throw new Error("Záloha musí být: JSON object");
+        throw new Error(this._lang()==='cs'?"Záloha musí být: JSON object":"Backup must be a JSON object");
       }
       await this._send("restore", { data });
       const status = this.shadowRoot.getElementById("backupStatus");
