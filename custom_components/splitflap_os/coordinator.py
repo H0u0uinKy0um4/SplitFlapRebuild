@@ -424,12 +424,17 @@ class SplitFlapCoordinator:
         count = _coerce_count(self.data.get("modules_count"), 0)
         return count or len(self.modules)
 
-    def drum_for(self, module_id: Any) -> list[str]:
+    def flap_list_for(self, module_id: Any) -> list[str] | None:
+        """Return the module's reported drum, or ``None`` when unknown."""
+
         module = self.modules.get(str(module_id)) or {}
         flap_list = module.get("flap_list")
         if isinstance(flap_list, list) and flap_list:
             return flap_list
-        return list(DEFAULT_DRUM)
+        return None
+
+    def drum_for(self, module_id: Any) -> list[str]:
+        return self.flap_list_for(module_id) or list(DEFAULT_DRUM)
 
     def module_snapshot(self, module_id: str) -> dict[str, Any]:
         module = dict(self.modules.get(module_id) or {})

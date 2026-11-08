@@ -12,7 +12,7 @@ import random
 import re
 import textwrap
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 #: The stock 64-character drum.  The first character is a real blank flap.
 DEFAULT_DRUM = (
@@ -550,6 +550,35 @@ def _flap_index(char: str, drum: str | Sequence[str] | None) -> int | None:
         return list(drum).index(char)
     except ValueError:
         return None
+
+
+def unknown_characters(
+    char_by_id: Mapping[str, object],
+    drums: Mapping[str, str | Sequence[str] | None],
+) -> dict[str, list[str]]:
+    """Return characters that the target module's drum cannot show.
+
+    Modules whose drum is unknown (empty or not reported) are skipped: there
+    is nothing to validate against, and rejecting them would break boards
+    whose firmware does not publish a ``flap_list``.  Blank characters are
+    ignored because centring and padding add spaces that are not meant to be
+    visible flaps.
+    """
+
+    missing: dict[str, list[str]] = {}
+    for module_id, char in char_by_id.items():
+        drum = drums.get(module_id)
+        if not drum:
+            continue
+        value = str(char or " ")[:1] or " "
+        if value == " ":
+            continue
+        if _flap_index(value, drum) is not None:
+            continue
+        chars = missing.setdefault(str(module_id), [])
+        if value not in chars:
+            chars.append(value)
+    return missing
 
 
 def estimate_rotation_seconds(

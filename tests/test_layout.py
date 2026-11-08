@@ -222,6 +222,42 @@ class RotationTests(unittest.TestCase):
         self.assertEqual(seconds, 8.0)
 
 
+class UnknownCharactersTests(unittest.TestCase):
+    def test_accepts_characters_in_each_drum(self) -> None:
+        self.assertEqual(
+            layout.unknown_characters(
+                {"1": "A", "2": "r", "3": " "},
+                {"1": "ABC", "2": list("roygbpw"), "3": "ABC"},
+            ),
+            {},
+        )
+
+    def test_reports_missing_characters_per_module(self) -> None:
+        self.assertEqual(
+            layout.unknown_characters(
+                {"1": "X", "2": "B"},
+                {"1": "ABC", "2": "roygbpw"},
+            ),
+            {"1": ["X"], "2": ["B"]},
+        )
+
+    def test_skips_modules_without_a_reported_drum(self) -> None:
+        self.assertEqual(layout.unknown_characters({"1": "X"}, {}), {})
+        self.assertEqual(layout.unknown_characters({"1": "X"}, {"1": ""}), {})
+
+    def test_ignores_padding_spaces(self) -> None:
+        self.assertEqual(
+            layout.unknown_characters({"1": " "}, {"1": "ABC"}),
+            {},
+        )
+
+    def test_uses_first_character_like_the_display_command(self) -> None:
+        self.assertEqual(
+            layout.unknown_characters({"1": "XY"}, {"1": "X"}),
+            {},
+        )
+
+
 class MiscTests(unittest.TestCase):
     def test_split_csv(self) -> None:
         self.assertEqual(layout.split_csv(" a, b ,,c "), ["a", "b", "c"])

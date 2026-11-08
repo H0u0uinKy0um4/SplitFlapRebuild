@@ -43,6 +43,7 @@ from .layout import (
     order_indices,
     parse_row_counts,
     resolve_layout,
+    unknown_characters,
 )
 from .models import Page
 from .settings import settings_for_ui
@@ -373,9 +374,6 @@ class AppEngine:
         stop: bool = True,
         raw: bool = False,
     ) -> None:
-        if stop:
-            await self.async_stop(notify=False)
-
         rows, cols = self.board
         try:
             offset = max(0, int(start) - 1)
@@ -383,15 +381,34 @@ class AppEngine:
             offset = 0
         value = (" " * offset) + str(text or "")
         lines, board = compose_board(value, rows, cols, raw=raw)
+        page_style = style if style in {
+            "ltr",
+            "rtl",
+            "columns",
+            "center_out",
+            "outside_in",
+            "diagonal",
+            "random",
+            "rain",
+            "spiral",
+        } else "ltr"
         page = Page(
             text=str(text or ""),
             raw=raw,
-            style=style if style in {"ltr", "rtl", "columns", "center_out", "outside_in", "diagonal", "random", "rain", "spiral"} else "ltr",
+            style=page_style,
             speed=int(speed) if speed not in (None, "") else None,
             start=0,
         )
-        await self._publish_board(lines, board, page.style or "ltr", page)
-        self._last_style = page.style or "ltr"
+
+        # Validate before stopping the current display so a rejected message
+        # leaves whatever is already on the board untouched.
+        self._validate_board(board, page_style)
+
+        if stop:
+            await self.async_stop(notify=False)
+
+        await self._publish_board(lines, board, page_style, page)
+        self._last_style = page_style
         self._last_speed = page.speed
         self._current_page = {**page.as_dict(), "lines": lines}
         self._current_page_index = 0
@@ -408,8 +425,14 @@ class AppEngine:
         *,
         loop: bool = True,
     ) -> None:
+        prepared = [Page.from_dict(page) for page in (pages or [])][:100]
+        # Check every page up front so a playlist cannot start with a
+        # character that the current drums cannot show.
+        for page in prepared:
+            self._validate_page(page)
+
         await self.async_stop(notify=False)
-        self.playlist = [Page.from_dict(page) for page in (pages or [])][:100]
+        self.playlist = prepared
         try:
             self.playlist_delay = max(0.1, float(delay or 5.0))
         except (TypeError, ValueError):
@@ -583,13 +606,11 @@ class AppEngine:
             self._last_text = page.text
         return rotation
 
-    async def _publish_board(
-        self,
-        lines: list[str],
-        board: str,
-        style: str,
-        page: Page,
-    ) -> float:
+    def _mapped_chars(
+        self, board: str, style: str
+    ) -> tuple[dict[str, str], list[str]]:
+        """Map board cells to module ids and build the send order."""
+
         rows, cols = self.board
         layout = self.layout
         module_ids = self.coordinator.module_ids
@@ -621,6 +642,48 @@ class AppEngine:
         for module_id in module_ids:
             if module_id not in order_ids:
                 order_ids.append(module_id)
+        return char_by_id, order_ids
+
+    def _validate_chars(self, char_by_id: dict[str, str]) -> None:
+        """Reject characters that a module's reported drum cannot show."""
+
+        drums = {
+            module_id: self.coordinator.flap_list_for(module_id)
+            for module_id in char_by_id
+        }
+        missing = unknown_characters(char_by_id, drums)
+        if not missing:
+            return
+
+        details = "; ".join(
+            f"module {module_id} lacks {', '.join(repr(char) for char in chars)}"
+            for module_id, chars in missing.items()
+        )
+        raise ValueError(
+            f"Cannot display: {details}. Use a character from the module's "
+            "drum or update its flap list in Tuning."
+        )
+
+    def _validate_board(self, board: str, style: str) -> None:
+        char_by_id, _ = self._mapped_chars(board, style)
+        self._validate_chars(char_by_id)
+
+    def _validate_page(self, page: Page) -> None:
+        rows, cols = self.board
+        text = page.text
+        if page.start:
+            text = (" " * page.start) + text
+        _, board = compose_board(text, rows, cols, raw=page.raw)
+        self._validate_board(board, page.style or "ltr")
+
+    async def _publish_board(
+        self,
+        lines: list[str],
+        board: str,
+        style: str,
+        page: Page,
+    ) -> float:
+        char_by_id, order_ids = self._mapped_chars(board, style)
 
         previous = dict(self.coordinator.desired_chars)
         drums = {

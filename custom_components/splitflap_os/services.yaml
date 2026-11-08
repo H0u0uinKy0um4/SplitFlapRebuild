@@ -1,6 +1,6 @@
 send_text:
   name: Send text
-  description: Send wrapped text to the split-flap display.
+  description: Send wrapped text to the split-flap display. Characters missing from a module's reported flap list are rejected.
   fields:
     text:
       name: Text
@@ -60,7 +60,7 @@ send_text:
 
 play_playlist:
   name: Play playlist
-  description: Play a list of pages, optionally looping.
+  description: Play a list of pages, optionally looping. All pages are checked against the modules' flap lists before playback.
   fields:
     pages:
       name: Pages

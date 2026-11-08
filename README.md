@@ -5,6 +5,8 @@ ESP32-C3 RS485 **SplitFlap Master** firmware. It replaces the older `splitflap`
 integration with a Home Assistant native app engine, a sidebar panel, and a
 tuning/calibration workbench.
 
+> 🇨🇿 Český návod pro začátečníky: [README.cs.md](README.cs.md).
+
 The integration talks to the master over MQTT. The master keeps ownership of the
 RS485 bus and the slave modules; Home Assistant owns text layout, apps, playlists,
 auto-detected board geometry, tuning state, and persistence.
@@ -38,6 +40,9 @@ Home Assistant                         ESP32 master                 Slaves
   EEPROM position maps, recording drum indexes, bus scan, sync, and refresh.
 - **Entities and services** so automations can send text, launch apps, and run
   hardware actions without the panel.
+- **Character validation**: text and playlists are checked against each
+  module's reported `flap_list` before anything is sent; a missing flap raises
+  an error naming the module and character.
 - **Backup/restore** of settings, playlists, and the last module snapshot.
 - Only one config entry is allowed, matching the single-master firmware.
 
@@ -117,6 +122,13 @@ Service `pages` fields accept a real YAML list when called from scripts, or a
 JSON array string when using the UI. `send_text` treats `start` as a 1-based
 column offset. `speed` is forwarded with the display command; the current master
 firmware ignores it and uses its own fixed bus timing.
+
+Before text is published, every module that reports a `flap_list` is checked
+for the characters it will receive. If a flap is missing, the service raises an
+error naming the module and character, and nothing is sent. `play_playlist`
+validates all pages before it starts. Padding spaces are ignored, and modules
+without a reported flap list are skipped because there is no drum to compare
+against.
 
 ## Settings
 
@@ -313,5 +325,9 @@ python3 tests/test_positions.py
 - **Display shows old text after a restart** — the integration restores the last
   known module snapshot and desired characters; press **Sync** to refresh from
   the master.
+- **Service fails with "Cannot display: module ... lacks ..."** — a module's
+  reported drum lacks one of the requested characters. Check the module in
+  Tuning, use a character from its flap list, or remove it. Nothing was sent to
+  the display.
 - **Panel missing after install** — reload the integration once, then hard-refresh
   the browser. Check Home Assistant logs for `panel` or static-path errors.
