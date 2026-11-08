@@ -86,6 +86,41 @@ function centerLine(line, cols) {
   return " ".repeat(left) + value + " ".repeat(cols - value.length - left);
 }
 
+const PANEL_I18N = {
+  en: {
+    tab_control: "CONTROL",
+    tab_apps: "APPS",
+    tab_tuning: "TUNING",
+    tab_settings: "SETTINGS",
+    stop: "STOP",
+    clear: "CLEAR",
+    save: "SAVE",
+    scan_bus: "SCAN BUS",
+    sync: "SYNC",
+    home_all: "HOME ALL",
+    save_settings: "SAVE SETTINGS",
+    type_message: "Type a message first",
+    display_cleared: "Display cleared",
+    settings_saved: "Settings saved",
+  },
+  cs: {
+    tab_control: "OVLÁDÁNÍ",
+    tab_apps: "APLIKACE",
+    tab_tuning: "LADĚNÍ",
+    tab_settings: "NASTAVENÍ",
+    stop: "STOP",
+    clear: "SMAZAT",
+    save: "ULOŽIT",
+    scan_bus: "PROHLEDAT SBĚRNICI",
+    sync: "SYNCHRONIZOVAT",
+    home_all: "DOMŮ VŠE",
+    save_settings: "ULOŽIT NASTAVENÍ",
+    type_message: "Nejprve napiš zprávu",
+    display_cleared: "Displej vymazán",
+    settings_saved: "Nastavení uloženo",
+  },
+};
+
 class SplitFlapOSPanel extends HTMLElement {
   constructor() {
     super();
@@ -562,14 +597,14 @@ class SplitFlapOSPanel extends HTMLElement {
         <div class="banner hidden" id="banner">
           <span class="dot"></span>
           <span id="bannerText"></span>
-          <button class="btn mini danger stop" data-action="stop">STOP</button>
+          <button class="btn mini danger stop" data-action="stop">${this._t("stop")}</button>
         </div>
 
         <nav class="tabs">
-          <button class="tab active" data-action="tab" data-tab="control">CONTROL</button>
-          <button class="tab" data-action="tab" data-tab="apps">APPS</button>
-          <button class="tab" data-action="tab" data-tab="tuning">TUNING</button>
-          <button class="tab" data-action="tab" data-tab="settings">SETTINGS</button>
+          <button class="tab active" data-action="tab" data-tab="control">${this._t("tab_control")}</button>
+          <button class="tab" data-action="tab" data-tab="apps">${this._t("tab_apps")}</button>
+          <button class="tab" data-action="tab" data-tab="tuning">${this._t("tab_tuning")}</button>
+          <button class="tab" data-action="tab" data-tab="settings">${this._t("tab_settings")}</button>
         </nav>
 
         <main>
@@ -606,7 +641,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="actions">
                 <button class="btn" data-action="push-text">PUSH TO DISPLAY</button>
                 <button class="btn secondary" data-action="add-playlist">+ ADD TO PLAYLIST</button>
-                <button class="btn secondary" data-action="clear-text">CLEAR</button>
+                <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
               </div>
             </div>
 
@@ -621,7 +656,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="actions">
                 <button class="btn" data-action="play-builder">PLAY PLAYLIST</button>
                 <input id="saveName" type="text" placeholder="Playlist name" style="max-width:190px">
-                <button class="btn secondary" data-action="save-builder">SAVE</button>
+                <button class="btn secondary" data-action="save-builder">${this._t("save")}</button>
               </div>
             </div>
 
@@ -651,10 +686,10 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="row between">
                 <h2 style="margin:0">HARDWARE</h2>
                 <div class="actions" style="margin:0">
-                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">SCAN BUS</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">SYNC EEPROM</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="update">REFRESH</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">HOME ALL</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
                 </div>
               </div>
               <div class="mod-matrix" id="moduleMatrix" style="margin-top:12px"></div>
@@ -736,7 +771,7 @@ class SplitFlapOSPanel extends HTMLElement {
                   <button class="btn mini secondary" data-action="hardware" data-sub="scan">SCAN</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="sync">SYNC</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="update">REFRESH</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">HOME ALL</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
                 </div>
               </div>
             </div>
@@ -757,7 +792,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <div class="row between">
                 <h2 style="margin:0">SETTINGS</h2>
-                <button class="btn" data-action="save-settings">SAVE SETTINGS</button>
+                <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
               </div>
               <div id="settingsGroups" style="margin-top:14px"></div>
             </div>
@@ -789,7 +824,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <h3 id="modalTitle">App settings</h3>
             <div id="modalFields"></div>
             <div class="actions">
-              <button class="btn" data-action="save-app-settings">SAVE</button>
+              <button class="btn" data-action="save-app-settings">${this._t("save")}</button>
               <button class="btn secondary" data-action="close-modal">CANCEL</button>
             </div>
           </div>
@@ -852,6 +887,16 @@ class SplitFlapOSPanel extends HTMLElement {
 
   _coordinator() {
     return this._state ? this._state.coordinator : null;
+  }
+
+  _lang() {
+    const lang = (this._hass && this._hass.language) || "en";
+    return lang.toLowerCase().startsWith("cs") ? "cs" : "en";
+  }
+
+  _t(key) {
+    const dict = PANEL_I18N[this._lang()] || PANEL_I18N.en;
+    return dict[key] || PANEL_I18N.en[key] || key;
   }
 
   _board() {
@@ -1667,7 +1712,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const speedNode = this.shadowRoot.getElementById("speedInput");
     const text = this._composeText || "";
     if (!text.trim()) {
-      this._toast("Type a message first", "warn");
+      this._toast(this._t("type_message"), "warn");
       return;
     }
     await this._send("send_text", {
@@ -1686,7 +1731,7 @@ class SplitFlapOSPanel extends HTMLElement {
     this._composeText = "";
     this._renderComposePreview();
     await this._send("send_text", { text: "", stop: true });
-    this._toast("Display cleared");
+    this._toast(this._t("display_cleared"));
   }
 
   _insertColor(char) {
@@ -1802,7 +1847,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const settings = this._collectSettings(root);
     await this._send("set_settings", { settings });
     this._settingsDirty = false;
-    this._toast("Settings saved");
+    this._toast(this._t("settings_saved"));
   }
 
   async _saveAppSettings() {
