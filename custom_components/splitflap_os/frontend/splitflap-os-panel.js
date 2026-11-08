@@ -316,6 +316,10 @@ class SplitFlapOSPanel extends HTMLElement {
           height: 1px; background: rgba(0,0,0,.78); pointer-events: none;
         }
         .flap.blank { color: transparent; background: #0c0c0c; border-color: #1d1d1d; }
+        .flap.void {
+          color: transparent; background: transparent;
+          border: 1px dashed #202020; opacity: .35;
+        }
         .flap.color-r { background: #b71c1c; border-color: #e53935; }
         .flap.color-o { background: #e65100; border-color: #fb8c00; }
         .flap.color-y { background: #f9a825; border-color: #fdd835; color: #1a1a1a; text-shadow: none; }
@@ -415,6 +419,11 @@ class SplitFlapOSPanel extends HTMLElement {
           transition: transform .12s ease, border-color .12s ease;
         }
         .app-card:hover { transform: translateY(-2px); border-color: var(--primary-color, #03a9f4); }
+        .app-card.disabled {
+          opacity: .48; cursor: not-allowed; filter: grayscale(.6);
+          background: var(--secondary-background-color, #f1f1f1);
+        }
+        .app-card.disabled:hover { transform: none; border-color: var(--divider-color, #ddd); }
         .app-card.running { border-color: #2ea043; background: rgba(46,160,67,.1); }
         .app-card.running::after {
           content: "LIVE"; position: absolute; top: 6px; left: 8px;
@@ -423,6 +432,14 @@ class SplitFlapOSPanel extends HTMLElement {
         .app-icon { font-size: 1.7rem; line-height: 1; }
         .app-name { margin-top: 8px; font-weight: 700; font-size: .84rem; }
         .app-desc { margin-top: 4px; font-size: .7rem; opacity: .6; }
+        .app-req {
+          margin-top: 7px; font-size: .6rem; line-height: 1.3;
+          color: #b26a00; font-weight: 700; letter-spacing: .02em;
+        }
+        .layout-alert {
+          margin-top: 8px; color: #b71c1c; font-size: .76rem;
+          font-weight: 700; line-height: 1.35;
+        }
         .gear {
           position: absolute; top: 4px; right: 4px; border: 0; background: transparent;
           color: inherit; opacity: .45; cursor: pointer; font-size: 1rem; padding: 4px;
@@ -445,6 +462,10 @@ class SplitFlapOSPanel extends HTMLElement {
         .mod.selected { border-color: var(--primary-color, #03a9f4); box-shadow: inset 0 0 0 1px var(--primary-color, #03a9f4); }
         .mod.offline { opacity: .45; }
         .mod.empty { cursor: default; opacity: .3; }
+        .mod.void {
+          cursor: default; opacity: .18; background: transparent;
+          border-style: dashed;
+        }
         .stats {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
           gap: 8px; margin: 12px 0;
@@ -720,6 +741,19 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <div class="row between">
+                <h2 style="margin:0">PHYSICAL LAYOUT</h2>
+                <span class="muted" id="layoutSummary"></span>
+              </div>
+              <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
+              <div class="layout-alert" id="layoutError"></div>
+              <p class="muted" style="margin-bottom:0">
+                Module IDs run left to right, then top to bottom. Blank cells are
+                dashed; short rows sit in the middle of the frame.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="row between">
                 <h2 style="margin:0">SETTINGS</h2>
                 <button class="btn" data-action="save-settings">SAVE SETTINGS</button>
               </div>
@@ -805,6 +839,7 @@ class SplitFlapOSPanel extends HTMLElement {
     this._renderApps();
     this._renderBanner();
     this._renderTuning();
+    this._renderLayout();
     this._renderSettings();
     this._renderConnectionInfo();
   }
@@ -820,10 +855,25 @@ class SplitFlapOSPanel extends HTMLElement {
   _board() {
     const engine = this._engine();
     const board = (engine && engine.board) || {};
+    const cols = Math.max(1, Number(board.cols) || 15);
+    const rows = Math.max(1, Number(board.rows) || 1);
+    let rowCounts = Array.isArray(board.row_counts) ? board.row_counts.map((n) => Number(n) || 0) : [];
+    if (rowCounts.length !== rows) rowCounts = Array(rows).fill(cols);
+    let rowOffsets = Array.isArray(board.row_offsets)
+      ? board.row_offsets.map((n) => Math.max(0, Number(n) || 0))
+      : [];
+    if (rowOffsets.length !== rows) {
+      rowOffsets = rowCounts.map((count) => Math.max(0, Math.floor((cols - count) / 2)));
+    }
     return {
-      rows: Math.max(1, Number(board.rows) || 1),
-      cols: Math.max(1, Number(board.cols) || 15),
+      rows,
+      cols,
       modules: Number(board.module_count) || 0,
+      rowCounts,
+      rowOffsets,
+      minCols: Number(board.min_cols) || 0,
+      layoutModuleCount: Number(board.layout_module_count) || 0,
+      error: board.error || "",
     };
   }
 
@@ -862,7 +912,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const mode =
       engine.active_app ||
       (engine.mode === "playlist" ? "playlist" : engine.mode || "idle");
-    subtitle.textContent = `${prefix} • ${board.rows}×${board.cols} • ${board.modules} modules • ${mode}`;
+    subtitle.textContent = `${prefix} • ${board.rows}×${board.cols} • ${board.modules} modules • ${mode}${
+      board.error ? " • LAYOUT ERROR" : ""
+    }`;
   }
 
   _flapHtml(char, flip) {
@@ -878,19 +930,27 @@ class SplitFlapOSPanel extends HTMLElement {
     const board = this._board();
     const chars = [];
     let html = "";
+    let slotBase = 0;
     for (let row = 0; row < board.rows; row += 1) {
+      const count = Math.max(0, Math.min(board.cols, Number(board.rowCounts[row]) || 0));
+      const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
       const line = String(lines[row] || "")
         .padEnd(board.cols, " ")
         .slice(0, board.cols);
       for (let col = 0; col < board.cols; col += 1) {
-        const char = line[col];
-        const index = row * board.cols + col;
+        if (col < offset || col >= offset + count) {
+          html += '<span class="flap void"></span>';
+          continue;
+        }
+        const char = line[col] || " ";
+        const index = slotBase + (col - offset);
         html += this._flapHtml(
           char,
           animate && this._lastChars[index] !== undefined && this._lastChars[index] !== char
         );
-        chars.push(char);
+        chars[index] = char;
       }
+      slotBase += count;
     }
     if (animate) this._lastChars = chars;
     return `<div class="grid" style="--cols:${board.cols}">${html}</div>`;
@@ -904,7 +964,9 @@ class SplitFlapOSPanel extends HTMLElement {
       engine.current_page_count
         ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
         : ""
-    } • ${board.rows} rows × ${board.cols} columns`;
+    } • ${board.rows} rows × ${board.cols} columns${
+      board.error ? " • LAYOUT ERROR" : ""
+    }`;
 
     for (const id of ["live", "liveApps"]) {
       const node = this.shadowRoot.getElementById(id);
@@ -980,11 +1042,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const lines = this._composeLines(this._composeText, board.rows, board.cols, start);
     const preview = this.shadowRoot.getElementById("composePreview");
     if (preview) {
-      preview.innerHTML = `<div class="grid" style="--cols:${board.cols}">${lines
-        .join("")
-        .split("")
-        .map((char) => this._flapHtml(char, false))
-        .join("")}</div>`;
+      preview.innerHTML = this._previewHtml(lines, false);
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
@@ -1056,16 +1114,24 @@ class SplitFlapOSPanel extends HTMLElement {
       return;
     }
     node.innerHTML = apps
-      .map(
-        (app) => `
-          <div class="app-card${engine.active_app === app.key ? " running" : ""}"
-               data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0">
+      .map((app) => {
+        const available = app.available !== false;
+        const running = engine.active_app === app.key;
+        const requirement = !available
+          ? app.unavailable_reason ||
+            `Needs ${Number(app.min_rows) || 1} rows × ${Number(app.min_cols) || 1} columns`
+          : "";
+        return `
+          <div class="app-card${running ? " running" : ""}${available ? "" : " disabled"}"
+               ${available ? `data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0"` : 'aria-disabled="true"'}
+               title="${escapeAttr(requirement || app.description || "")}">
             <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="Settings">⚙</button>
             <div class="app-icon">${escapeHtml(app.icon || "▦")}</div>
             <div class="app-name">${escapeHtml(app.name)}</div>
             <div class="app-desc">${escapeHtml(app.description || "")}</div>
-          </div>`
-      )
+            ${available ? "" : `<div class="app-req">${escapeHtml(requirement)}</div>`}
+          </div>`;
+      })
       .join("");
   }
 
@@ -1106,29 +1172,43 @@ class SplitFlapOSPanel extends HTMLElement {
 
     if (matrix) {
       const rows = Math.max(board.rows, Math.ceil(modules.length / board.cols) || 1);
-      const slots = rows * board.cols;
       let html = "";
-      for (let slot = 0; slot < slots; slot += 1) {
-        const module = modules[slot];
-        if (!module) {
-          html += '<div class="mod empty"></div>';
-          continue;
+      let slotBase = 0;
+      for (let row = 0; row < rows; row += 1) {
+        const inLayout = row < board.rows;
+        const count = inLayout
+          ? Math.max(0, Math.min(board.cols, Number(board.rowCounts[row]) || 0))
+          : board.cols;
+        const offset = inLayout
+          ? Math.max(0, Number(board.rowOffsets[row]) || 0)
+          : 0;
+        for (let col = 0; col < board.cols; col += 1) {
+          if (col < offset || col >= offset + count) {
+            html += '<div class="mod void"></div>';
+            continue;
+          }
+          const module = modules[slotBase + col - offset];
+          if (!module) {
+            html += '<div class="mod empty"></div>';
+            continue;
+          }
+          const selected =
+            this._selectedModule !== null &&
+            String(this._selectedModule) === String(module.id);
+          const flap =
+            module.displayed_flap != null ? module.displayed_flap : module.flap || " ";
+          const offline = module.online === false;
+          html += `
+            <button class="mod${selected ? " selected" : ""}${offline ? " offline" : ""}"
+                    data-action="select-module" data-id="${escapeAttr(module.id)}"
+                    title="Module ${escapeAttr(module.id)} • ${escapeAttr(
+                      module.state || "unknown"
+                    )}">
+              <span class="mid">${escapeHtml(module.id)}</span>
+              <span class="mchar">${flap === " " ? "␣" : escapeHtml(flap)}</span>
+            </button>`;
         }
-        const selected =
-          this._selectedModule !== null &&
-          String(this._selectedModule) === String(module.id);
-        const flap =
-          module.displayed_flap != null ? module.displayed_flap : module.flap || " ";
-        const offline = module.online === false;
-        html += `
-          <button class="mod${selected ? " selected" : ""}${offline ? " offline" : ""}"
-                  data-action="select-module" data-id="${escapeAttr(module.id)}"
-                  title="Module ${escapeAttr(module.id)} • ${escapeAttr(
-                    module.state || "unknown"
-                  )}">
-            <span class="mid">${escapeHtml(module.id)}</span>
-            <span class="mchar">${flap === " " ? "␣" : escapeHtml(flap)}</span>
-          </button>`;
+        slotBase += count;
       }
       matrix.style.setProperty("--cols", String(board.cols));
       matrix.innerHTML = html || '<div class="empty">No modules detected. Run a bus scan.</div>';
@@ -1197,6 +1277,55 @@ class SplitFlapOSPanel extends HTMLElement {
     }
 
     this._renderCharMap(selected);
+  }
+
+  _renderLayout() {
+    if (!this._state) return;
+    const node = this.shadowRoot.getElementById("layoutPreview");
+    const summary = this.shadowRoot.getElementById("layoutSummary");
+    const errorNode = this.shadowRoot.getElementById("layoutError");
+    if (!node) return;
+
+    const board = this._board();
+    const coordinator = this._coordinator() || {};
+    const modules = coordinator.modules || [];
+    let html = "";
+    let slotBase = 0;
+    for (let row = 0; row < board.rows; row += 1) {
+      const count = Math.max(0, Math.min(board.cols, Number(board.rowCounts[row]) || 0));
+      const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
+      for (let col = 0; col < board.cols; col += 1) {
+        if (col < offset || col >= offset + count) {
+          html += '<div class="mod void" title="Blank frame cell"></div>';
+          continue;
+        }
+        const slot = slotBase + col - offset;
+        const module = modules[slot];
+        const label = module ? module.id : slot + 1;
+        const flap =
+          module && module.displayed_flap != null
+            ? module.displayed_flap
+            : module && module.flap
+              ? module.flap
+              : "";
+        html += `
+          <div class="mod" title="Module ${escapeAttr(label)}${module ? "" : " (expected)"}">
+            <span class="mid">${escapeHtml(label)}</span>
+            <span class="mchar">${flap === " " || flap === "" ? "·" : escapeHtml(flap)}</span>
+          </div>`;
+      }
+      slotBase += count;
+    }
+    node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols}">${html}</div>`;
+
+    if (summary) {
+      const rows = board.rowCounts.join(",");
+      summary.textContent = `${board.rows} × ${board.cols} frame • rows ${rows} • ${board.modules} detected`;
+    }
+    if (errorNode) {
+      errorNode.textContent = board.error ? `Layout error: ${board.error}` : "";
+      errorNode.style.display = board.error ? "block" : "none";
+    }
   }
 
   _renderCharMap(module) {
@@ -1421,9 +1550,19 @@ class SplitFlapOSPanel extends HTMLElement {
       case "stop":
         await this._send("stop_app");
         break;
-      case "start-app":
+      case "start-app": {
+        const apps = (this._engine() && this._engine().apps) || [];
+        const app = apps.find((item) => item.key === target.dataset.app);
+        if (app && app.available === false) {
+          this._toast(
+            `${app.name} cannot run: ${app.unavailable_reason || "display too small"}`,
+            "warn"
+          );
+          break;
+        }
         await this._send("start_app", { app: target.dataset.app });
         break;
+      }
       case "app-settings":
         this._openAppSettings(target.dataset.app);
         break;

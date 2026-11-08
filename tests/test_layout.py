@@ -48,13 +48,96 @@ class AutoBoardTests(unittest.TestCase):
 
     def test_unknown_count_is_wide(self) -> None:
         rows, cols = layout.auto_board(41)
-        self.assertEqual(cols, 15)
         self.assertEqual(rows, 3)
+        self.assertEqual(cols, 14)
+
+    def test_small_counts_are_one_row(self) -> None:
+        self.assertEqual(layout.auto_board(1), (1, 1))
+        self.assertEqual(layout.auto_board(7), (1, 7))
+        self.assertEqual(layout.auto_board(12), (1, 12))
 
     def test_zero_modules_still_has_a_board(self) -> None:
         rows, cols = layout.auto_board(0)
         self.assertGreaterEqual(rows, 1)
         self.assertGreaterEqual(cols, 1)
+
+
+class ResolveLayoutTests(unittest.TestCase):
+    def test_parse_row_counts(self) -> None:
+        self.assertEqual(layout.parse_row_counts("3,3,1"), (3, 3, 1))
+        self.assertEqual(layout.parse_row_counts(" 3 ; 2 1 "), (3, 2, 1))
+        self.assertEqual(layout.parse_row_counts(""), ())
+        self.assertEqual(layout.parse_row_counts(None), ())
+
+    def test_parse_row_counts_rejects_bad_values(self) -> None:
+        with self.assertRaises(ValueError):
+            layout.parse_row_counts("3,x,1")
+        with self.assertRaises(ValueError):
+            layout.parse_row_counts("3,0,1")
+        with self.assertRaises(ValueError):
+            layout.parse_row_counts("-2")
+
+    def test_seven_modules_fit_a_three_by_three_frame(self) -> None:
+        resolved = layout.resolve_layout(7, 3, 3)
+        self.assertTrue(resolved.valid)
+        self.assertEqual(resolved.row_counts, (3, 3, 1))
+        self.assertEqual(resolved.row_offsets, (0, 0, 1))
+        self.assertEqual(resolved.slots(), list(range(7)))
+
+    def test_seven_modules_do_not_fit_a_three_by_fifteen_frame(self) -> None:
+        resolved = layout.resolve_layout(7, 3, 15)
+        self.assertFalse(resolved.valid)
+        self.assertIn("blank", resolved.error or "")
+
+    def test_short_row_is_centred(self) -> None:
+        resolved = layout.resolve_layout(7, 3, 3, "3,3,1")
+        self.assertTrue(resolved.valid)
+        self.assertIsNone(resolved.slot_at(2, 0))
+        self.assertEqual(resolved.slot_at(2, 1), 6)
+        self.assertIsNone(resolved.slot_at(2, 2))
+
+    def test_explicit_layout_derives_frame_size(self) -> None:
+        resolved = layout.resolve_layout(7, 0, 0, "3,3,1")
+        self.assertTrue(resolved.valid)
+        self.assertEqual((resolved.rows, resolved.cols), (3, 3))
+
+    def test_explicit_layout_rejects_detected_count_mismatch(self) -> None:
+        resolved = layout.resolve_layout(8, 3, 3, "3,3,1")
+        self.assertFalse(resolved.valid)
+        self.assertIn("7", resolved.error or "")
+        self.assertIn("8", resolved.error or "")
+
+    def test_explicit_layout_rejects_too_many_blank_cells(self) -> None:
+        resolved = layout.resolve_layout(7, 3, 15, "7,0,0")
+        self.assertFalse(resolved.valid)
+
+    def test_rectangular_auto_layout_is_valid(self) -> None:
+        resolved = layout.resolve_layout(45)
+        self.assertTrue(resolved.valid)
+        self.assertEqual((resolved.rows, resolved.cols), (3, 15))
+        self.assertEqual(resolved.row_counts, (15, 15, 15))
+
+    def test_one_module_layout(self) -> None:
+        resolved = layout.resolve_layout(1)
+        self.assertTrue(resolved.valid)
+        self.assertEqual((resolved.rows, resolved.cols), (1, 1))
+        self.assertEqual(resolved.slots(), [0])
+
+    def test_row_layout_module_slots_are_reading_order(self) -> None:
+        resolved = layout.resolve_layout(8, 3, 3, "3,3,2")
+        self.assertTrue(resolved.valid)
+        self.assertEqual(resolved.row_counts, (3, 3, 2))
+        self.assertEqual(resolved.row_offsets, (0, 0, 0))
+        self.assertEqual(resolved.slots(), list(range(8)))
+
+    def test_app_minimum_uses_narrowest_row(self) -> None:
+        layout_obj = layout.resolve_layout(7, 3, 3, "3,3,1")
+        fits, reason = layout.app_fits(layout_obj, 3, 9)
+        self.assertFalse(fits)
+        self.assertIn("narrowest", reason)
+        small = layout.resolve_layout(1)
+        self.assertTrue(layout.app_fits(small, 1, 1)[0])
+        self.assertFalse(layout.app_fits(small, 3, 9)[0])
 
 
 class FormattingTests(unittest.TestCase):

@@ -18,23 +18,37 @@ from .apps.common import SettingField
 
 DISPLAY_FIELDS = (
     SettingField(
+        key="row_counts",
+        label="Physical row layout (blank = auto)",
+        type="text",
+        default="",
+        placeholder="3,3,1",
+        help=(
+            "One number per physical row, top to bottom. Module IDs are "
+            "assigned left to right, then top to bottom. Short rows are "
+            "centred. Blank lets the integration choose from the detected "
+            "module count."
+        ),
+    ),
+    SettingField(
         key="rows",
-        label="Rows (0 = auto)",
+        label="Frame rows (0 = auto)",
         type="number",
         default=0,
         minimum=0,
-        maximum=64,
+        maximum=100,
         step=1,
-        help="Leave both rows and columns at 0 to fit the detected modules.",
+        help="Physical frame height. Leave 0 to derive it from the display.",
     ),
     SettingField(
         key="cols",
-        label="Columns (0 = auto)",
+        label="Frame columns (0 = auto)",
         type="number",
         default=0,
         minimum=0,
-        maximum=64,
+        maximum=100,
         step=1,
+        help="Physical frame width. Leave 0 to derive it from the display.",
     ),
     SettingField(
         key="timezone",
@@ -111,6 +125,7 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
 
 
 DEFAULT_SETTINGS: dict[str, Any] = {
+    "row_counts": "",
     "rows": 0,
     "cols": 0,
     "timezone": "",

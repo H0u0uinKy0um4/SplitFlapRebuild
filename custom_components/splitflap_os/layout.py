@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import math
 import random
+import re
 import textwrap
+from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 #: The stock 64-character drum.  The first character is a real blank flap.
@@ -75,6 +77,280 @@ def normalize_text(text: object, *, raw: bool = False) -> str:
     return value.replace('"', "q")
 
 
+@dataclass(frozen=True)
+class Layout:
+    """A resolved physical module layout.
+
+    ``cell_slots`` is a flat ``rows * cols`` tuple.  Each entry is either the
+    0-based module slot that lives in that frame cell, or ``None`` for a blank
+    frame cell.  Module slots are assigned left-to-right, top-to-bottom.
+    """
+
+    rows: int
+    cols: int
+    row_counts: tuple[int, ...]
+    cell_slots: tuple[int | None, ...]
+    error: str | None = None
+
+    @property
+    def valid(self) -> bool:
+        return self.error is None
+
+    @property
+    def module_count(self) -> int:
+        return sum(self.row_counts)
+
+    @property
+    def min_cols(self) -> int:
+        """Width of the narrowest non-empty row."""
+
+        counts = [count for count in self.row_counts if count > 0]
+        return min(counts) if counts else 0
+
+    @property
+    def row_offsets(self) -> tuple[int, ...]:
+        """Left offsets that centre each row in the physical frame."""
+
+        return tuple((self.cols - count) // 2 for count in self.row_counts)
+
+    def slot_at(self, row: int, col: int) -> int | None:
+        if not (0 <= row < self.rows and 0 <= col < self.cols):
+            return None
+        return self.cell_slots[row * self.cols + col]
+
+    def slots(self) -> list[int]:
+        return [slot for slot in self.cell_slots if slot is not None]
+
+    def as_board_dict(self) -> dict[str, object]:
+        return {
+            "rows": self.rows,
+            "cols": self.cols,
+            "row_counts": list(self.row_counts),
+            "row_offsets": list(self.row_offsets),
+            "min_cols": self.min_cols,
+            "layout_module_count": self.module_count,
+            "error": self.error,
+        }
+
+
+def _as_dimension(value: int | str | None) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def parse_row_counts(value: object) -> tuple[int, ...]:
+    """Parse ``"3,3,1"`` into ``(3, 3, 1)``.
+
+    Blank input means "use automatic layout".  Non-empty input must contain
+    positive whole numbers; anything else raises :class:`ValueError` so the
+    panel can show a useful message.
+    """
+
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple)):
+        parts = [str(part).strip() for part in value]
+    else:
+        text = str(value).strip()
+        if not text:
+            return ()
+        parts = [part for part in re.split(r"[,;\s]+", text) if part]
+
+    counts: list[int] = []
+    for part in parts:
+        try:
+            count = int(part)
+        except (TypeError, ValueError) as err:
+            raise ValueError(
+                f"Row layout must contain whole numbers, not {part!r}"
+            ) from err
+        if count <= 0:
+            raise ValueError("Row layout counts must be greater than zero")
+        counts.append(count)
+    return tuple(counts)
+
+
+def _build_layout(
+    rows: int,
+    cols: int,
+    row_counts: Sequence[int],
+    error: str | None = None,
+) -> Layout:
+    rows = max(1, rows)
+    cols = max(1, cols)
+    counts = tuple(max(0, min(cols, int(count))) for count in row_counts)
+    if len(counts) < rows:
+        counts = counts + (0,) * (rows - len(counts))
+    elif len(counts) > rows:
+        counts = counts[:rows]
+
+    cells: list[int | None] = [None] * (rows * cols)
+    slot = 0
+    for row, count in enumerate(counts):
+        offset = (cols - count) // 2
+        for col in range(offset, offset + count):
+            cells[row * cols + col] = slot
+            slot += 1
+
+    return Layout(
+        rows=rows,
+        cols=cols,
+        row_counts=counts,
+        cell_slots=tuple(cells),
+        error=error,
+    )
+
+
+def _filled_row_counts(count: int, rows: int, cols: int) -> tuple[int, ...]:
+    """Fill a frame row-by-row, leaving the last row short when needed."""
+
+    if count <= 0:
+        return (cols,) * rows
+    counts: list[int] = []
+    remaining = count
+    for _ in range(rows):
+        take = min(cols, remaining)
+        counts.append(take)
+        remaining -= take
+    return tuple(counts)
+
+
+def resolve_layout(
+    module_count: int,
+    rows: int | str | None = 0,
+    cols: int | str | None = 0,
+    row_counts: object = "",
+) -> Layout:
+    """Resolve the physical frame and per-cell module mapping.
+
+    ``module_count`` may be ``0`` when the bus has not been scanned yet.  In
+    that case the structure is still validated, but the detected count is not
+    compared with the configured layout.
+    """
+
+    try:
+        count = max(0, int(module_count))
+    except (TypeError, ValueError):
+        count = 0
+    known_count = count > 0
+
+    want_rows = _as_dimension(rows)
+    want_cols = _as_dimension(cols)
+
+    try:
+        explicit = parse_row_counts(row_counts)
+    except ValueError as err:
+        fallback_rows, fallback_cols = auto_board(count or 1)
+        return _build_layout(
+            fallback_rows,
+            fallback_cols,
+            _filled_row_counts(count, fallback_rows, fallback_cols),
+            str(err),
+        )
+
+    if explicit:
+        counts = list(explicit)
+        frame_rows = want_rows or len(counts)
+        frame_cols = want_cols or max(counts)
+        errors: list[str] = []
+
+        if want_rows and want_rows != len(counts):
+            errors.append(
+                f"Row layout has {len(counts)} row(s) but the frame is "
+                f"{want_rows} row(s)"
+            )
+            frame_rows = len(counts)
+        if want_cols and want_cols < max(counts):
+            errors.append(
+                f"Row layout needs at least {max(counts)} columns but the "
+                f"frame has {want_cols}"
+            )
+
+        total = sum(counts)
+        if known_count and total != count:
+            errors.append(
+                f"Row layout describes {total} module(s) but {count} were "
+                "detected"
+            )
+
+        blank = frame_rows * frame_cols - total
+        if blank < 0:
+            errors.append("Row layout does not fit inside the frame")
+        elif blank > frame_cols:
+            errors.append(
+                f"Layout leaves {blank} blank cell(s); at most one row "
+                f"({frame_cols}) is allowed"
+            )
+
+        return _build_layout(
+            frame_rows,
+            frame_cols,
+            counts,
+            "; ".join(errors) if errors else None,
+        )
+
+    if not want_rows and not want_cols:
+        frame_rows, frame_cols = auto_board(count or 1)
+    elif want_rows and not want_cols:
+        frame_rows = want_rows
+        frame_cols = max(1, math.ceil(count / frame_rows)) if known_count else 1
+    elif want_cols and not want_rows:
+        frame_cols = want_cols
+        frame_rows = max(1, math.ceil(count / frame_cols)) if known_count else 1
+    else:
+        frame_rows, frame_cols = want_rows, want_cols
+
+    capacity = frame_rows * frame_cols
+    errors = []
+    if known_count and count > capacity:
+        errors.append(
+            f"The {frame_rows}×{frame_cols} frame only fits {capacity} of "
+            f"{count} detected module(s)"
+        )
+
+    counts = _filled_row_counts(count, frame_rows, frame_cols)
+    blank = capacity - min(count, capacity)
+    if blank > frame_cols:
+        errors.append(
+            f"Layout leaves {blank} blank cell(s); at most one row "
+            f"({frame_cols}) is allowed. Set a row layout such as 3,3,1."
+        )
+
+    return _build_layout(
+        frame_rows,
+        frame_cols,
+        counts,
+        "; ".join(errors) if errors else None,
+    )
+
+
+def app_fits(
+    layout: Layout,
+    min_rows: int = 1,
+    min_cols: int = 1,
+) -> tuple[bool, str]:
+    """Return whether an app fits the physical layout, and why not."""
+
+    need_rows = max(1, int(min_rows or 1))
+    need_cols = max(1, int(min_cols or 1))
+    if need_rows == 1 and need_cols == 1:
+        return True, ""
+    if layout.rows < need_rows:
+        return (
+            False,
+            f"Needs {need_rows} rows; this layout has {layout.rows}",
+        )
+    if layout.min_cols < need_cols:
+        return (
+            False,
+            f"Needs every row to be at least {need_cols} columns; the "
+            f"narrowest row has {layout.min_cols}",
+        )
+    return True, ""
+
+
 def auto_board(
     module_count: int,
     rows: int | str | None = 0,
@@ -90,14 +366,8 @@ def auto_board(
     except (TypeError, ValueError):
         count = 1
 
-    try:
-        want_rows = max(0, int(rows or 0))
-    except (TypeError, ValueError):
-        want_rows = 0
-    try:
-        want_cols = max(0, int(cols or 0))
-    except (TypeError, ValueError):
-        want_cols = 0
+    want_rows = _as_dimension(rows)
+    want_cols = _as_dimension(cols)
 
     if want_rows and want_cols:
         return want_rows, want_cols
@@ -109,10 +379,13 @@ def auto_board(
     if count in _KNOWN_BOARDS:
         return _KNOWN_BOARDS[count]
 
-    # Aim for a wide 3-5 row board, which is what split-flap displays usually
-    # look like.  The exact size does not matter: unused slots stay blank.
-    cols = 15 if count <= 45 else 16
-    return max(1, math.ceil(count / cols)), cols
+    # Small displays are physically one row.  Larger unknown counts aim for a
+    # wide banner-like frame instead of defaulting to a 15-column canvas.
+    if count <= 12:
+        return 1, count
+    frame_rows = max(1, round(math.sqrt(count / 4)))
+    frame_cols = max(1, math.ceil(count / frame_rows))
+    return frame_rows, frame_cols
 
 
 def format_lines(lines: Sequence[object], rows: int, cols: int) -> list[str]:

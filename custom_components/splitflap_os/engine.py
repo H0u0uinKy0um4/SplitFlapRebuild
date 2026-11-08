@@ -22,7 +22,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 
-from .apps import APP_PROVIDERS, app_defs
+from .apps import APP_DEFS_BY_KEY, APP_PROVIDERS, app_defs
 from .const import (
     DEFAULT_SETTINGS,
     DOMAIN,
@@ -35,11 +35,14 @@ from .const import (
 )
 from .coordinator import SplitFlapCoordinator
 from .layout import (
-    auto_board,
+    Layout,
+    app_fits,
     compose_board,
     estimate_rotation_seconds,
     format_lines,
     order_indices,
+    parse_row_counts,
+    resolve_layout,
 )
 from .models import Page
 from .settings import settings_for_ui
@@ -85,6 +88,8 @@ class AppEngine:
         self._current_page: dict[str, Any] | None = None
         self._current_page_index = 0
         self._current_page_count = 0
+        self._layout_cache_key: tuple[Any, ...] | None = None
+        self._layout_cache: Layout | None = None
 
         self._store: Store[dict[str, Any]] = Store(
             hass, ENGINE_STORAGE_VERSION, f"{DOMAIN}.engine.{entry.entry_id}"
@@ -151,12 +156,25 @@ class AppEngine:
         return "metric" if is_metric else "imperial"
 
     @property
+    def layout(self) -> Layout:
+        rows = self.settings.get("rows", 0)
+        cols = self.settings.get("cols", 0)
+        row_counts = self.settings.get("row_counts", "")
+        key = (self.coordinator.modules_count, rows, cols, str(row_counts))
+        if self._layout_cache_key != key or self._layout_cache is None:
+            self._layout_cache = resolve_layout(
+                self.coordinator.modules_count,
+                rows,
+                cols,
+                row_counts,
+            )
+            self._layout_cache_key = key
+        return self._layout_cache
+
+    @property
     def board(self) -> tuple[int, int]:
-        return auto_board(
-            self.coordinator.modules_count,
-            self.settings.get("rows", 0),
-            self.settings.get("cols", 0),
-        )
+        layout = self.layout
+        return layout.rows, layout.cols
 
     @property
     def rows(self) -> int:
@@ -180,15 +198,49 @@ class AppEngine:
     def lines(self, *values: object) -> str:
         return "\n".join(format_lines(values, self.rows, self.cols))
 
+    def app_status(self, app_key: str) -> dict[str, Any]:
+        app = APP_DEFS_BY_KEY.get(str(app_key))
+        if app is None:
+            return {
+                "key": str(app_key),
+                "available": False,
+                "unavailable_reason": f"Unknown app: {app_key}",
+            }
+        available, reason = self._app_available(app)
+        return {
+            **app.as_dict(),
+            "available": available,
+            "unavailable_reason": reason,
+        }
+
+    def _app_available(self, app: Any) -> tuple[bool, str]:
+        if isinstance(app, dict):
+            min_rows = int(app.get("min_rows") or 1)
+            min_cols = int(app.get("min_cols") or 1)
+        else:
+            min_rows = int(getattr(app, "min_rows", 1) or 1)
+            min_cols = int(getattr(app, "min_cols", 1) or 1)
+        layout = self.layout
+        if layout.error:
+            if min_rows <= 1 and min_cols <= 1:
+                return True, ""
+            return False, f"Fix the display layout first: {layout.error}"
+        return app_fits(layout, min_rows, min_cols)
+
     @property
     def running(self) -> bool:
         return self._task is not None and not self._task.done()
 
     def snapshot(self) -> dict[str, Any]:
         rows, cols = self.board
+        layout = self.layout
         lines = list(self._last_lines)
         if len(lines) != rows or any(len(line) != cols for line in lines):
             lines = [" " * cols for _ in range(rows)]
+        apps = [
+            {**app, **self._app_status_dict(app)}
+            for app in app_defs()
+        ]
         return {
             "mode": self.mode,
             "active_app": self.active_app,
@@ -197,6 +249,11 @@ class AppEngine:
                 "rows": rows,
                 "cols": cols,
                 "module_count": self.coordinator.modules_count,
+                **{
+                    key: value
+                    for key, value in layout.as_board_dict().items()
+                    if key not in {"rows", "cols"}
+                },
             },
             "display": {
                 "lines": lines,
@@ -208,10 +265,17 @@ class AppEngine:
             "saved_playlists": self.saved_playlists,
             "settings": settings_for_ui(self.settings),
             "settings_groups": SETTINGS_GROUPS,
-            "apps": app_defs(),
+            "apps": apps,
             "current_page": self._current_page,
             "current_page_index": self._current_page_index,
             "current_page_count": self._current_page_count,
+        }
+
+    def _app_status_dict(self, app: Any) -> dict[str, Any]:
+        available, reason = self._app_available(app)
+        return {
+            "available": available,
+            "unavailable_reason": reason,
         }
 
     # ------------------------------------------------------------------
@@ -224,9 +288,15 @@ class AppEngine:
                 continue
             if key in {"rows", "cols"}:
                 try:
-                    cleaned[key] = max(0, min(64, int(value)))
+                    cleaned[key] = max(0, min(100, int(value)))
                 except (TypeError, ValueError):
                     continue
+            elif key == "row_counts":
+                try:
+                    counts = parse_row_counts(value)
+                except ValueError as err:
+                    raise ValueError(str(err)) from err
+                cleaned[key] = ",".join(str(count) for count in counts)
             elif key == "page_delay":
                 try:
                     cleaned[key] = max(0.1, min(120.0, float(value)))
@@ -235,8 +305,27 @@ class AppEngine:
             else:
                 cleaned[key] = value
 
+        candidate = {**self.settings, **cleaned}
+        layout_keys = {"rows", "cols", "row_counts"}
+        layout = resolve_layout(
+            self.coordinator.modules_count,
+            candidate.get("rows", 0),
+            candidate.get("cols", 0),
+            candidate.get("row_counts", ""),
+        )
+        if layout.error and layout_keys.intersection(cleaned):
+            raise ValueError(layout.error)
+
         self.settings.update(cleaned)
+        self._layout_cache_key = None
+        self._layout_cache = None
         self._cache.clear()
+
+        if self.mode == "app" and self.active_app:
+            app = APP_DEFS_BY_KEY.get(self.active_app)
+            if app is not None and not self._app_available(app)[0]:
+                await self.async_stop(notify=False)
+
         await self._store.async_save(self._state_snapshot())
         self._notify()
         return settings_for_ui(self.settings)
@@ -332,8 +421,12 @@ class AppEngine:
 
     async def async_start_app(self, app_key: str) -> None:
         key = str(app_key or "").strip()
-        if key not in APP_PROVIDERS:
+        app = APP_DEFS_BY_KEY.get(key)
+        if app is None:
             raise ValueError(f"Unknown app: {app_key}")
+        available, reason = self._app_available(app)
+        if not available:
+            raise ValueError(f"{app.name} cannot run on this display: {reason}")
         await self.async_stop(notify=False)
         self.mode = "app"
         self.active_app = key
@@ -426,6 +519,16 @@ class AppEngine:
         if provider is None:
             return [Page(self.lines("APP NOT FOUND", self.active_app, ""))]
 
+        app = APP_DEFS_BY_KEY.get(self.active_app)
+        if app is not None and not self._app_available(app)[0]:
+            _LOGGER.warning(
+                "Stopping %s: it no longer fits the display layout",
+                self.active_app,
+            )
+            self.mode = "idle"
+            self.active_app = None
+            return []
+
         try:
             result = await provider(self, datetime.now(self.tz))
         except Exception as err:  # noqa: BLE001 - show an error page
@@ -483,20 +586,33 @@ class AppEngine:
         page: Page,
     ) -> float:
         rows, cols = self.board
+        layout = self.layout
         module_ids = self.coordinator.module_ids
         if not module_ids:
             # Before the first scan, assume the stock 1-based ids.  The master
             # ignores ids that do not answer, so this is harmless.
-            module_ids = [str(index + 1) for index in range(rows * cols)]
+            module_ids = [
+                str(index + 1) for index in range(layout.module_count or rows * cols)
+            ]
 
         char_by_id: dict[str, str] = {}
-        for slot, module_id in enumerate(module_ids):
-            char_by_id[module_id] = board[slot] if slot < len(board) else " "
+        for cell, slot in enumerate(layout.cell_slots):
+            if slot is None or slot >= len(module_ids):
+                continue
+            module_id = module_ids[slot]
+            char_by_id[module_id] = board[cell] if cell < len(board) else " "
 
         order = order_indices(style, rows, cols)
-        order_ids = [
-            module_ids[slot] for slot in order if slot < len(module_ids)
-        ]
+        order_ids: list[str] = []
+        for cell in order:
+            if cell >= len(layout.cell_slots):
+                continue
+            slot = layout.cell_slots[cell]
+            if slot is None or slot >= len(module_ids):
+                continue
+            module_id = module_ids[slot]
+            if module_id not in order_ids:
+                order_ids.append(module_id)
         for module_id in module_ids:
             if module_id not in order_ids:
                 order_ids.append(module_id)

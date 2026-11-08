@@ -22,7 +22,12 @@ Home Assistant                         ESP32 master                 Slaves
 - **Sidebar panel** (`Split-Flap OS`) with Control, Apps, Tuning, and Settings
   tabs, plus a live flap preview.
 - **Board auto-detection**: module count comes from the master status payload.
-  45 modules become 3×15 and 64 become 4×16; rows/columns can be overridden.
+  45 modules become 3×15 and 64 become 4×16. Small displays use a single row.
+  The physical frame can be overridden with rows/columns and a per-row module
+  layout such as `3,3,1`.
+- **Physical layouts and app availability**: short rows are centred, module IDs
+  are assigned in reading order, and data apps are disabled with a reason when
+  every row is not wide enough.
 - **Apps** rendered from Home Assistant data where possible:
   clock, date, dashboard, weather, stocks, crypto, NHL scores, MBTA transit,
   countdown, world clock, ISS position, and colour animations.
@@ -118,7 +123,10 @@ firmware ignores it and uses its own fixed bus timing.
 Settings are stored with Home Assistant's `Store` under the config entry and are
 available from the panel. Important keys include:
 
-- `rows`, `cols` — `0` means auto-detect from the module count.
+- `row_counts`, `rows`, `cols` — the physical display layout. `row_counts` is
+  one comma-separated module count per row, for example `3,3,1`. Blank means
+  automatic layout. `rows` and `cols` are the frame dimensions; `0` means
+  derive them from the detected module count.
 - `timezone`, `units`, `page_delay`.
 - `weather_entity` (preferred), `zip_code` + `weather_api_key` (OpenWeather
   fallback).
@@ -131,6 +139,52 @@ Weather uses the Home Assistant `weather.get_forecasts` service when an entity i
 selected, so no external API key is required for the normal path. Stocks and
 crypto use Yahoo Finance and CoinGecko respectively. MBTA works without a key at
 low volume; an API key is optional.
+
+## Physical layout and app availability
+
+The layout describes the real display, not just the number of modules.
+
+```text
+row_counts = 3,3,1     frame = 3 rows × 3 columns
+
+row 1: module 1  module 2  module 3
+row 2: module 4  module 5  module 6
+row 3:          module 7
+```
+
+Rules:
+
+- Module IDs are assigned left to right, then top to bottom.
+- A row with fewer modules is centred inside the frame.
+- A layout may leave blank frame cells, up to one row's worth. For example,
+  7 modules in a 3×3 frame is valid; 7 modules in a 3×15 frame is rejected.
+- The integration rejects a saved layout that does not match the detected
+  module count or leaves too much blank space. If the detected count changes
+  later, the panel shows a layout error instead of silently using the wrong
+  modules.
+- Text pages and colour animations work on any valid layout, including one
+  module. Data apps require every row to be wide enough for their content.
+
+App minimums are declared in `apps/__init__.py`:
+
+| App | Minimum frame |
+| --- | --- |
+| Animations | any size |
+| Clock | 3 × 9 |
+| Date | 3 × 11 |
+| Dashboard | 3 × 11 |
+| Weather | 3 × 10 |
+| Stocks | 3 × 7 |
+| Crypto | 3 × 8 |
+| Sports | 3 × 8 |
+| Metro | 3 × 10 |
+| Countdown | 3 × 12 |
+| World Clock | 1 × 10 |
+| ISS | 3 × 10 |
+
+Unsupported app cards are disabled and show the requirement. Starting one from
+the panel or a service returns an error. If a running app becomes unsupported
+because the layout changed, the engine stops it.
 
 ## MQTT contract
 
@@ -213,7 +267,7 @@ custom_components/splitflap_os/
 ├── engine.py            display loop, playlists, settings, backup
 ├── entity.py            shared entity base
 ├── frontend/            sidebar panel JavaScript
-├── layout.py            pure text/wrapping/order/rotation helpers
+├── layout.py            pure text/layout/order/rotation helpers
 ├── manifest.json
 ├── models.py            Page object
 ├── panel.py             static path + panel registration
@@ -240,6 +294,7 @@ node --check custom_components/splitflap_os/frontend/splitflap-os-panel.js
 python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null
 python3 tests/test_layout.py
+python3 tests/test_positions.py
 ```
 
 ## Troubleshooting
@@ -249,6 +304,10 @@ python3 tests/test_layout.py
   seconds; the integration marks it offline after 90 seconds.
 - **No modules** — press **Scan bus** in Tuning. The status payload's
   `modules_count` drives the board size.
+- **Layout error or disabled apps** — open Settings and adjust the frame or
+  row layout. A row layout such as `3,3,1` must describe every detected module
+  and may leave at most one row of blank frame cells. Data apps stay disabled
+  until every row is wide enough.
 - **Display shows old text after a restart** — the integration restores the last
   known module snapshot and desired characters; press **Sync** to refresh from
   the master.

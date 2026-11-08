@@ -17,8 +17,16 @@ and must not be treated as production code or deleted.
 - The master's `display` command is an array whose order is the send order.
 - Board characters are one character per module. The stock drum is 64 flaps
   (`layout.DEFAULT_DRUM`); lower-case `roygbpw` are physical colour flaps.
+- The physical layout is defined by `row_counts` (one module count per row,
+  e.g. `3,3,1`) plus the `rows`/`cols` frame size. Module IDs are assigned
+  left-to-right, top-to-bottom; short rows are centred. A layout may leave at
+  most one row's worth of blank frame cells.
 - `layout.py` and `positions.py` must stay free of Home Assistant imports so
-  they can be unit tested.
+  they can be unit tested. `resolve_layout()` is the single mapping from the
+  detected count and settings to physical cells.
+- Apps declare `min_rows` and `min_cols`. Support is checked against the frame
+  rows and the narrowest row, so a ragged layout disables data apps. Unsupported
+  starts raise `ValueError`; the panel shows disabled cards.
 - The panel is vanilla JS loaded as an ES module through `panel_custom`. No build
   step, no external dependencies.
 - Preserve the old `/home/iuarchbtw/GIT_Personal/HASC/SplitFlap` repository.

@@ -176,6 +176,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         ),
         default_delay=1.0,
         category="time",
+        min_rows=3,
+        min_cols=9,
     ),
     AppDef(
         key="date",
@@ -184,6 +186,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         description="Day, date and time",
         default_delay=1.0,
         category="time",
+        min_rows=3,
+        min_cols=11,
     ),
     AppDef(
         key="dashboard",
@@ -193,6 +197,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=WEATHER_FIELDS,
         default_delay=4.0,
         category="time",
+        min_rows=3,
+        min_cols=11,
     ),
     AppDef(
         key="weather",
@@ -202,6 +208,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=WEATHER_FIELDS,
         default_delay=5.0,
         category="data",
+        min_rows=3,
+        min_cols=10,
     ),
     AppDef(
         key="stocks",
@@ -211,6 +219,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=STOCK_FIELDS,
         default_delay=4.0,
         category="data",
+        min_rows=3,
+        min_cols=7,
     ),
     AppDef(
         key="crypto",
@@ -220,6 +230,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=CRYPTO_FIELDS,
         default_delay=4.0,
         category="data",
+        min_rows=3,
+        min_cols=8,
     ),
     AppDef(
         key="sports",
@@ -229,6 +241,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=SPORTS_FIELDS,
         default_delay=5.0,
         category="data",
+        min_rows=3,
+        min_cols=8,
     ),
     AppDef(
         key="metro",
@@ -238,6 +252,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=METRO_FIELDS,
         default_delay=5.0,
         category="data",
+        min_rows=3,
+        min_cols=10,
     ),
     AppDef(
         key="countdown",
@@ -247,6 +263,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=COUNTDOWN_FIELDS,
         default_delay=1.0,
         category="time",
+        min_rows=3,
+        min_cols=12,
     ),
     AppDef(
         key="world_clock",
@@ -256,6 +274,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=WORLD_CLOCK_FIELDS,
         default_delay=1.0,
         category="time",
+        min_rows=1,
+        min_cols=10,
     ),
     AppDef(
         key="iss",
@@ -264,6 +284,8 @@ APP_DEFS: tuple[AppDef, ...] = (
         description="Space station position",
         default_delay=5.0,
         category="data",
+        min_rows=3,
+        min_cols=10,
     ),
     AppDef(
         key="animations",
@@ -273,8 +295,12 @@ APP_DEFS: tuple[AppDef, ...] = (
         fields=ANIMATION_FIELDS,
         default_delay=0.4,
         category="animation",
+        min_rows=1,
+        min_cols=1,
     ),
 )
+
+APP_DEFS_BY_KEY: dict[str, AppDef] = {app.key: app for app in APP_DEFS}
 
 APP_PROVIDERS = {
     "clock": clock,

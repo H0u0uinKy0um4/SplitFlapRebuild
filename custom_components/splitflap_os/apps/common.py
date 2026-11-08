@@ -49,6 +49,8 @@ class AppDef:
     fields: tuple[SettingField, ...] = ()
     default_delay: float = 5.0
     category: str = "data"
+    min_rows: int = 1
+    min_cols: int = 1
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -59,6 +61,8 @@ class AppDef:
             "fields": [field.as_dict() for field in self.fields],
             "default_delay": self.default_delay,
             "category": self.category,
+            "min_rows": self.min_rows,
+            "min_cols": self.min_cols,
         }
 
 
