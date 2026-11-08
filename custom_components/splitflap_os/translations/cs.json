@@ -1,0 +1,212 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Připojit Split-Flap OS",
+        "description": "Zadejte MQTT prefix, který používá ESP32 master. Výchozí firmware používá `splitflap`.",
+        "data": {
+          "topic_prefix": "MQTT prefix",
+          "name": "Název displeje"
+        },
+        "data_description": {
+          "topic_prefix": "Stav se čte z `<prefix>/status` a příkazy se odesílají na `<prefix>/command/*`.",
+          "name": "Název zobrazený v Home Assistantu a v postranním panelu."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Split-Flap OS je již nakonfigurován. V jedné instanci Home Assistantu lze spravovat pouze jeden displej."
+    },
+    "error": {
+      "invalid_prefix": "Použijte neprázdný MQTT prefix bez zástupných znaků + nebo #."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti Split-Flap OS",
+        "description": "Změňte MQTT prefix nebo název displeje. Po uložení se integrace znovu načte.",
+        "data": {
+          "topic_prefix": "MQTT prefix",
+          "name": "Název displeje"
+        }
+      }
+    },
+    "error": {
+      "invalid_prefix": "Použijte neprázdný MQTT prefix bez zástupných znaků + nebo #."
+    }
+  },
+  "services": {
+    "send_text": {
+      "name": "Odeslat text",
+      "description": "Odešle zalamovaný text na split-flap displej. Znaky, které modul nemá ve svém hlášeném seznamu lístků, budou odmítnuty.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "Text k zobrazení. Nové řádky začnou novou řadu."
+        },
+        "start": {
+          "name": "Počáteční sloupec",
+          "description": "Posun sloupce počítaný od 1 (pro žádný posun použijte 1)."
+        },
+        "style": {
+          "name": "Pořadí odesílání",
+          "description": "Pořadí animace při odesílání znaků do modulů."
+        },
+        "speed": {
+          "name": "Rychlost",
+          "description": "Zpoždění v milisekundách na modul. Odesílá se s příkazem displeje; aktuální firmware masteru ho ignoruje."
+        },
+        "stop": {
+          "name": "Zastavit aktuální aplikaci",
+          "description": "Před zobrazením textu zastaví běžící aplikaci nebo playlist."
+        },
+        "raw": {
+          "name": "Surová tabule",
+          "description": "Text se použije jako kompletní data tabule; nezalamuje se a nemění se velikost písmen."
+        }
+      }
+    },
+    "play_playlist": {
+      "name": "Přehrát playlist",
+      "description": "Přehrává seznam stránek, volitelně ve smyčce. Před přehráním se všechny stránky zkontrolují proti seznamům lístků modulů.",
+      "fields": {
+        "pages": {
+          "name": "Stránky",
+          "description": "JSON pole řetězců nebo objektů stránek s klíči text, delay, style a speed."
+        },
+        "delay": {
+          "name": "Prodleva",
+          "description": "Počet sekund čekání po dokončení pohybu každé stránky."
+        },
+        "loop": {
+          "name": "Smyčka",
+          "description": "Opakovat playlist, dokud nebude zastaven."
+        }
+      }
+    },
+    "start_app": {
+      "name": "Spustit aplikaci",
+      "description": "Spustí datovou aplikaci.",
+      "fields": {
+        "app": {
+          "name": "Aplikace",
+          "description": "Klíč aplikace, například clock, weather, stocks, crypto, sports, metro, countdown, world_clock, iss nebo animations."
+        }
+      }
+    },
+    "stop_app": {
+      "name": "Zastavit aplikaci",
+      "description": "Zastaví aktivní aplikaci nebo playlist."
+    },
+    "sync": {
+      "name": "Synchronizovat stav",
+      "description": "Požádá master o opětovné zveřejnění aktuálního stavu."
+    },
+    "scan": {
+      "name": "Prohledat sběrnici",
+      "description": "Prohledá RS485 sběrnici a najde moduly."
+    },
+    "update": {
+      "name": "Aktualizovat moduly",
+      "description": "Obnoví známé moduly bez plného prohledání."
+    },
+    "calibrate": {
+      "name": "Kalibrovat modul",
+      "description": "Odešle kalibrační příkaz jednomu modulu.",
+      "fields": {
+        "module": {
+          "name": "Modul",
+          "description": "ID modulu."
+        },
+        "action": {
+          "name": "Akce",
+          "description": "Kalibrační akce."
+        },
+        "index": {
+          "name": "Index bubnu",
+          "description": "Index lístku počítaný od nuly."
+        },
+        "flap": {
+          "name": "Lístek",
+          "description": "Znak, na který se má modul přesunout, když je akce goto a index není zadán."
+        },
+        "home_offset": {
+          "name": "Offset domovské pozice",
+          "description": "Počet kroků od hallova senzoru k prvnímu lístku (akce apply)."
+        },
+        "positions": {
+          "name": "Mapa pozic",
+          "description": "Mapování indexu bubnu na absolutní krok pozice (akce apply)."
+        },
+        "clear_map": {
+          "name": "Vymazat mapu",
+          "description": "Před použitím vymaže mapu pozic v EEPROM (akce apply)."
+        },
+        "steps": {
+          "name": "Kroky",
+          "description": "Relativní kroky; integrace je převede na absolutní pozici podle posledního hlášeného kroku modulu."
+        }
+      }
+    },
+    "home_all": {
+      "name": "Najet domů se všemi",
+      "description": "Najede domů všechny známé moduly."
+    },
+    "record_all": {
+      "name": "Zaznamenat u všech",
+      "description": "Zaznamená jeden index bubnu na všech známých modulech.",
+      "fields": {
+        "index": {
+          "name": "Index bubnu",
+          "description": "Index lístku počítaný od nuly, který se má zaznamenat."
+        }
+      }
+    },
+    "save_playlist": {
+      "name": "Uložit playlist",
+      "description": "Uloží pojmenovaný playlist.",
+      "fields": {
+        "name": {
+          "name": "Název"
+        },
+        "pages": {
+          "name": "Stránky",
+          "description": "JSON pole řetězců nebo objektů stránek."
+        },
+        "delay": {
+          "name": "Prodleva",
+          "description": "Počet sekund mezi stránkami."
+        }
+      }
+    },
+    "delete_playlist": {
+      "name": "Smazat playlist",
+      "description": "Smaže uložený playlist.",
+      "fields": {
+        "name": {
+          "name": "Název"
+        }
+      }
+    },
+    "run_saved_playlist": {
+      "name": "Spustit uložený playlist",
+      "description": "Spustí pojmenovaný playlist ve smyčce.",
+      "fields": {
+        "name": {
+          "name": "Název"
+        }
+      }
+    },
+    "set_settings": {
+      "name": "Nastavit parametry",
+      "description": "Sloučí a uloží nastavení Split-Flap OS.",
+      "fields": {
+        "settings": {
+          "name": "Nastavení",
+          "description": "Klíče a hodnoty nastavení, které se mají sloučit."
+        }
+      }
+    }
+  }
+}

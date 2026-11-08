@@ -43,6 +43,8 @@ Home Assistant                         ESP32 master                 Slaves
 - **Character validation**: text and playlists are checked against each
   module's reported `flap_list` before anything is sent; a missing flap raises
   an error naming the module and character.
+- **Czech localization** of the setup/options flow and service names; the panel
+  and entity names remain English.
 - **Backup/restore** of settings, playlists, and the last module snapshot.
 - Only one config entry is allowed, matching the single-master firmware.
 

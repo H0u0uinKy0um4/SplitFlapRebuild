@@ -7,6 +7,9 @@ můžete používat v automatizacích a skriptech.
 
 Anglický originál najdete v [README.md](README.md).
 
+> **Jazyk:** Přidání integrace, možnosti a názvy služeb mají český překlad.
+> Vlastní panel a názvy entit jsou zatím anglicky.
+
 ---
 
 ## 1. Jak to celé funguje

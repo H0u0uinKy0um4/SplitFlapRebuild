@@ -67,6 +67,7 @@ node --check custom_components/splitflap_os/frontend/splitflap-os-panel.js
 python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/translations/en.json >/dev/null
+python3 -m json.tool custom_components/splitflap_os/translations/cs.json >/dev/null
 python3 tests/test_layout.py
 python3 tests/test_positions.py
 ```
