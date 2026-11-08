@@ -102,6 +102,63 @@ const PANEL_I18N = {
     type_message: "Type a message first",
     display_cleared: "Display cleared",
     settings_saved: "Settings saved",
+    backup_downloaded: "Backup downloaded",
+    backup_restored: "Backup restored",
+    compose_message_first: "Compose a message before adding it",
+    enter_drum_index: "Enter a drum index",
+    enter_nonzero_steps: "Enter a non-zero step count",
+    enter_index_step_pair: "Enter at least one index:step pair",
+    enter_valid_home_offset: "Enter a valid home offset",
+    enter_index_to_record: "Enter the index to record",
+    give_playlist_name: "Give the playlist a name",
+    homing_every_module: "Homing every module",
+    refreshing_modules: "Refreshing known modules…",
+    requested_sync: "Requested EEPROM/state sync",
+    scanning_bus: "Scanning the RS485 bus…",
+    select_module_first: "Select a module first",
+    playlist_empty: "The playlist is empty",
+    apply_map_to_eeprom: "APPLY MAP TO EEPROM",
+    available_apps: "AVAILABLE APPS",
+    cancel: "CANCEL",
+    character_map: "CHARACTER MAP",
+    clear_map: "CLEAR MAP",
+    compose: "COMPOSE",
+    connecting: "CONNECTING",
+    connection: "CONNECTION",
+    delete: "DELETE",
+    download_backup_json: "DOWNLOAD BACKUP JSON",
+    flap: "FLAP",
+    get_position: "GET POSITION",
+    goto_drum_index: "GOTO DRUM INDEX",
+    goto_index: "GOTO INDEX",
+    hardware: "HARDWARE",
+    hardware_actions: "HARDWARE ACTIONS",
+    home_motor: "HOME MOTOR",
+    home_offset: "HOME OFFSET",
+    index: "INDEX",
+    live_display: "LIVE DISPLAY",
+    module: "MODULE",
+    offset: "OFFSET",
+    physical_layout: "PHYSICAL LAYOUT",
+    play_playlist: "PLAY PLAYLIST",
+    playlist_builder: "PLAYLIST BUILDER",
+    push_to_display: "PUSH TO DISPLAY",
+    record: "RECORD",
+    record_at_index: "RECORD AT INDEX",
+    refresh: "REFRESH",
+    reported: "REPORTED",
+    restore_from_json: "RESTORE FROM JSON",
+    run: "RUN",
+    saved_playlists: "SAVED PLAYLISTS",
+    scan: "SCAN",
+    send_order: "SEND ORDER",
+    set_offset: "SET OFFSET",
+    settings: "SETTINGS",
+    start_column: "START COLUMN",
+    step: "STEP",
+    step_steps: "STEP STEPS",
+    sync: "SYNC",
+    total_steps: "TOTAL STEPS",
   },
   cs: {
     tab_control: "OVLÁDÁNÍ",
@@ -118,6 +175,63 @@ const PANEL_I18N = {
     type_message: "Nejprve napiš zprávu",
     display_cleared: "Displej vymazán",
     settings_saved: "Nastavení uloženo",
+    backup_downloaded: "Záloha stažena",
+    backup_restored: "Záloha obnovena",
+    compose_message_first: "Nejprve slož zprávu",
+    enter_drum_index: "Zadej index bubnu",
+    enter_nonzero_steps: "Zadej nenulový počet kroků",
+    enter_index_step_pair: "Zadej alespoň jeden pár index:krok",
+    enter_valid_home_offset: "Zadej platný offset domovské pozice",
+    enter_index_to_record: "Zadej index k zaznamenání",
+    give_playlist_name: "Pojmenuj playlist",
+    homing_every_module: "Najíždění všech modulů",
+    refreshing_modules: "Obnovování známých modulů…",
+    requested_sync: "Požadována synchronizace EEPROM/stavu",
+    scanning_bus: "Prohledávání RS485 sběrnice…",
+    select_module_first: "Nejprve vyber modul",
+    playlist_empty: "Playlist je prázdný",
+    apply_map_to_eeprom: "APLIKOVAT MAPU DO EEPROM",
+    available_apps: "DOSTUPNÉ APLIKACE",
+    cancel: "ZRUŠIT",
+    character_map: "MAPA ZNAKŮ",
+    clear_map: "VYMAZAT MAPU",
+    compose: "SLOŽIT",
+    connecting: "PŘIPOJOVÁNÍ",
+    connection: "PŘIPOJENÍ",
+    delete: "SMAZAT",
+    download_backup_json: "STÁHNOUT ZÁLOHU JSON",
+    flap: "LÍSTEK",
+    get_position: "ZÍSKAT POZICI",
+    goto_drum_index: "PŘEJÍT NA INDEX BUBNU",
+    goto_index: "PŘEJÍT NA INDEX",
+    hardware: "HARDWARE",
+    hardware_actions: "AKCE HARDWARU",
+    home_motor: "NAJET MOTOR",
+    home_offset: "OFFSET DOMOVSKÉ POZICE",
+    index: "INDEX",
+    live_display: "ŽIVÝ DISPLEJ",
+    module: "MODUL",
+    offset: "OFFSET",
+    physical_layout: "FYZICKÉ ROZLOŽENÍ",
+    play_playlist: "PŘEHRÁT PLAYLIST",
+    playlist_builder: "TVORBA PLAYLISTU",
+    push_to_display: "ODESLAT NA DISPLEJ",
+    record: "ZAZNAMENAT",
+    record_at_index: "ZAZNAMENAT NA INDEXU",
+    refresh: "OBNOVIT",
+    reported: "HLÁŠENO",
+    restore_from_json: "OBNOVIT Z JSON",
+    run: "SPUSTIT",
+    saved_playlists: "ULOŽENÉ PLAYLISTY",
+    scan: "PROHLEDAT",
+    send_order: "POŘADÍ ODESÍLÁNÍ",
+    set_offset: "NASTAVIT OFFSET",
+    settings: "NASTAVENÍ",
+    start_column: "POČÁTEČNÍ SLOUPEC",
+    step: "KROK",
+    step_steps: "KROK KROKY",
+    sync: "SYNCHRONIZOVAT",
+    total_steps: "CELKEM KROKŮ",
   },
 };
 
@@ -602,7 +716,7 @@ class SplitFlapOSPanel extends HTMLElement {
             </div>
           </div>
           <div class="conn">
-            <span class="pill connecting" id="statusPill">CONNECTING</span>
+            <span class="pill connecting" id="statusPill">${this._t('connecting')}</span>
             <button class="icon-btn" data-action="refresh" title="Refresh state">⟳</button>
           </div>
         </header>
@@ -623,13 +737,13 @@ class SplitFlapOSPanel extends HTMLElement {
         <main>
           <section class="page active" data-page="control">
             <div class="card">
-              <h2>LIVE DISPLAY</h2>
+              <h2>${this._t('live_display')}</h2>
               <div class="preview wide" id="live"></div>
               <div class="muted" id="liveMeta" style="margin-top:8px"></div>
             </div>
 
             <div class="card">
-              <h2>COMPOSE</h2>
+              <h2>${this._t('compose')}</h2>
               <textarea id="compose" class="compose-input" rows="3"
                 placeholder="Type a message — new lines become rows"></textarea>
               <div class="palette">
@@ -639,10 +753,10 @@ class SplitFlapOSPanel extends HTMLElement {
                 ).join("")}
               </div>
               <div class="options">
-                <label class="field"><span>START COLUMN</span>
+                <label class="field"><span>${this._t('start_column')}</span>
                   <input id="startCol" type="number" min="1" max="512" value="1">
                 </label>
-                <label class="field"><span>SEND ORDER</span>
+                <label class="field"><span>${this._t('send_order')}</span>
                   <select id="styleSelect">${STYLE_OPTIONS}</select>
                 </label>
                 <label class="field"><span>SPEED (MS/MODULE)</span>
@@ -652,7 +766,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="preview" id="composePreview"></div>
               <div class="muted" id="composeMeta" style="margin-top:8px"></div>
               <div class="actions">
-                <button class="btn" data-action="push-text">PUSH TO DISPLAY</button>
+                <button class="btn" data-action="push-text">${this._t('push_to_display')}</button>
                 <button class="btn secondary" data-action="add-playlist">+ ADD TO PLAYLIST</button>
                 <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
               </div>
@@ -660,33 +774,33 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">PLAYLIST BUILDER</h2>
+                <h2 style="margin:0">${this._t('playlist_builder')}</h2>
                 <label class="field" style="max-width:120px"><span>DELAY (S)</span>
                   <input id="builderDelay" type="number" min="0.1" max="120" step="0.5" value="5">
                 </label>
               </div>
               <div class="list" id="builderList"></div>
               <div class="actions">
-                <button class="btn" data-action="play-builder">PLAY PLAYLIST</button>
+                <button class="btn" data-action="play-builder">${this._t('play_playlist')}</button>
                 <input id="saveName" type="text" placeholder="Playlist name" style="max-width:190px">
                 <button class="btn secondary" data-action="save-builder">${this._t("save")}</button>
               </div>
             </div>
 
             <div class="card">
-              <h2>SAVED PLAYLISTS</h2>
+              <h2>${this._t('saved_playlists')}</h2>
               <div class="list" id="savedList"></div>
             </div>
           </section>
 
           <section class="page" data-page="apps">
             <div class="card">
-              <h2>LIVE DISPLAY</h2>
+              <h2>${this._t('live_display')}</h2>
               <div class="preview wide" id="liveApps"></div>
               <div class="muted" id="liveAppsMeta" style="margin-top:8px"></div>
             </div>
             <div class="card">
-              <h2>AVAILABLE APPS</h2>
+              <h2>${this._t('available_apps')}</h2>
               <div class="apps-grid" id="appsGrid"></div>
               <p class="muted" style="margin-bottom:0">
                 Tap an app to launch it. Use the gear to edit the settings that app reads.
@@ -697,11 +811,11 @@ class SplitFlapOSPanel extends HTMLElement {
           <section class="page" data-page="tuning">
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">HARDWARE</h2>
+                <h2 style="margin:0">${this._t('hardware')}</h2>
                 <div class="actions" style="margin:0">
                   <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="update">REFRESH</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
                 </div>
               </div>
@@ -711,26 +825,26 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card inspector hidden" id="inspector">
               <div class="row between">
-                <h2 style="margin:0" id="inspectTitle">MODULE</h2>
+                <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
                 <span class="muted" id="inspectState"></span>
               </div>
               <div class="stats">
-                <div class="stat"><b id="statFlap">–</b><span>FLAP</span></div>
-                <div class="stat"><b id="statActual">–</b><span>REPORTED</span></div>
-                <div class="stat"><b id="statStep">–</b><span>STEP</span></div>
-                <div class="stat"><b id="statIndex">–</b><span>INDEX</span></div>
-                <div class="stat"><b id="statOffset">–</b><span>OFFSET</span></div>
-                <div class="stat"><b id="statTotal">–</b><span>TOTAL STEPS</span></div>
+                <div class="stat"><b id="statFlap">–</b><span>${this._t('flap')}</span></div>
+                <div class="stat"><b id="statActual">–</b><span>${this._t('reported')}</span></div>
+                <div class="stat"><b id="statStep">–</b><span>${this._t('step')}</span></div>
+                <div class="stat"><b id="statIndex">–</b><span>${this._t('index')}</span></div>
+                <div class="stat"><b id="statOffset">–</b><span>${this._t('offset')}</span></div>
+                <div class="stat"><b id="statTotal">–</b><span>${this._t('total_steps')}</span></div>
               </div>
               <div class="grid2">
-                <label class="field"><span>GOTO DRUM INDEX</span>
+                <label class="field"><span>${this._t('goto_drum_index')}</span>
                   <input id="gotoIndex" type="number" min="0" max="63" placeholder="0-63">
                 </label>
                 <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="goto_index">GOTO INDEX</button>
-                  <button class="btn secondary" data-action="module" data-sub="get_pos">GET POSITION</button>
+                  <button class="btn secondary" data-action="module" data-sub="goto_index">${this._t('goto_index')}</button>
+                  <button class="btn secondary" data-action="module" data-sub="get_pos">${this._t('get_position')}</button>
                 </div>
-                <label class="field"><span>STEP STEPS</span>
+                <label class="field"><span>${this._t('step_steps')}</span>
                   <input id="stepAmount" type="number" step="1" value="32">
                 </label>
                 <div class="step-row" style="align-items:flex-end">
@@ -738,35 +852,35 @@ class SplitFlapOSPanel extends HTMLElement {
                   <button class="btn secondary" data-action="module" data-sub="step" data-step="-1">-1</button>
                   <button class="btn secondary" data-action="module" data-sub="step" data-step="1">+1</button>
                   <button class="btn secondary" data-action="module" data-sub="step" data-step="32">+32</button>
-                  <button class="btn secondary" data-action="module" data-sub="step">STEP</button>
+                  <button class="btn secondary" data-action="module" data-sub="step">${this._t('step')}</button>
                 </div>
-                <label class="field"><span>RECORD AT INDEX</span>
+                <label class="field"><span>${this._t('record_at_index')}</span>
                   <input id="recordIndex" type="number" min="0" max="63" placeholder="0-63">
                 </label>
                 <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="record">RECORD</button>
-                  <button class="btn danger" data-action="module" data-sub="home">HOME MOTOR</button>
-                  <button class="btn secondary" data-action="module" data-sub="clear_map">CLEAR MAP</button>
+                  <button class="btn secondary" data-action="module" data-sub="record">${this._t('record')}</button>
+                  <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
+                  <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
                 </div>
-                <label class="field"><span>HOME OFFSET</span>
+                <label class="field"><span>${this._t('home_offset')}</span>
                   <input id="offsetValue" type="number" min="0" max="65535" placeholder="steps">
                 </label>
                 <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="apply_offset">SET OFFSET</button>
+                  <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
                 </div>
               </div>
               <label class="field" style="margin-top:12px"><span>POSITION MAP (index:step, one per line)</span>
                 <textarea id="posMap" rows="3" placeholder="0:2832&#10;1:2896"></textarea>
               </label>
               <div class="actions">
-                <button class="btn secondary" data-action="module" data-sub="apply_map">APPLY MAP TO EEPROM</button>
+                <button class="btn secondary" data-action="module" data-sub="apply_map">${this._t('apply_map_to_eeprom')}</button>
                 <span class="muted">The master homes the module after applying a map.</span>
               </div>
             </div>
 
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">CHARACTER MAP</h2>
+                <h2 style="margin:0">${this._t('character_map')}</h2>
                 <span class="muted" id="charMapTitle"></span>
               </div>
               <div class="char-map" id="charMap" style="margin-top:12px"></div>
@@ -779,11 +893,11 @@ class SplitFlapOSPanel extends HTMLElement {
           <section class="page" data-page="settings">
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">HARDWARE ACTIONS</h2>
+                <h2 style="margin:0">${this._t('hardware_actions')}</h2>
                 <div class="actions" style="margin:0">
-                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">SCAN</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">SYNC</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="update">REFRESH</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t('scan')}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t('sync')}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
                   <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
                 </div>
               </div>
@@ -791,7 +905,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">PHYSICAL LAYOUT</h2>
+                <h2 style="margin:0">${this._t('physical_layout')}</h2>
                 <span class="muted" id="layoutSummary"></span>
               </div>
               <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
@@ -804,7 +918,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <div class="row between">
-                <h2 style="margin:0">SETTINGS</h2>
+                <h2 style="margin:0">${this._t('settings')}</h2>
                 <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
               </div>
               <div id="settingsGroups" style="margin-top:14px"></div>
@@ -816,15 +930,15 @@ class SplitFlapOSPanel extends HTMLElement {
                 Exports settings, playlists and the last module snapshot. Restore merges settings and replaces playlists.
               </p>
               <div class="actions">
-                <button class="btn secondary" data-action="download-backup">DOWNLOAD BACKUP JSON</button>
-                <button class="btn secondary" data-action="restore-backup">RESTORE FROM JSON</button>
+                <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
+                <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
                 <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
               </div>
               <div class="muted" id="backupStatus" style="margin-top:8px"></div>
             </div>
 
             <div class="card">
-              <h2>CONNECTION</h2>
+              <h2>${this._t('connection')}</h2>
               <div class="muted" id="connectionInfo">Waiting for state…</div>
             </div>
           </section>
@@ -838,7 +952,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div id="modalFields"></div>
             <div class="actions">
               <button class="btn" data-action="save-app-settings">${this._t("save")}</button>
-              <button class="btn secondary" data-action="close-modal">CANCEL</button>
+              <button class="btn secondary" data-action="close-modal">${this._t('cancel')}</button>
             </div>
           </div>
         </div>
@@ -1189,8 +1303,8 @@ class SplitFlapOSPanel extends HTMLElement {
             <span class="idx">▶</span>
             <span class="text">${escapeHtml(name)}</span>
             <span class="muted">${count} page${count === 1 ? "" : "s"}</span>
-            <button class="btn mini" data-action="run-saved" data-name="${escapeAttr(name)}">RUN</button>
-            <button class="btn mini danger" data-action="delete-saved" data-name="${escapeAttr(name)}">DELETE</button>
+            <button class="btn mini" data-action="run-saved" data-name="${escapeAttr(name)}">${this._t('run')}</button>
+            <button class="btn mini danger" data-action="delete-saved" data-name="${escapeAttr(name)}">${this._t('delete')}</button>
           </div>`;
       })
       .join("");
@@ -1737,7 +1851,7 @@ class SplitFlapOSPanel extends HTMLElement {
       speed: Math.max(0, Number(speedNode.value) || 0),
       stop: true,
     });
-    this._toast(`Sent ${text.length} characters to the ${board.rows}×${board.cols} board`);
+    this._toast(`Odesláno ${text.length} znaků na tabuli ${board.rows}×${board.cols}`);
   }
 
   async _clearText() {
@@ -1765,17 +1879,17 @@ class SplitFlapOSPanel extends HTMLElement {
   _addToBuilder() {
     const text = this._composeText || "";
     if (!text.trim()) {
-      this._toast("Compose a message before adding it", "warn");
+      this._toast(this._t("compose_message_first"), "warn");
       return;
     }
     this._builder.push({ text });
     this._renderBuilder();
-    this._toast(`Added page ${this._builder.length}`);
+    this._toast(`Přidána stránka ${this._builder.length}`);
   }
 
   async _playBuilder() {
     if (!this._builder.length) {
-      this._toast("The playlist is empty", "warn");
+      this._toast(this._t("playlist_empty"), "warn");
       return;
     }
     const delayNode = this.shadowRoot.getElementById("builderDelay");
@@ -1785,18 +1899,18 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
       loop: true,
     });
-    this._toast(`Playing ${this._builder.length}-page playlist`);
+    this._toast(`Přehrávání playlistu (${this._builder.length} stránek)`);
   }
 
   async _saveBuilder() {
     if (!this._builder.length) {
-      this._toast("The playlist is empty", "warn");
+      this._toast(this._t("playlist_empty"), "warn");
       return;
     }
     const nameNode = this.shadowRoot.getElementById("saveName");
     const name = String(nameNode.value || "").trim();
     if (!name) {
-      this._toast("Give the playlist a name", "warn");
+      this._toast(this._t("give_playlist_name"), "warn");
       return;
     }
     const delayNode = this.shadowRoot.getElementById("builderDelay");
@@ -1807,20 +1921,20 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
     });
     nameNode.value = "";
-    this._toast(`Saved playlist "${name}"`);
+    this._toast(`Uložen playlist „${name}“`);
   }
 
   async _runSaved(name) {
     if (!name) return;
     await this._send("run_saved_playlist", { name });
-    this._toast(`Running "${name}"`);
+    this._toast(`Spuštěno „${name}“`);
   }
 
   async _deleteSaved(name) {
     if (!name) return;
     if (!window.confirm(`Delete playlist "${name}"?`)) return;
     await this._send("delete_playlist", { name });
-    this._toast(`Deleted "${name}"`);
+    this._toast(`Smazáno „${name}“`);
   }
 
   _openAppSettings(key) {
@@ -1904,13 +2018,13 @@ class SplitFlapOSPanel extends HTMLElement {
   async _moduleAction(sub, data) {
     const module = this._selectedModule;
     if (module === null || !this._moduleFor(module)) {
-      this._toast("Select a module first", "warn");
+      this._toast(this._t("select_module_first"), "warn");
       return;
     }
 
     if (sub === "home") {
       await this._send("calibrate", { module, action: "home" });
-      this._toast(`Module ${module} homing`);
+      this._toast(`Modul ${module} najíždí`);
       return;
     }
     if (sub === "get_pos") {
@@ -1920,7 +2034,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (sub === "goto_index") {
       const index = Number(this._moduleValue("gotoIndex"));
       if (!Number.isFinite(index) || index < 0) {
-        this._toast("Enter a drum index", "warn");
+        this._toast(this._t("enter_drum_index"), "warn");
         return;
       }
       await this._send("calibrate", { module, action: "goto", index });
@@ -1938,7 +2052,7 @@ class SplitFlapOSPanel extends HTMLElement {
           ? Number(data.step)
           : Number(this._moduleValue("stepAmount"));
       if (!Number.isFinite(steps) || steps === 0) {
-        this._toast("Enter a non-zero step count", "warn");
+        this._toast(this._t("enter_nonzero_steps"), "warn");
         return;
       }
       await this._send("calibrate", { module, action: "step", steps });
@@ -1947,7 +2061,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (sub === "record") {
       const index = Number(this._moduleValue("recordIndex"));
       if (!Number.isFinite(index) || index < 0) {
-        this._toast("Enter the index to record", "warn");
+        this._toast(this._t("enter_index_to_record"), "warn");
         return;
       }
       if (
@@ -1959,18 +2073,18 @@ class SplitFlapOSPanel extends HTMLElement {
         return;
       }
       await this._send("calibrate", { module, action: "record", index });
-      this._toast(`Recorded module ${module} index ${index}`);
+      this._toast(`Zaznamenán modul ${module}, index ${index}`);
       return;
     }
     if (sub === "clear_map") {
       await this._send("calibrate", { module, action: "clear_map" });
-      this._toast(`Cleared the EEPROM map for module ${module}`);
+      this._toast(`Vymazána mapa EEPROM pro modul ${module}`);
       return;
     }
     if (sub === "apply_offset") {
       const offset = Number(this._moduleValue("offsetValue"));
       if (!Number.isFinite(offset) || offset < 0) {
-        this._toast("Enter a valid home offset", "warn");
+        this._toast(this._t("enter_valid_home_offset"), "warn");
         return;
       }
       await this._send("calibrate", {
@@ -1978,13 +2092,13 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         home_offset: offset,
       });
-      this._toast(`Applied offset ${offset}; module is homing`);
+      this._toast(`Aplikován offset ${offset}; modul najíždí`);
       return;
     }
     if (sub === "apply_map") {
       const positions = this._parsePositions(this._moduleValue("posMap"));
       if (!Object.keys(positions).length) {
-        this._toast("Enter at least one index:step pair", "warn");
+        this._toast(this._t("enter_index_step_pair"), "warn");
         return;
       }
       await this._send("calibrate", {
@@ -1992,29 +2106,29 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         positions,
       });
-      this._toast(`Applied ${Object.keys(positions).length} map entries; module is homing`);
+      this._toast(`Aplikováno ${Object.keys(positions).length} záznamů mapy; modul najíždí`);
     }
   }
 
   async _hardwareAction(sub) {
     if (sub === "scan") {
       await this._send("scan");
-      this._toast("Scanning the RS485 bus…");
+      this._toast(this._t("scanning_bus"));
       return;
     }
     if (sub === "sync") {
       await this._send("sync");
-      this._toast("Requested EEPROM/state sync");
+      this._toast(this._t("requested_sync"));
       return;
     }
     if (sub === "update") {
       await this._send("update");
-      this._toast("Refreshing known modules…");
+      this._toast(this._t("refreshing_modules"));
       return;
     }
     if (sub === "home_all") {
       await this._send("home_all");
-      this._toast("Homing every module");
+      this._toast(this._t("homing_every_module"));
     }
   }
 
@@ -2035,7 +2149,7 @@ class SplitFlapOSPanel extends HTMLElement {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     const status = this.shadowRoot.getElementById("backupStatus");
     if (status) status.textContent = `Backup downloaded at ${new Date().toLocaleTimeString()}`;
-    this._toast("Backup downloaded");
+    this._toast(this._t("backup_downloaded"));
   }
 
   async _restoreFile(input) {
@@ -2050,7 +2164,7 @@ class SplitFlapOSPanel extends HTMLElement {
       await this._send("restore", { data });
       const status = this.shadowRoot.getElementById("backupStatus");
       if (status) status.textContent = `Restored ${file.name}`;
-      this._toast("Backup restored");
+      this._toast(this._t("backup_restored"));
       this._settingsDirty = false;
     } catch (err) {
       this._toast(`Restore failed: ${err.message || err}`, "error");
