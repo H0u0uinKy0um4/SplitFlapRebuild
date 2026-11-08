@@ -235,6 +235,57 @@ const PANEL_I18N = {
   },
 };
 
+
+const SETTINGS_I18N = {
+  groups: {
+    display: "🖥️ Displej",
+    weather: "🌤️ Počasí",
+    markets: "📈 Trhy",
+    sports: "🏒 Sport",
+    transit: "🚇 Doprava",
+    time: "⏳ Čas",
+    animations: "🎨 Animace",
+  },
+  labels: {
+    row_counts: "Fyzické rozložení řad (prázdné = auto)",
+    rows: "Řádky rámu (0 = auto)",
+    cols: "Sloupce rámu (0 = auto)",
+    ui_scale: "Měřítko náhledu (%)",
+    timezone: "Časové pásmo",
+    units: "Jednotky",
+    page_delay: "Výchozí prodleva stránky (s)",
+    weather_entity: "Entita počasí",
+    zip_code: "PSČ (záloha OpenWeather)",
+    weather_api_key: "API klíč OpenWeather (záloha)",
+    stocks_list: "Symboly akcií",
+    crypto_list: "ID coinů CoinGecko",
+    sports_teams: "Týmy NHL",
+    metro_stop: "ID zastávky MBTA",
+    metro_route: "Trasa MBTA",
+    mbta_api_key: "API klíč MBTA",
+    countdown_event: "Název události",
+    countdown_target: "Cílové datum/čas",
+    clock_format: "Formát hodin",
+    world_clock_zones: "Časová pásma",
+    anim_effect: "Efekt",
+    anim_style: "Styl odesílání",
+    anim_speed: "Prodleva snímku (s)",
+  },
+  helps: {
+    row_counts: "Jedno číslo na fyzickou řadu, shora dolů. ID modulů se přiřazují zleva doprava, pak shora dolů. Kratší řady jsou vycentrované. Prázdné nechá integraci zvolit podle počtu nalezených modulů.",
+    rows: "Fyzická výška rámu. Nech 0 pro automatický odhad z displeje.",
+    cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
+    ui_scale: "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
+    timezone: "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
+    weather_entity: "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
+    stocks_list: "Symboly Yahoo Finance oddělené čárkou.",
+    crypto_list: "ID coinů CoinGecko oddělené čárkou.",
+    sports_teams: "Zkratky oddělené čárkou. Prázdné zobrazí všechny zápasy.",
+    countdown_target: "Místní čas v nakonfigurovaném časovém pásmu.",
+    world_clock_zones: "Názvy IANA zón oddělené čárkou.",
+  },
+};
+
 class SplitFlapOSPanel extends HTMLElement {
   constructor() {
     super();
@@ -1028,6 +1079,21 @@ class SplitFlapOSPanel extends HTMLElement {
     return dict[key] || PANEL_I18N.en[key] || key;
   }
 
+  _settingLabel(key, fallback) {
+    if (this._lang() !== "cs") return fallback || key;
+    return (SETTINGS_I18N.labels && SETTINGS_I18N.labels[key]) || fallback || key;
+  }
+
+  _settingHelp(key, fallback) {
+    if (this._lang() !== "cs") return fallback || "";
+    return (SETTINGS_I18N.helps && SETTINGS_I18N.helps[key]) || fallback || "";
+  }
+
+  _settingGroup(key, fallback) {
+    if (this._lang() !== "cs") return fallback || key;
+    return (SETTINGS_I18N.groups && SETTINGS_I18N.groups[key]) || fallback || key;
+  }
+
   _board() {
     const engine = this._engine();
     const board = (engine && engine.board) || {};
@@ -1659,9 +1725,9 @@ class SplitFlapOSPanel extends HTMLElement {
 
     return `
       <label class="field">
-        <span>${escapeHtml(field.label || field.key)}</span>
+        <span>${escapeHtml(this._settingLabel(field.key, field.label || field.key))}</span>
         ${input}
-        ${field.help ? `<small>${escapeHtml(field.help)}</small>` : ""}
+        ${field.help ? `<small>${escapeHtml(this._settingHelp(field.key, field.help))}</small>` : ""}
       </label>`;
   }
 
@@ -1677,7 +1743,7 @@ class SplitFlapOSPanel extends HTMLElement {
         .map(
           (group) => `
             <div class="settings-group">
-              <h3>${escapeHtml(group.icon || "")} ${escapeHtml(group.name || group.key)}</h3>
+              <h3>${escapeHtml(group.icon || "")} ${escapeHtml(this._settingGroup(group.key, group.name || group.key))}</h3>
               <div class="settings-grid">
                 ${(group.fields || [])
                   .map((field) => this._fieldHtml(field, settings[field.key]))
