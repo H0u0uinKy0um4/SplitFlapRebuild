@@ -28,6 +28,16 @@ def _panel_path() -> str:
     )
 
 
+def _panel_cache_key() -> str:
+    """Return a cache-busting key that changes when the JS file changes."""
+
+    try:
+        mtime = int(os.path.getmtime(_panel_path()))
+    except OSError:
+        return VERSION
+    return f"{VERSION}-{mtime}"
+
+
 async def _async_register_static_path(hass: HomeAssistant) -> bool:
     """Serve the panel JavaScript from the integration directory."""
 
@@ -80,7 +90,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
             frontend_url_path=PANEL_URL_PATH,
             sidebar_title=PANEL_TITLE,
             sidebar_icon=PANEL_ICON,
-            module_url=f"{FRONTEND_URL_PATH}?v={VERSION}",
+            module_url=f"{FRONTEND_URL_PATH}?v={_panel_cache_key()}",
             embed_iframe=False,
             require_admin=False,
             config={"domain": DOMAIN, "version": VERSION},

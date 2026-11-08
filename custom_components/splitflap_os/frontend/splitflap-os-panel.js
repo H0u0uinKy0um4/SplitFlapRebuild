@@ -8,7 +8,7 @@
  */
 
 const DOMAIN = "splitflap_os";
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const STYLES = [
   "ltr",
@@ -304,6 +304,7 @@ class SplitFlapOSPanel extends HTMLElement {
         .grid { display: grid; gap: 3px; grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr)); }
         .flap {
           position: relative; aspect-ratio: 2 / 3; min-width: 0;
+          max-width: 48px; justify-self: center;
           display: flex; align-items: center; justify-content: center;
           background: #101010; border: 1px solid #292929; border-radius: 3px;
           color: #f5f5f5; font-family: "Roboto Mono", "Courier New", monospace;
@@ -451,6 +452,7 @@ class SplitFlapOSPanel extends HTMLElement {
         }
         .mod {
           aspect-ratio: 1; min-width: 0; border-radius: 5px; cursor: pointer;
+          max-width: 56px; justify-self: center;
           border: 1px solid var(--divider-color, #ccc);
           background: var(--secondary-background-color, #f2f2f2);
           color: inherit; display: flex; flex-direction: column;
@@ -965,7 +967,7 @@ class SplitFlapOSPanel extends HTMLElement {
       slotBase += count;
     }
     if (animate) this._lastChars = chars;
-    const width = this._gridMaxWidth(board.cols, 56, 3);
+    const width = this._gridMaxWidth(board.cols, 48, 3);
     return `<div class="grid" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
   }
 
@@ -973,7 +975,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const board = this._board();
     const engine = this._engine();
     const html = this._previewHtml(this._lines(), true);
-    const width = this._gridMaxWidth(board.cols, 56, 3);
+    const width = this._gridMaxWidth(board.cols, 48, 3);
     const meta = `${engine.mode || "idle"}${
       engine.current_page_count
         ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
@@ -1060,7 +1062,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const preview = this.shadowRoot.getElementById("composePreview");
     if (preview) {
       preview.innerHTML = this._previewHtml(lines, false);
-      this._fitPreview(preview, this._gridMaxWidth(board.cols, 56, 3));
+      this._fitPreview(preview, this._gridMaxWidth(board.cols, 48, 3));
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
@@ -1230,7 +1232,7 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       matrix.style.setProperty("--cols", String(board.cols));
       if (modules.length) {
-        const width = this._gridMaxWidth(board.cols, 64, 4);
+        const width = this._gridMaxWidth(board.cols, 56, 4);
         matrix.style.maxWidth = `${width}px`;
         matrix.style.marginLeft = "auto";
         matrix.style.marginRight = "auto";
@@ -1344,7 +1346,7 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       slotBase += count;
     }
-    const width = this._gridMaxWidth(board.cols, 64, 4);
+    const width = this._gridMaxWidth(board.cols, 56, 4);
     node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
     this._fitPreview(node, width);
 
