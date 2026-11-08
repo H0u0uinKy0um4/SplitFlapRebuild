@@ -833,7 +833,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="list" id="builderList"></div>
               <div class="actions">
                 <button class="btn" data-action="play-builder">${this._t('play_playlist')}</button>
-                <input id="saveName" type="text" placeholder="Playlist name" style="max-width:190px">
+                <input id="saveName" type="text" placeholder="${this._lang()==='cs'?'Název playlistu':'Playlist name'}" style="max-width:190px">
                 <button class="btn secondary" data-action="save-builder">${this._t("save")}</button>
               </div>
             </div>
@@ -1238,7 +1238,7 @@ class SplitFlapOSPanel extends HTMLElement {
       engine.current_page_count
         ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
         : ""
-    } • ${board.rows} rows × ${board.cols} columns${
+    } • ${board.rows} ${this._lang()==='cs'?'řádek':'row'}${board.rows===1?'':'s'} × ${board.cols} ${this._lang()==='cs'?'sloupec':'column'}${board.cols===1?'':'s'}${
       board.error ? " • LAYOUT ERROR" : ""
     }`;
 
@@ -1324,7 +1324,7 @@ class SplitFlapOSPanel extends HTMLElement {
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
-      meta.textContent = `${this._composeText.length} characters • start column ${start}`;
+      meta.textContent = `${this._composeText.length} ${this._lang()==='cs'?'znaků':'characters'} • ${this._lang()==='cs'?'počáteční sloupec':'start column'} ${start}`;
     }
   }
 
@@ -1371,7 +1371,7 @@ class SplitFlapOSPanel extends HTMLElement {
           <div class="list-item">
             <span class="idx">▶</span>
             <span class="text">${escapeHtml(name)}</span>
-            <span class="muted">${count} page${count === 1 ? "" : "s"}</span>
+            <span class="muted">${count} ${this._lang()==='cs'?(count===1?'stránka':'stránek'):(count===1?'page':'pages')}</span>
             <button class="btn mini" data-action="run-saved" data-name="${escapeAttr(name)}">${this._t('run')}</button>
             <button class="btn mini danger" data-action="delete-saved" data-name="${escapeAttr(name)}">${this._t('delete')}</button>
           </div>`;
