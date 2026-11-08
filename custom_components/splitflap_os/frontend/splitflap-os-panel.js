@@ -926,6 +926,18 @@ class SplitFlapOSPanel extends HTMLElement {
     }</span>`;
   }
 
+  _gridMaxWidth(cols, maxCell, gap) {
+    const count = Math.max(1, Number(cols) || 1);
+    return Math.round(count * maxCell + Math.max(0, count - 1) * gap);
+  }
+
+  _fitPreview(node, contentWidth) {
+    if (!node) return;
+    node.style.maxWidth = `${Math.min(Math.round(contentWidth) + 22, 940)}px`;
+    node.style.marginLeft = "auto";
+    node.style.marginRight = "auto";
+  }
+
   _previewHtml(lines, animate) {
     const board = this._board();
     const chars = [];
@@ -953,13 +965,15 @@ class SplitFlapOSPanel extends HTMLElement {
       slotBase += count;
     }
     if (animate) this._lastChars = chars;
-    return `<div class="grid" style="--cols:${board.cols}">${html}</div>`;
+    const width = this._gridMaxWidth(board.cols, 56, 3);
+    return `<div class="grid" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
   }
 
   _renderLive() {
     const board = this._board();
     const engine = this._engine();
     const html = this._previewHtml(this._lines(), true);
+    const width = this._gridMaxWidth(board.cols, 56, 3);
     const meta = `${engine.mode || "idle"}${
       engine.current_page_count
         ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
@@ -970,7 +984,10 @@ class SplitFlapOSPanel extends HTMLElement {
 
     for (const id of ["live", "liveApps"]) {
       const node = this.shadowRoot.getElementById(id);
-      if (node) node.innerHTML = html;
+      if (node) {
+        node.innerHTML = html;
+        this._fitPreview(node, width);
+      }
     }
     for (const id of ["liveMeta", "liveAppsMeta"]) {
       const node = this.shadowRoot.getElementById(id);
@@ -1043,6 +1060,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const preview = this.shadowRoot.getElementById("composePreview");
     if (preview) {
       preview.innerHTML = this._previewHtml(lines, false);
+      this._fitPreview(preview, this._gridMaxWidth(board.cols, 56, 3));
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
@@ -1211,6 +1229,16 @@ class SplitFlapOSPanel extends HTMLElement {
         slotBase += count;
       }
       matrix.style.setProperty("--cols", String(board.cols));
+      if (modules.length) {
+        const width = this._gridMaxWidth(board.cols, 64, 4);
+        matrix.style.maxWidth = `${width}px`;
+        matrix.style.marginLeft = "auto";
+        matrix.style.marginRight = "auto";
+      } else {
+        matrix.style.maxWidth = "";
+        matrix.style.marginLeft = "";
+        matrix.style.marginRight = "";
+      }
       matrix.innerHTML = html || '<div class="empty">No modules detected. Run a bus scan.</div>';
     }
 
@@ -1316,7 +1344,9 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       slotBase += count;
     }
-    node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols}">${html}</div>`;
+    const width = this._gridMaxWidth(board.cols, 64, 4);
+    node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};max-width:${width}px;margin:0 auto">${html}</div>`;
+    this._fitPreview(node, width);
 
     if (summary) {
       const rows = board.rowCounts.join(",");
