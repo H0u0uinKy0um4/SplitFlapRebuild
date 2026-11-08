@@ -30,6 +30,14 @@ and must not be treated as production code or deleted.
 - The panel is vanilla JS loaded as an ES module through `panel_custom`. No build
   step, no external dependencies.
 - Preserve the old `/home/iuarchbtw/GIT_Personal/HASC/SplitFlap` repository.
+- All user-facing UI text must be implemented in **English and Czech**. For the
+  panel, add strings to `PANEL_I18N`/`SETTINGS_I18N` in
+  `frontend/splitflap-os-panel.js` and use `_t()`/language-aware helpers (never
+  hardcode user-visible text in one language). For Home Assistant config/options,
+  services, and entity names, keep `strings.json`, `translations/en.json`, and
+  `translations/cs.json` in sync (same keys/fields) and use `translation_key`
+  where applicable. When adding new UI or messages, update both languages in the
+  same change.
 
 ## Important architecture
 

@@ -99,12 +99,12 @@ const PANEL_I18N = {
     sync: "SYNC",
     home_all: "HOME ALL",
     save_settings: "SAVE SETTINGS",
-    type_message: "Napiš zprávu first",
+    type_message: "Type a message first",
     display_cleared: "Display cleared",
     settings_saved: "Settings saved",
     backup_downloaded: "Backup downloaded",
     backup_restored: "Backup restored",
-    compose_message_first: "Nejprve slož zprávu:",
+    compose_message_first: "Compose a message first",
     enter_drum_index: "Enter a drum index",
     enter_nonzero_steps: "Enter a non-zero step count",
     enter_index_step_pair: "Enter at least one index:step pair",
@@ -115,7 +115,8 @@ const PANEL_I18N = {
     refreshing_modules: "Refreshing known modules…",
     requested_sync: "Requested EEPROM/state sync",
     scanning_bus: "Scanning the RS485 bus…",
-    select_module_first: "Nejprve vyber modul",
+    select_module_first: "Select a module first",
+    select_module: "Select a module",
     playlist_empty: "The playlist is empty",
     apply_map_to_eeprom: "APPLY MAP TO EEPROM",
     available_apps: "AVAILABLE APPS",
@@ -146,6 +147,8 @@ const PANEL_I18N = {
     record: "RECORD",
     record_at_index: "RECORD AT INDEX",
     refresh: "REFRESH",
+    refresh_state: "Refresh state",
+    remove: "Remove",
     reported: "REPORTED",
     restore_from_json: "RESTORE FROM JSON",
     run: "RUN",
@@ -157,6 +160,9 @@ const PANEL_I18N = {
     start_column: "START COLUMN",
     step: "STEP",
     step_steps: "STEP STEPS",
+    steps: "steps",
+    expected: "expected",
+    blank: "(blank)",
     sync: "SYNC",
     total_steps: "TOTAL STEPS",
   },
@@ -189,6 +195,7 @@ const PANEL_I18N = {
     requested_sync: "Požadována synchronizace EEPROM/stavu",
     scanning_bus: "Prohledávání RS485 sběrnice…",
     select_module_first: "Nejprve vyber modul",
+    select_module: "Vyber modul",
     playlist_empty: "Playlist je prázdný",
     apply_map_to_eeprom: "APLIKOVAT MAPU DO EEPROM",
     available_apps: "DOSTUPNÉ APLIKACE",
@@ -219,6 +226,8 @@ const PANEL_I18N = {
     record: "ZAZNAMENAT",
     record_at_index: "ZAZNAMENAT NA INDEXU",
     refresh: "OBNOVIT",
+    refresh_state: "Obnovit stav",
+    remove: "Odebrat",
     reported: "HLÁŠENO",
     restore_from_json: "OBNOVIT Z JSON",
     run: "SPUSTIT",
@@ -230,6 +239,9 @@ const PANEL_I18N = {
     start_column: "POČÁTEČNÍ SLOUPEC",
     step: "KROK",
     step_steps: "KROK KROKY",
+    steps: "kroky",
+    expected: "očekáváno",
+    blank: "(prázdné)",
     sync: "SYNCHRONIZOVAT",
     total_steps: "CELKEM KROKŮ",
   },
@@ -768,7 +780,7 @@ class SplitFlapOSPanel extends HTMLElement {
           </div>
           <div class="conn">
             <span class="pill connecting" id="statusPill">${this._t('connecting')}</span>
-            <button class="icon-btn" data-action="refresh" title="Refresh state">⟳</button>
+            <button class="icon-btn" data-action="refresh" title="${escapeAttr(this._t('refresh_state'))}">⟳</button>
           </div>
         </header>
 
@@ -914,7 +926,7 @@ class SplitFlapOSPanel extends HTMLElement {
                   <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
                 </div>
                 <label class="field"><span>${this._t('home_offset')}</span>
-                  <input id="offsetValue" type="number" min="0" max="65535" placeholder="steps">
+                  <input id="offsetValue" type="number" min="0" max="65535" placeholder="${escapeAttr(this._t('steps'))}">
                 </label>
                 <div class="row" style="align-items:flex-end">
                   <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
@@ -1137,9 +1149,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const pill = this.shadowRoot.getElementById("statusPill");
     const subtitle = this.shadowRoot.getElementById("subtitle");
     if (!this._state) {
-      pill.textContent = "CONNECTING";
+      pill.textContent = this._t('connecting');
       pill.className = "pill connecting";
-      subtitle.textContent = "${this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…'}";
+      subtitle.textContent = this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…';
       return;
     }
 
@@ -1343,9 +1355,9 @@ class SplitFlapOSPanel extends HTMLElement {
           <div class="list-item">
             <span class="idx">${index + 1}</span>
             <span class="text">${escapeHtml(
-              String(page.text || "").replace(/\n/g, " / ") || "(blank)"
+              String(page.text || "").replace(/\n/g, " / ") || this._t('blank')
             )}</span>
-            <button class="icon-btn" data-action="remove-builder" data-index="${index}" title="Remove">✕</button>
+            <button class="icon-btn" data-action="remove-builder" data-index="${index}" title="${escapeAttr(this._t('remove'))}">✕</button>
           </div>`
       )
       .join("");
@@ -1486,7 +1498,7 @@ class SplitFlapOSPanel extends HTMLElement {
           html += `
             <button class="mod${selected ? " selected" : ""}${offline ? " offline" : ""}"
                     data-action="select-module" data-id="${escapeAttr(module.id)}"
-                    title="Module ${escapeAttr(module.id)} • ${escapeAttr(
+                    title="${escapeAttr(this._t('module'))} ${escapeAttr(module.id)} • ${escapeAttr(
                       module.state || "unknown"
                     )}">
               <span class="mid">${escapeHtml(module.id)}</span>
@@ -1616,7 +1628,7 @@ class SplitFlapOSPanel extends HTMLElement {
               ? module.flap
               : "";
         html += `
-          <div class="mod" title="Module ${escapeAttr(label)}${module ? "" : " (expected)"}">
+          <div class="mod" title="${escapeAttr(this._t('module'))} ${escapeAttr(label)}${module ? "" : ` (${escapeAttr(this._t('expected'))})`}">
             <span class="mid">${escapeHtml(label)}</span>
             <span class="mchar">${flap === " " || flap === "" ? "·" : escapeHtml(flap)}</span>
           </div>`;
@@ -1645,7 +1657,7 @@ class SplitFlapOSPanel extends HTMLElement {
     const title = this.shadowRoot.getElementById("charMapTitle");
     if (!node) return;
     if (!module) {
-      if (title) title.textContent = "Select a module";
+      if (title) title.textContent = this._t('select_module');
       node.innerHTML = this._lang()==='cs'?'<div class="empty">Vyber modul výše pro ladění znaků.</div>':'<div class="empty">Select a module above to tune characters.</div>';
       this._charSignature = "";
       return;
