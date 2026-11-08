@@ -672,7 +672,19 @@ class SplitFlapOSPanel extends HTMLElement {
           content: "LIVE"; position: absolute; top: 6px; left: 8px;
           font-size: .58rem; font-weight: 700; letter-spacing: .08em; color: #2ea043;
         }
-        .app-icon { font-size: 1.7rem; line-height: 1; }
+        .app-icon {
+          font-size: 1.7rem;
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.2rem;
+          height: 2.2rem;
+          margin: 0 auto;
+          font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+          font-variant-emoji: emoji;
+          text-rendering: optimizeLegibility;
+        }
         .app-name { margin-top: 8px; font-weight: 700; font-size: .84rem; }
         .app-desc { margin-top: 4px; font-size: .7rem; opacity: .6; }
         .app-req {
