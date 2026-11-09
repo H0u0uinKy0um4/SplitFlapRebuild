@@ -25,7 +25,7 @@ PANEL_ICON: Final = "mdi:dots-grid"
 PANEL_ELEMENT: Final = "splitflap-os-panel"
 FRONTEND_DIR: Final = "frontend"
 FRONTEND_FILENAME: Final = "splitflap-os-panel.js"
-FRONTEND_URL_PATH: Final = f"/{DOMAIN}/{FRONTEND_DIR}/{FRONTEND_FILENAME}"
+FRONTEND_URL_PATH: Final = f"/{DOMAIN}/{FRONTEND_DIR}"
 
 # Storage
 STORAGE_VERSION: Final = 1

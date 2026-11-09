@@ -71,7 +71,7 @@ and must not be treated as production code or deleted.
 ```bash
 python3 -m py_compile custom_components/splitflap_os/*.py \
   custom_components/splitflap_os/apps/*.py
-node --check custom_components/splitflap_os/frontend/splitflap-os-panel.js
+for f in $(find custom_components/splitflap_os/frontend -name '*.js'); do node --check "$f"; done
 python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/translations/en.json >/dev/null

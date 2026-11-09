@@ -23,16 +23,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _panel_path() -> str:
-    return os.path.join(
-        os.path.dirname(__file__), FRONTEND_DIR, FRONTEND_FILENAME
-    )
+    return os.path.join(os.path.dirname(__file__), FRONTEND_DIR)
 
 
 def _panel_cache_key() -> str:
-    """Return a cache-busting key that changes when the JS file changes."""
-
+    """Return a cache-busting key that changes when any frontend file changes."""
     try:
-        mtime = int(os.path.getmtime(_panel_path()))
+        mtimes = [
+            os.path.getmtime(os.path.join(_panel_path(), name))
+            for name in os.listdir(_panel_path())
+            if name.endswith(".js")
+        ]
+        mtime = int(max(mtimes)) if mtimes else 0
     except OSError:
         return VERSION
     return f"{VERSION}-{mtime}"
@@ -90,7 +92,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
             frontend_url_path=PANEL_URL_PATH,
             sidebar_title=PANEL_TITLE,
             sidebar_icon=PANEL_ICON,
-            module_url=f"{FRONTEND_URL_PATH}?v={_panel_cache_key()}",
+            module_url=f"{FRONTEND_URL_PATH}/{FRONTEND_FILENAME}?v={_panel_cache_key()}",
             embed_iframe=False,
             require_admin=False,
             config={"domain": DOMAIN, "version": VERSION},
