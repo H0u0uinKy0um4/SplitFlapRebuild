@@ -203,8 +203,8 @@ export const PanelMixin = (Base) => class extends Base {
                 <small class="muted">${this._t('module_drum_help')}</small>
               </label>
               <div class="actions">
-                <button class="btn secondary" data-action="save-module-drum">${this._t('save')}</button>
-                <button class="btn secondary" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
+                <button class="btn secondary" id="saveModuleDrumBtn" data-action="save-module-drum">${this._t('save')}</button>
+                <button class="btn secondary" id="resetModuleDrumBtn" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
                 <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
                 <span class="muted" id="moduleDrumCharCount"></span>
               </div>
@@ -890,6 +890,11 @@ export const PanelMixin = (Base) => class extends Base {
       }
     }
     this._updateModuleDrumCharCount();
+
+    const saveModDrumBtn = this.shadowRoot.getElementById("saveModuleDrumBtn");
+    const resetModDrumBtn = this.shadowRoot.getElementById("resetModuleDrumBtn");
+    if (saveModDrumBtn) saveModDrumBtn.onclick = () => this._saveModuleDrum();
+    if (resetModDrumBtn) resetModDrumBtn.onclick = () => this._resetModuleDrum();
 
     this._renderCharMap(selected);
   }
