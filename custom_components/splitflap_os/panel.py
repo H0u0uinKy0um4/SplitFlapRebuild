@@ -33,6 +33,7 @@ def _panel_cache_key() -> str:
         FRONTEND_FILENAME,
         "constants.js",
         "utils.js",
+        "helpers.js",
         "styles.js",
         "i18n/en.js",
         "i18n/cs.js",
