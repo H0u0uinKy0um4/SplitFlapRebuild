@@ -26,23 +26,32 @@ def _panel_path() -> str:
     return os.path.join(os.path.dirname(__file__), FRONTEND_DIR)
 
 
-async def _panel_cache_key(hass: HomeAssistant) -> str:
+def _panel_cache_key() -> str:
     """Return a cache-busting key that changes when any frontend file changes."""
-    path = _panel_path()
-
-    def _calc() -> str:
-        mtimes = [
-            os.path.getmtime(os.path.join(path, name))
-            for name in os.listdir(path)
-            if name.endswith(".js")
-        ]
-        mtime = int(max(mtimes)) if mtimes else 0
-        return f"{VERSION}-{mtime}"
-
-    try:
-        return await hass.async_add_executor_job(_calc)
-    except OSError:
+    base = _panel_path()
+    candidates = [
+        FRONTEND_FILENAME,
+        "constants.js",
+        "utils.js",
+        "styles.js",
+        "i18n/en.js",
+        "i18n/cs.js",
+        "i18n/index.js",
+        "panel/core.js",
+        "panel/render.js",
+        "panel/actions.js",
+    ]
+    mtimes = []
+    for relative in candidates:
+        try:
+            mtimes.append(
+                os.path.getmtime(os.path.join(base, *relative.split("/")))
+            )
+        except OSError:
+            continue
+    if not mtimes:
         return VERSION
+    return f"{VERSION}-{int(max(mtimes))}"
 
 
 async def _async_register_static_path(hass: HomeAssistant) -> bool:
@@ -97,7 +106,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
             frontend_url_path=PANEL_URL_PATH,
             sidebar_title=PANEL_TITLE,
             sidebar_icon=PANEL_ICON,
-            module_url=f"{FRONTEND_URL_PATH}/{FRONTEND_FILENAME}?v={await _panel_cache_key(hass)}",
+            module_url=f"{FRONTEND_URL_PATH}/{FRONTEND_FILENAME}?v={_panel_cache_key()}",
             embed_iframe=False,
             require_admin=False,
             config={"domain": DOMAIN, "version": VERSION},
