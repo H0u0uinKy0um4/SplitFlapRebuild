@@ -13,6 +13,10 @@ export const PanelMixin = (Base) => class extends Base {
       this._renderComposePreview();
       return;
     }
+    if (target.id === "defaultDrum") {
+      this._updateDrumCharCount();
+      return;
+    }
     if (target.id === "startCol" || target.id === "styleSelect" || target.id === "speedInput") {
       this._renderComposePreview();
       return;
@@ -118,6 +122,12 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "restore-backup":
         this.shadowRoot.getElementById("restoreFile").click();
+        break;
+      case "save-default-drum":
+        await this._saveDefaultDrum();
+        break;
+      case "reset-default-drum":
+        this._resetDefaultDrum();
         break;
       default:
         break;
@@ -503,6 +513,32 @@ export const PanelMixin = (Base) => class extends Base {
       );
     } finally {
       input.value = "";
+    }
+  }
+
+  async _saveDefaultDrum() {
+    const textarea = this.shadowRoot.getElementById("defaultDrum");
+    if (!textarea) return;
+    const value = String(textarea.value || "").slice(0, 64);
+    const settings = { default_drum: value };
+    await this._send("set_settings", { settings });
+    this._settingsDirty = false;
+    this._toast(this._t("settings_saved"));
+  }
+
+  _resetDefaultDrum() {
+    const textarea = this.shadowRoot.getElementById("defaultDrum");
+    if (textarea) {
+      textarea.value = this._t("default_drum_placeholder");
+      this._updateDrumCharCount();
+    }
+  }
+
+  _updateDrumCharCount() {
+    const textarea = this.shadowRoot.getElementById("defaultDrum");
+    const counter = this.shadowRoot.getElementById("drumCharCount");
+    if (textarea && counter) {
+      counter.textContent = `${textarea.value.length} / 64`;
     }
   }
 

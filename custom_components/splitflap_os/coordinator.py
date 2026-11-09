@@ -434,7 +434,46 @@ class SplitFlapCoordinator:
         return None
 
     def drum_for(self, module_id: Any) -> list[str]:
-        return self.flap_list_for(module_id) or list(DEFAULT_DRUM)
+        return self.get_effective_drum(module_id)
+
+    def get_effective_drum(self, module_id: Any) -> list[str]:
+        """Return the effective drum for a module.
+
+        Priority:
+        1. Module's reported drum (flap_list).
+        2. Per-module override from settings (key ``drum_<id>``).
+        3. Global ``default_drum`` setting.
+        4. Built-in ``DEFAULT_DRUM``.
+        """
+        reported = self.flap_list_for(module_id)
+        if reported:
+            return list(reported)
+
+        # Check for per-module override in settings.
+        module_key = f"drum_{module_id}"
+        try:
+            from .engine import AppEngine  # noqa: F401
+        except Exception:  # noqa: BLE001
+            pass
+
+        # The coordinator does not have direct access to engine settings,
+        # so we check the runtime store via hass.data.
+        try:
+            runtime = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
+            if runtime:
+                engine = runtime.get("engine")
+                if engine is not None:
+                    settings = getattr(engine, "settings", {}) or {}
+                    override = settings.get(module_key)
+                    if isinstance(override, str) and len(override) >= 1:
+                        return list(override[:64].ljust(64, " "))
+                    default = settings.get("default_drum")
+                    if isinstance(default, str) and len(default) >= 1:
+                        return list(default[:64].ljust(64, " "))
+        except Exception:  # noqa: BLE001
+            pass
+
+        return list(DEFAULT_DRUM)
 
     def module_snapshot(self, module_id: str) -> dict[str, Any]:
         module = dict(self.modules.get(module_id) or {})

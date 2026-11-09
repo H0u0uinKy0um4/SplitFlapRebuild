@@ -31,6 +31,18 @@ DISPLAY_FIELDS = (
         ),
     ),
     SettingField(
+        key="default_drum",
+        label="Default drum (64 chars)",
+        type="text",
+        default="",
+        placeholder=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
+        help=(
+            "Override the 64-character drum used when a module has not "
+            "reported its own drum. Leave blank for the stock drum. "
+            "Use lowercase letters for colour flaps."
+        ),
+    ),
+    SettingField(
         key="rows",
         label="Frame rows (0 = auto)",
         type="number",
@@ -139,6 +151,7 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
 
 DEFAULT_SETTINGS: dict[str, Any] = {
     "row_counts": "",
+    "default_drum": "",
     "rows": 0,
     "cols": 0,
     "ui_scale": 100,

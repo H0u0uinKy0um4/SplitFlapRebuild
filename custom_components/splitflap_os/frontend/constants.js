@@ -24,6 +24,8 @@ export const PALETTE = [
   ["\u{1F7EA}", "p"],
   ["\u2B1C", "w"],
   ["\u2B1B", "k"],
+  ["\U0001FA75", "c"],
+  ["\U0001FA77", "m"],
 ];
 
 export const COLOR_MAP = {
@@ -35,6 +37,8 @@ export const COLOR_MAP = {
   "\u{1F7EA}": "p",
   "\u2B1C": "w",
   "\u2B1B": " ",
+  "\U0001FA75": "c",
+  "\U0001FA77": "m",
 };
 
 export const DEFAULT_DRUM =

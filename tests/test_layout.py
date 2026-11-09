@@ -277,7 +277,7 @@ class MiscTests(unittest.TestCase):
         self.assertEqual(layout.FLAP_COUNT, 64)
         self.assertEqual(layout.FLAP_COUNT, len(layout.DEFAULT_DRUM))
         self.assertEqual(layout.DEFAULT_DRUM[0], " ")
-        self.assertTrue(set(layout.COLOR_CODES) <= set(layout.DEFAULT_DRUM))
+        self.assertTrue(set(layout.PHYSICAL_COLOR_CODES) <= set(layout.DEFAULT_DRUM))
 
 
 if __name__ == "__main__":

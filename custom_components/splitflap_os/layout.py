@@ -21,7 +21,9 @@ DEFAULT_DRUM = (
 FLAP_COUNT = len(DEFAULT_DRUM)
 
 #: Lower-case flaps that are physically coloured tiles on the stock drum.
-COLOR_CODES = "roygbpw"
+PHYSICAL_COLOR_CODES = "roygbpw"
+#: All colour codes including software-only additions for custom drums.
+COLOR_CODES = "roygbpwcm"
 
 #: Emoji palette from Adam's UI -> firmware colour flap.
 COLOR_MAP = {
@@ -33,6 +35,8 @@ COLOR_MAP = {
     "\U0001f7ea": "p",  # purple square
     "\u2b1c": "w",      # white square
     "\u2b1b": " ",      # black square
+    "\U0001fa75": "c",  # cyan (light blue heart)
+    "\U0001fa77": "m",  # magenta (pink heart)
 }
 
 #: Sensible defaults for common board sizes.  Everything else is derived.
@@ -644,6 +648,8 @@ def color_css(char: str) -> str | None:
         "b": "#1e88e5",
         "p": "#8e24aa",
         "w": "#f5f5f5",
+        "c": "#00bcd4",
+        "m": "#e91e63",
     }.get(char)
 
 

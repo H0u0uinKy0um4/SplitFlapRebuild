@@ -130,6 +130,19 @@ export const PanelMixin = (Base) => class extends Base {
               <div class="muted" id="matrixMeta" style="margin-top:8px"></div>
             </div>
 
+            <div class="card">
+              <h2 style="margin:0">${this._t('default_drum')}</h2>
+              <label class="field" style="margin-top:12px">
+                <span>${this._t('drum_editor_help')}</span>
+                <textarea id="defaultDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+              </label>
+              <div class="row" style="margin-top:8px;align-items:center">
+                <button class="btn secondary" data-action="save-default-drum">${this._t('save')}</button>
+                <button class="btn secondary" data-action="reset-default-drum">${this._t('reset_to_stock')}</button>
+                <span class="muted" id="drumCharCount"></span>
+              </div>
+            </div>
+
             <div class="card inspector hidden" id="inspector">
               <div class="row between">
                 <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
@@ -783,6 +796,16 @@ export const PanelMixin = (Base) => class extends Base {
         coordinator.prefix || "—"
       } • ${this._t(coordinator.online ? "master_online" : "master_offline")}`;
     }
+
+    // Load default drum into the editor textarea.
+    const drumTextarea = this.shadowRoot.getElementById("defaultDrum");
+    if (drumTextarea && !this._settingsDirty) {
+      const engine = this._engine();
+      const settings = (engine && engine.settings) || {};
+      const drum = settings.default_drum || "";
+      if (drumTextarea.value !== drum) drumTextarea.value = drum;
+    }
+    this._updateDrumCharCount();
 
     const selected = this._moduleFor(this._selectedModule);
     if (!selected) {

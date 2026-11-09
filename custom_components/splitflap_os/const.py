@@ -6,7 +6,7 @@ from typing import Final
 
 from homeassistant.const import Platform
 
-from .layout import COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, FLAP_COUNT
+from .layout import COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, FLAP_COUNT, PHYSICAL_COLOR_CODES
 from .settings import DEFAULT_SETTINGS, SETTINGS_GROUPS, SETTINGS_KEYS
 
 DOMAIN: Final = "splitflap_os"
@@ -70,6 +70,7 @@ __all__ = [
     "ANIMATION_ORDERS",
     "COLOR_CODES",
     "COLOR_MAP",
+    "PHYSICAL_COLOR_CODES",
     "COMMAND_TOPICS",
     "CONF_NAME",
     "CONF_TOPIC_PREFIX",

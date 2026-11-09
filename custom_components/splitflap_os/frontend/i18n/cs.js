@@ -221,6 +221,12 @@ export const PANEL = {
   color_p: "Fialová",
   color_w: "Bílá",
   color_k: "Černá",
+  color_c: "Azurová",
+  color_m: "Purpurová",
+  default_drum: "Výchozí bubna",
+  drum_editor_help: "64 znaků, jeden na lístek (pozice 0-63)",
+  default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
+  reset_to_stock: "Obnovit výchozí",
 };
 
 export const APPS = {

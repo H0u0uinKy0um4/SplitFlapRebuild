@@ -106,6 +106,8 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
 .flap.color-b { background: #1565c0; border-color: #1e88e5; }
 .flap.color-p { background: #6a1b9a; border-color: #8e24aa; }
 .flap.color-w { background: #eceff1; border-color: #fff; color: #111; text-shadow: none; }
+.flap.color-c { background: #00bcd4; border-color: #26c6da; color: #111; text-shadow: none; }
+.flap.color-m { background: #e91e63; border-color: #ec407a; }
 .flap.flip { animation: flapFlip .2s ease-out; }
 @keyframes flapFlip {
   from { transform: rotateX(-82deg); opacity: .35; }
@@ -302,6 +304,8 @@ input:focus, select:focus, textarea:focus {
 .char.color-b { background: #1565c0; color: #fff; border-color: #1e88e5; }
 .char.color-p { background: #6a1b9a; color: #fff; border-color: #8e24aa; }
 .char.color-w { background: #eceff1; color: #111; border-color: #fff; }
+.char.color-c { background: #00bcd4; color: #111; border-color: #26c6da; }
+.char.color-m { background: #e91e63; color: #fff; border-color: #ec407a; }
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .settings-group { margin-bottom: 18px; }
 .settings-group:last-child { margin-bottom: 0; }

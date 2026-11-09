@@ -220,6 +220,12 @@ export const PANEL = {
   color_p: "Purple",
   color_w: "White",
   color_k: "Black",
+  color_c: "Cyan",
+  color_m: "Magenta",
+  default_drum: "Default drum",
+  drum_editor_help: "64 characters, one per flap (position 0-63)",
+  default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
+  reset_to_stock: "Reset to stock",
 };
 
 export const APPS = {
