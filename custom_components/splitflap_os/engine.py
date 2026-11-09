@@ -113,7 +113,7 @@ class AppEngine:
                     {
                         key: value
                         for key, value in raw_settings.items()
-                        if key in SETTINGS_KEYS or key.startswith("drum_")
+                        if key in SETTINGS_KEYS
                     }
                 )
             playlists = stored.get("saved_playlists")
@@ -285,7 +285,7 @@ class AppEngine:
     async def async_set_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
         cleaned: dict[str, Any] = {}
         for key, value in (updates or {}).items():
-            if key not in SETTINGS_KEYS and not key.startswith("drum_"):
+            if key not in SETTINGS_KEYS:
                 continue
             if key in {"rows", "cols"}:
                 try:
@@ -784,7 +784,7 @@ class AppEngine:
                 {
                     key: value
                     for key, value in settings.items()
-                    if key in SETTINGS_KEYS or key.startswith("drum_")
+                    if key in SETTINGS_KEYS
                 }
             )
 

@@ -1,6 +1,6 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.9";
+import { formatMessage } from "../utils.js?v=0.1.8";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -48,6 +48,9 @@ export const PanelMixin = (Base) => class extends Base {
     const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
     if (!target) return;
     const action = target.dataset.action;
+    if (action === "save-module-drum" || action === "reset-module-drum") {
+      console.log("Module drum action:", action, "selected:", this._selectedModule);
+    }
 
     switch (action) {
       case "tab":
