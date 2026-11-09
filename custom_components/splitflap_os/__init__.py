@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "engine": engine,
         }
 
-        async_register_services(hass)
+        await async_register_services(hass)
         async_register_websocket_api(hass)
         await async_register_panel(hass)
 

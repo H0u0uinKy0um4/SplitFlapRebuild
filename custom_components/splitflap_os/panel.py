@@ -48,8 +48,8 @@ async def _async_register_static_path(hass: HomeAssistant) -> bool:
         return True
 
     path = _panel_path()
-    if not os.path.isfile(path):
-        _LOGGER.error("Split-Flap OS panel file not found: %s", path)
+    if not os.path.isdir(path):
+        _LOGGER.error("Split-Flap OS panel directory not found: %s", path)
         return False
 
     try:
