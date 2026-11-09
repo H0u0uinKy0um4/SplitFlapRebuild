@@ -29,6 +29,20 @@ and must not be treated as production code or deleted.
   starts raise `ValueError`; the panel shows disabled cards.
 - The panel is vanilla JS loaded as an ES module through `panel_custom`. No build
   step, no external dependencies.
+- **Frontend Cache Busting & Version Bump Rule**: Whenever modifying frontend files
+  (`frontend/*.js`, `styles.js`, `i18n/*.js`, `panel/*.js`), **ALWAYS bump the version
+  in lockstep across all files** to bust Home Assistant / browser Service Worker caches:
+  1. `custom_components/splitflap_os/manifest.json` (`"version": "<NEW_VERSION>"`)
+  2. `custom_components/splitflap_os/const.py` (`VERSION: Final = "<NEW_VERSION>"`)
+  3. `custom_components/splitflap_os/frontend/constants.js` (`export const VERSION = "<NEW_VERSION>";`)
+  4. All ES module import query parameters (`?v=<NEW_VERSION>`) in:
+     - `frontend/splitflap-os-panel.js` (entry point — NEVER forget this file!)
+     - `frontend/panel/render.js`
+     - `frontend/panel/core.js`
+     - `frontend/panel/actions.js`
+     - `frontend/i18n/index.js`
+  Never leave stale `?v=...` version parameters in any import, or the browser will
+  serve stale cached modules.
 - Preserve the old `/home/iuarchbtw/GIT_Personal/HASC/SplitFlap` repository.
 - All user-facing UI text must be implemented in **English and Czech**. For the
   panel, add strings to `PANEL_I18N`/`SETTINGS_I18N` in
