@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js";
-import { formatMessage } from "../utils.js";
+import { DOMAIN, STYLES } from "../constants.js?v=0.1.4";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=0.1.4";
+import { formatMessage } from "../utils.js?v=0.1.4";
 
 
 export const PanelMixin = (Base) => class extends Base {
