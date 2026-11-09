@@ -703,6 +703,8 @@ class AppEngine:
         return rotation
 
     def _default_delay(self) -> float:
+        if self.mode == "playlist":
+            return float(self.playlist_delay or 5.0)
         if self.mode == "app" and self.active_app:
             for app in app_defs():
                 if app["key"] == self.active_app:

@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.11";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.11";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.11";
-import { PANEL_STYLES } from "../styles.js?v=0.1.11";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.12";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.12";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.12";
+import { PANEL_STYLES } from "../styles.js?v=0.1.12";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -83,7 +83,7 @@ export const PanelMixin = (Base) => class extends Base {
               <div class="row between">
                 <h2 style="margin:0">${this._t('playlist_builder')}</h2>
                 <label class="field" style="max-width:120px"><span>${this._t('delay_seconds')}</span>
-                  <input id="builderDelay" type="number" min="0.1" max="120" step="0.5" value="5">
+                  <input id="builderDelay" type="number" min="0.1" max="120" step="0.5" value="${this._playDelay || 5}">
                 </label>
               </div>
               <div class="list" id="builderList"></div>
