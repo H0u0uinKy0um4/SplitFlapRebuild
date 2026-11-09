@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.6";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.6";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.6";
-import { PANEL_STYLES } from "../styles.js?v=0.1.6";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.7";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.7";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.7";
+import { PANEL_STYLES } from "../styles.js?v=0.1.7";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -362,7 +362,7 @@ export const PanelMixin = (Base) => class extends Base {
   _flapHtml(char, flip) {
     const value = char == null ? " " : String(char).slice(0, 1);
     const blank = value === " " || value === "";
-    const color = "roygbpw".includes(value) ? ` color-${value}` : "";
+    const color = COLOR_CODES.includes(value) ? ` color-${value}` : "";
     return `<span class="flap${blank ? " blank" : ""}${color}${flip ? " flip" : ""}">${
       blank ? "" : escapeHtml(value)
     }</span>`;
@@ -980,7 +980,7 @@ export const PanelMixin = (Base) => class extends Base {
     }
     node.innerHTML = drum
       .map((char, index) => {
-        const color = "roygbpw".includes(char) ? ` color-${char}` : "";
+        const color = COLOR_CODES.includes(char) ? ` color-${char}` : "";
         const tuned = positions[String(index)] !== undefined;
         return `<button class="char${color}${tuned ? " tuned" : ""}${
           index === currentIndex ? " current" : ""

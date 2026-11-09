@@ -169,6 +169,8 @@ input:focus, select:focus, textarea:focus {
   width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
   border: 2px solid var(--divider-color, #ccc);
   padding: 0; display: inline-block;
+  appearance: none; -webkit-appearance: none;
+  box-sizing: border-box;
 }
 .palette .palette-r { background: #b71c1c; border-color: #e53935; }
 .palette .palette-o { background: #e65100; border-color: #fb8c00; }

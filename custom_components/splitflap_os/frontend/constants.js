@@ -1,7 +1,7 @@
 /** Shared constants, palettes, and icon markup. */
 
 export const DOMAIN = "splitflap_os";
-export const VERSION = "0.1.6";
+export const VERSION = "0.1.7";
 
 export const STYLES = [
   "ltr",
@@ -14,6 +14,9 @@ export const STYLES = [
   "rain",
   "spiral",
 ];
+
+export const PHYSICAL_COLOR_CODES = "roygbpw";
+export const COLOR_CODES = "roygbpwcm";
 
 export const PALETTE = [
   ["\u{1F7E5}", "r"],

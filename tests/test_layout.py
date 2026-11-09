@@ -24,6 +24,7 @@ class NormalizeTextTests(unittest.TestCase):
 
     def test_maps_colour_emoji(self) -> None:
         self.assertEqual(layout.normalize_text("\U0001f7e5\U0001f7e6X"), "rbX")
+        self.assertEqual(layout.normalize_text("\U0001fa75\U0001fa77"), "cm")
 
     def test_raw_keeps_case(self) -> None:
         self.assertEqual(layout.normalize_text("aBc", raw=True), "aBc")
@@ -265,6 +266,8 @@ class MiscTests(unittest.TestCase):
 
     def test_color_css(self) -> None:
         self.assertEqual(layout.color_css("r"), "#e53935")
+        self.assertEqual(layout.color_css("c"), "#00bcd4")
+        self.assertEqual(layout.color_css("m"), "#e91e63")
         self.assertIsNone(layout.color_css("A"))
 
     def test_board_from_settings_alias(self) -> None:
