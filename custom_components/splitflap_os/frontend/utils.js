@@ -33,12 +33,12 @@ export function formatMessage(template, params) {
   );
 }
 
-function numberText(value) {
+export function numberText(value) {
   if (value === null || value === undefined || value === "") return "–";
   return String(value);
 }
 
-function centerLine(line, cols) {
+export function centerLine(line, cols) {
   const value = String(line || "");
   if (value.length >= cols) return value.slice(0, cols);
   const left = Math.floor((cols - value.length) / 2);
