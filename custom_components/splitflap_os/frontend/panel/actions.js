@@ -1,6 +1,6 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.9";
+import { formatMessage } from "../utils.js?v=0.1.10";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -452,6 +452,19 @@ export const PanelMixin = (Base) => class extends Base {
           entries: this._plural("entries", Object.keys(positions).length),
         })
       );
+    }
+    if (sub === "drum_write") {
+      const drum = String(this._moduleValue("moduleDrum") || "").slice(0, 64);
+      if (drum.length !== 64) {
+        this._toast(this._t("enter_drum_index"), "warn");
+        return;
+      }
+      await this._send("calibrate", {
+        module,
+        action: "drum_write",
+        drum,
+      });
+      this._toast(this._t("drum_written"));
     }
   }
 

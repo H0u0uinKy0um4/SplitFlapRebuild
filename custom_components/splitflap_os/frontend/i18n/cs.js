@@ -229,6 +229,8 @@ export const PANEL = {
   reset_to_stock: "Obnovit výchozí",
   module_drum: "Bubna modulu",
   module_drum_help: "Vlastní bubna o 64 znacích pro tento modul. Ponechte prázdné pro použití výchozí bubny.",
+  write_to_eeprom: "Zapsat do EEPROM",
+  drum_written: "Bubna zapsána do modulu",
 };
 
 export const APPS = {

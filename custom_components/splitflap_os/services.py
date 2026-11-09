@@ -143,6 +143,7 @@ async def _handle_calibrate(call: ServiceCall) -> None:
         positions=positions if isinstance(positions, dict) else None,
         clear_map=call.data.get("clear_map", False),
         steps=call.data.get("steps"),
+        drum=call.data.get("drum"),
     )
 
 
@@ -215,6 +216,7 @@ CALIBRATE_SCHEMA = vol.Schema(
         vol.Optional("positions"): vol.Any(dict, str),
         vol.Optional("clear_map", default=False): bool,
         vol.Optional("steps"): vol.Coerce(int),
+        vol.Optional("drum"): vol.All(str, vol.Length(min=64, max=64)),
     }
 )
 

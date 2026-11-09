@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.9";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.9";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.9";
-import { PANEL_STYLES } from "../styles.js?v=0.1.9";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.10";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.10";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.10";
+import { PANEL_STYLES } from "../styles.js?v=0.1.10";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -205,6 +205,7 @@ export const PanelMixin = (Base) => class extends Base {
               <div class="actions">
                 <button class="btn secondary" data-action="save-module-drum">${this._t('save')}</button>
                 <button class="btn secondary" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
+                <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
                 <span class="muted" id="moduleDrumCharCount"></span>
               </div>
             </div>

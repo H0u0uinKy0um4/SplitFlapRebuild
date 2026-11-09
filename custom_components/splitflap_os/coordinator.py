@@ -738,6 +738,7 @@ class SplitFlapCoordinator:
         positions: dict[str, Any] | None = None,
         clear_map: bool = False,
         steps: int | None = None,
+        drum: str | None = None,
     ) -> None:
         """Publish one calibration command to the master."""
 
@@ -759,6 +760,8 @@ class SplitFlapCoordinator:
             action_norm = "get_pos"
         if action_norm in {"clearmap", "clear_map"}:
             action_norm = "clear_map"
+        if action_norm in {"drumwrite", "writedrum", "drum_write", "write_drum"}:
+            action_norm = "drum_write"
 
         payload: dict[str, Any] = {
             "action": action_norm,
@@ -806,6 +809,12 @@ class SplitFlapCoordinator:
                 payload["positions"] = {
                     str(key): value for key, value in sorted(cleaned_positions.items())
                 }
+        elif action_norm in {"drum_write", "drumwrite", "write_drum"}:
+            if drum is not None and len(drum) == 64:
+                payload["action"] = "drum_write"
+                payload["drum"] = drum
+            else:
+                raise ValueError("drum must be a 64-character string")
 
         await self._publish("calibrate", payload)
 

@@ -228,6 +228,8 @@ export const PANEL = {
   reset_to_stock: "Reset to stock",
   module_drum: "Module drum",
   module_drum_help: "Custom 64-character drum for this module. Leave blank to use the default drum.",
+  write_to_eeprom: "Write to EEPROM",
+  drum_written: "Drum written to module",
 };
 
 export const APPS = {
