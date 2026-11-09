@@ -1,6 +1,6 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.8";
+import { formatMessage } from "../utils.js?v=0.1.9";
 
 
 export const PanelMixin = (Base) => class extends Base {
