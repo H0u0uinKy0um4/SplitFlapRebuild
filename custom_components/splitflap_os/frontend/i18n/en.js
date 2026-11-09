@@ -226,6 +226,8 @@ export const PANEL = {
   drum_editor_help: "64 characters, one per flap (position 0-63)",
   default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
   reset_to_stock: "Reset to stock",
+  module_drum: "Module drum",
+  module_drum_help: "Custom 64-character drum for this module. Leave blank to use the default drum.",
 };
 
 export const APPS = {

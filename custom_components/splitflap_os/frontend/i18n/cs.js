@@ -227,6 +227,8 @@ export const PANEL = {
   drum_editor_help: "64 znaků, jeden na lístek (pozice 0-63)",
   default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
   reset_to_stock: "Obnovit výchozí",
+  module_drum: "Bubna modulu",
+  module_drum_help: "Vlastní bubna o 64 znacích pro tento modul. Ponechte prázdné pro použití výchozí bubny.",
 };
 
 export const APPS = {

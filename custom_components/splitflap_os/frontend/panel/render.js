@@ -196,6 +196,17 @@ export const PanelMixin = (Base) => class extends Base {
                 <button class="btn secondary" data-action="module" data-sub="apply_map">${this._t('apply_map_to_eeprom')}</button>
                 <span class="muted">${this._t('position_map_hint')}</span>
               </div>
+
+              <div class="field" style="margin-top:16px">
+                <span>${this._t('module_drum')}</span>
+                <textarea id="moduleDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+                <small class="muted">${this._t('module_drum_help')}</small>
+              </div>
+              <div class="actions">
+                <button class="btn secondary" data-action="save-module-drum">${this._t('save')}</button>
+                <button class="btn secondary" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
+                <span class="muted" id="moduleDrumCharCount"></span>
+              </div>
             </div>
 
             <div class="card">
@@ -868,6 +879,16 @@ export const PanelMixin = (Base) => class extends Base {
         .join("\n");
       set("posMap", text);
     }
+
+    // Load the module-specific drum override from settings.
+    const moduleDrumTextarea = this.shadowRoot.getElementById("moduleDrum");
+    if (moduleDrumTextarea) {
+      const engine = this._engine();
+      const settings = (engine && engine.settings) || {};
+      const drum = settings[`drum_${selected.id}`] || "";
+      if (moduleDrumTextarea.value !== drum) moduleDrumTextarea.value = drum;
+    }
+    this._updateModuleDrumCharCount();
 
     this._renderCharMap(selected);
   }
