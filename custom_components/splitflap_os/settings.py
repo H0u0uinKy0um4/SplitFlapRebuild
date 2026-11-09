@@ -191,5 +191,5 @@ def settings_for_ui(settings: dict[str, Any]) -> dict[str, Any]:
     """Return a merged, JSON-safe settings dictionary for the panel."""
 
     merged = dict(DEFAULT_SETTINGS)
-    merged.update({key: value for key, value in settings.items() if key in SETTINGS_KEYS})
+    merged.update({key: value for key, value in settings.items() if key in SETTINGS_KEYS or key.startswith("drum_")})
     return merged
