@@ -178,6 +178,8 @@ input:focus, select:focus, textarea:focus {
 .palette .palette-p { background: #6a1b9a; border-color: #8e24aa; }
 .palette .palette-w { background: #eceff1; border-color: #b0bec5; }
 .palette .palette-k { background: #1a1a1a; border-color: #555; }
+.palette .palette-c { background: #00bcd4; border-color: #26c6da; }
+.palette .palette-m { background: #e91e63; border-color: #ec407a; }
 .options {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px; margin: 12px 0;
