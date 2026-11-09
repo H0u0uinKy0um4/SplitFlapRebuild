@@ -47,10 +47,6 @@ const COLOR_MAP = {
 const DEFAULT_DRUM =
   " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw";
 
-const STYLE_OPTIONS = STYLES.map(
-  (style) => `<option value="${style}">${style}</option>`
-).join("");
-
 function escapeHtml(value) {
   return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => {
     switch (char) {
@@ -74,6 +70,16 @@ function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, "&#96;");
 }
 
+/** Replace `{name}` placeholders without touching unknown placeholders. */
+function formatMessage(template, params) {
+  if (!params) return String(template);
+  return String(template).replace(/\{(\w+)\}/g, (match, name) =>
+    Object.prototype.hasOwnProperty.call(params, name)
+      ? String(params[name])
+      : match
+  );
+}
+
 function numberText(value) {
   if (value === null || value === undefined || value === "") return "–";
   return String(value);
@@ -88,6 +94,7 @@ function centerLine(line, cols) {
 
 const PANEL_I18N = {
   en: {
+    // Navigation and global actions.
     tab_control: "CONTROL",
     tab_apps: "APPS",
     tab_tuning: "TUNING",
@@ -95,10 +102,118 @@ const PANEL_I18N = {
     stop: "STOP",
     clear: "CLEAR",
     save: "SAVE",
+    cancel: "CANCEL",
+    delete: "DELETE",
+    run: "RUN",
+    refresh: "REFRESH",
+    refresh_state: "Refresh state",
+    remove: "Remove",
     scan_bus: "SCAN BUS",
     sync: "SYNC",
     home_all: "HOME ALL",
     save_settings: "SAVE SETTINGS",
+    scan: "SCAN",
+    record: "RECORD",
+    home_motor: "HOME MOTOR",
+    clear_map: "CLEAR MAP",
+    set_offset: "SET OFFSET",
+    goto_index: "GOTO INDEX",
+    get_position: "GET POSITION",
+    step: "STEP",
+    apply_map_to_eeprom: "APPLY MAP TO EEPROM",
+    push_to_display: "PUSH TO DISPLAY",
+    play_playlist: "PLAY PLAYLIST",
+    download_backup_json: "DOWNLOAD BACKUP JSON",
+    restore_from_json: "RESTORE FROM JSON",
+    add_to_playlist: "+ ADD TO PLAYLIST",
+
+    // Headings.
+    live_display: "LIVE DISPLAY",
+    compose: "COMPOSE",
+    playlist_builder: "PLAYLIST BUILDER",
+    saved_playlists: "SAVED PLAYLISTS",
+    available_apps: "AVAILABLE APPS",
+    hardware: "HARDWARE",
+    hardware_actions: "HARDWARE ACTIONS",
+    character_map: "CHARACTER MAP",
+    physical_layout: "PHYSICAL LAYOUT",
+    settings: "SETTINGS",
+    connection: "CONNECTION",
+    backup_restore: "BACKUP & RESTORE",
+
+    // Field labels and short values.
+    start_column: "START COLUMN",
+    send_order: "SEND ORDER",
+    speed: "SPEED (MS/MODULE)",
+    delay_seconds: "DELAY (S)",
+    playlist_name: "Playlist name",
+    goto_drum_index: "GOTO DRUM INDEX",
+    record_at_index: "RECORD AT INDEX",
+    step_steps: "STEP COUNT",
+    home_offset: "HOME OFFSET",
+    position_map: "POSITION MAP (index:step, one per line)",
+    module: "MODULE",
+    flap: "FLAP",
+    reported: "REPORTED",
+    index: "INDEX",
+    offset: "OFFSET",
+    total_steps: "TOTAL STEPS",
+    steps: "steps",
+    expected: "expected",
+    blank: "(blank)",
+    frame: "frame",
+    rows_label: "rows",
+    detected: "detected",
+    mqtt_prefix: "MQTT prefix",
+    master: "Master",
+    last_status: "Last status",
+    modules_label: "Modules",
+    board: "Board",
+    engine: "Engine",
+    integration: "Integration",
+    live_badge: "LIVE",
+    app_settings: "Settings",
+    app_idle: "Idle",
+    app_settings_title: "App settings",
+    master_online: "master online",
+    master_offline: "master offline",
+    blank_cell: "Blank frame cell",
+    select_module_hint: "Select a module above to tune characters.",
+    char_map_title: "Module {id} • {flaps}",
+    index_named: "Index {index}",
+    mode_idle: "idle",
+    mode_app: "app",
+    mode_playlist: "playlist",
+    unknown: "unknown",
+    never: "never",
+    online: "ONLINE",
+    offline: "OFFLINE",
+
+    // Static messages.
+    connecting: "CONNECTING",
+    connecting_subtitle: "Connecting to Home Assistant…",
+    waiting_state: "Waiting for state…",
+    layout_error_short: "LAYOUT ERROR",
+    compose_placeholder: "Type a message — new lines become rows",
+    apps_help:
+      "Tap an app to launch it. Use the gear to edit the settings that app reads.",
+    app_no_options:
+      "This app has no options of its own. It uses the display and data settings from the Settings tab.",
+    backup_help:
+      "Export settings, playlists and the last module snapshot. Restoring merges settings and replaces playlists.",
+    position_map_hint:
+      "After the map is applied the master homes the module.",
+    char_map_help:
+      "Click a character to move the selected module there. Gold cells already have a stored position.",
+    layout_help:
+      "Module IDs run left to right, then top to bottom. Blank cells are dashed; short rows sit in the middle of the frame.",
+    layout_summary:
+      "{rows} × {cols} frame • rows {counts} • {detected} detected",
+    builder_empty: "Add composed messages here to build a playlist.",
+    saved_empty: "No saved playlists yet.",
+    no_apps: "No apps registered.",
+    no_modules: "No modules detected. Run a bus scan.",
+    playlist_empty: "The playlist is empty",
     type_message: "Type a message first",
     display_cleared: "Display cleared",
     settings_saved: "Settings saved",
@@ -117,54 +232,79 @@ const PANEL_I18N = {
     scanning_bus: "Scanning the RS485 bus…",
     select_module_first: "Select a module first",
     select_module: "Select a module",
-    playlist_empty: "The playlist is empty",
-    apply_map_to_eeprom: "APPLY MAP TO EEPROM",
-    available_apps: "AVAILABLE APPS",
-    cancel: "CANCEL",
-    character_map: "CHARACTER MAP",
-    clear_map: "CLEAR MAP",
-    compose: "COMPOSE",
-    connecting: "CONNECTING",
-    connection: "CONNECTION",
-    delete: "DELETE",
-    download_backup_json: "DOWNLOAD BACKUP JSON",
-    flap: "FLAP",
-    get_position: "GET POSITION",
-    goto_drum_index: "GOTO DRUM INDEX",
-    goto_index: "GOTO INDEX",
-    hardware: "HARDWARE",
-    hardware_actions: "HARDWARE ACTIONS",
-    home_motor: "HOME MOTOR",
-    home_offset: "HOME OFFSET",
-    index: "INDEX",
-    live_display: "LIVE DISPLAY",
-    module: "MODULE",
-    offset: "OFFSET",
-    physical_layout: "PHYSICAL LAYOUT",
-    play_playlist: "PLAY PLAYLIST",
-    playlist_builder: "PLAYLIST BUILDER",
-    push_to_display: "PUSH TO DISPLAY",
-    record: "RECORD",
-    record_at_index: "RECORD AT INDEX",
-    refresh: "REFRESH",
-    refresh_state: "Refresh state",
-    remove: "Remove",
-    reported: "REPORTED",
-    restore_from_json: "RESTORE FROM JSON",
-    run: "RUN",
-    saved_playlists: "SAVED PLAYLISTS",
-    scan: "SCAN",
-    send_order: "SEND ORDER",
-    set_offset: "SET OFFSET",
-    settings: "SETTINGS",
-    start_column: "START COLUMN",
-    step: "STEP",
-    step_steps: "STEP STEPS",
-    steps: "steps",
-    expected: "expected",
-    blank: "(blank)",
-    sync: "SYNC",
-    total_steps: "TOTAL STEPS",
+    not_connected: "Home Assistant is not connected",
+    connect_failed: "Panel connection failed: {error}",
+    display_too_small: "display too small",
+    app_needs_rows: "Needs {needed}; this layout has {actual}",
+    app_needs_cols:
+      "Needs every row to be at least {needed}; the narrowest row has {actual}",
+    fix_layout_first: "Fix the display layout first: {error}",
+    app_running: "{name} is running",
+    playlist_running: "Playlist running",
+    playlist_running_progress: "Playlist running • {current}/{total}",
+    page_of: "page {page}/{total}",
+    module_named: "MODULE {id}",
+    layout_error: "Layout error: {error}",
+    layout_err_whole_numbers: "Row layout must contain whole numbers, not {value}",
+    layout_err_positive: "Row layout counts must be greater than zero",
+    layout_err_row_mismatch: "Row layout has {count}, but the frame is {frame}",
+    layout_err_columns:
+      "Row layout needs at least {needed}, but the frame has {frame}",
+    layout_err_describes:
+      "Row layout describes {layout}; {detected} detected",
+    layout_err_no_fit: "Row layout does not fit inside the frame",
+    layout_err_blank:
+      "Layout leaves {blank}; at most one row ({row}) is allowed",
+    layout_err_capacity:
+      "The {frame} frame fits only {capacity}; {detected} detected",
+    backup_downloaded_at: "Backup downloaded at {time}",
+    restored_file: "Restored {name}",
+    restore_failed: "Restore failed: {error}",
+    backup_must_be_object: "Backup must be a JSON object",
+    index_zero_confirm:
+      "Recording index 0 also makes the current master firmware send a destructive m<id>w0:0 write. Continue?",
+    sent_text: "Sent {chars} to the {rows}×{cols} board",
+    page_added: "Added page {index}",
+    playing_playlist: "Playing playlist ({pages})",
+    saved_playlist: 'Saved playlist "{name}"',
+    started: 'Started "{name}"',
+    deleted: 'Deleted "{name}"',
+    delete_playlist_confirm: 'Delete playlist "{name}"?',
+    module_homing: "Module {module} homing",
+    recorded_module: "Recorded module {module} index {index}",
+    cleared_eeprom: "Cleared the EEPROM map for module {module}",
+    applied_offset: "Applied offset {offset}; module is homing",
+    applied_map: "Applied {entries}; module is homing",
+    app_settings_named: "{name} settings",
+    app_settings_saved: "{name} settings saved",
+
+    // Plurals: one / few / many. English uses "one" and "many".
+    modules_one: "{count} module",
+    modules_few: "{count} modules",
+    modules_many: "{count} modules",
+    rows_one: "{count} row",
+    rows_few: "{count} rows",
+    rows_many: "{count} rows",
+    columns_one: "{count} column",
+    columns_few: "{count} columns",
+    columns_many: "{count} columns",
+    characters_one: "{count} character",
+    characters_few: "{count} characters",
+    characters_many: "{count} characters",
+    pages_one: "{count} page",
+    pages_few: "{count} pages",
+    pages_many: "{count} pages",
+    flaps_one: "{count} flap",
+    flaps_few: "{count} flaps",
+    flaps_many: "{count} flaps",
+    entries_one: "{count} map entry",
+    entries_few: "{count} map entries",
+    entries_many: "{count} map entries",
+    blank_cells_one: "{count} blank cell",
+    blank_cells_few: "{count} blank cells",
+    blank_cells_many: "{count} blank cells",
+
+    // Physical colour flap names.
     color_r: "Red",
     color_o: "Orange",
     color_y: "Yellow",
@@ -175,6 +315,7 @@ const PANEL_I18N = {
     color_k: "Black",
   },
   cs: {
+    // Navigace a globální akce.
     tab_control: "OVLÁDÁNÍ",
     tab_apps: "APLIKACE",
     tab_tuning: "LADĚNÍ",
@@ -182,10 +323,118 @@ const PANEL_I18N = {
     stop: "STOP",
     clear: "SMAZAT",
     save: "ULOŽIT",
+    cancel: "ZRUŠIT",
+    delete: "SMAZAT",
+    run: "SPUSTIT",
+    refresh: "OBNOVIT",
+    refresh_state: "Obnovit stav",
+    remove: "Odebrat",
     scan_bus: "PROHLEDAT SBĚRNICI",
     sync: "SYNCHRONIZOVAT",
     home_all: "DOMŮ VŠE",
     save_settings: "ULOŽIT NASTAVENÍ",
+    scan: "PROHLEDAT",
+    record: "ZAZNAMENAT",
+    home_motor: "NAJET MOTOR",
+    clear_map: "VYMAZAT MAPU",
+    set_offset: "NASTAVIT OFFSET",
+    goto_index: "PŘEJÍT NA INDEX",
+    get_position: "ZÍSKAT POZICI",
+    step: "KROK",
+    apply_map_to_eeprom: "APLIKOVAT MAPU DO EEPROM",
+    push_to_display: "ODESLAT NA DISPLEJ",
+    play_playlist: "PŘEHRÁT PLAYLIST",
+    download_backup_json: "STÁHNOUT ZÁLOHU JSON",
+    restore_from_json: "OBNOVIT Z JSON",
+    add_to_playlist: "+ PŘIDAT DO PLAYLISTU",
+
+    // Nadpisy.
+    live_display: "ŽIVÝ DISPLEJ",
+    compose: "SLOŽIT",
+    playlist_builder: "TVORBA PLAYLISTU",
+    saved_playlists: "ULOŽENÉ PLAYLISTY",
+    available_apps: "DOSTUPNÉ APLIKACE",
+    hardware: "HARDWARE",
+    hardware_actions: "AKCE HARDWARU",
+    character_map: "MAPA ZNAKŮ",
+    physical_layout: "FYZICKÉ ROZLOŽENÍ",
+    settings: "NASTAVENÍ",
+    connection: "PŘIPOJENÍ",
+    backup_restore: "ZÁLOHA A OBNOVA",
+
+    // Popisky polí a krátké hodnoty.
+    start_column: "POČÁTEČNÍ SLOUPEC",
+    send_order: "POŘADÍ ODESÍLÁNÍ",
+    speed: "RYCHLOST (MS/MODUL)",
+    delay_seconds: "PRODLEVA (S)",
+    playlist_name: "Název playlistu",
+    goto_drum_index: "PŘEJÍT NA INDEX BUBNU",
+    record_at_index: "ZAZNAMENAT NA INDEXU",
+    step_steps: "POČET KROKŮ",
+    home_offset: "OFFSET DOMOVSKÉ POZICE",
+    position_map: "MAPA POZIC (index:krok, jeden na řádek)",
+    module: "MODUL",
+    flap: "LÍSTEK",
+    reported: "HLÁŠENO",
+    index: "INDEX",
+    offset: "OFFSET",
+    total_steps: "CELKEM KROKŮ",
+    steps: "kroky",
+    expected: "očekáváno",
+    blank: "(prázdné)",
+    frame: "rám",
+    rows_label: "řady",
+    detected: "nalezeno",
+    mqtt_prefix: "MQTT prefix",
+    master: "Master",
+    last_status: "Poslední stav",
+    modules_label: "Moduly",
+    board: "Tabule",
+    engine: "Engine",
+    integration: "Integrace",
+    live_badge: "ŽIVĚ",
+    app_settings: "Nastavení",
+    app_idle: "Nečinnost",
+    app_settings_title: "Nastavení aplikace",
+    master_online: "master online",
+    master_offline: "master offline",
+    blank_cell: "Prázdná buňka rámu",
+    select_module_hint: "Vyber modul výše pro ladění znaků.",
+    char_map_title: "Modul {id} • {flaps}",
+    index_named: "Index {index}",
+    mode_idle: "nečinnost",
+    mode_app: "aplikace",
+    mode_playlist: "playlist",
+    unknown: "neznámý",
+    never: "nikdy",
+    online: "ONLINE",
+    offline: "OFFLINE",
+
+    // Statické zprávy.
+    connecting: "PŘIPOJOVÁNÍ",
+    connecting_subtitle: "Připojování k Home Assistantu…",
+    waiting_state: "Čekání na stav…",
+    layout_error_short: "CHYBA ROZLOŽENÍ",
+    compose_placeholder: "Napiš zprávu — nové řádky začnou novou řadu",
+    apps_help:
+      "Kliknutím na aplikaci ji spustíte. Ozubeným kolečkem upravíte nastavení, která aplikace čte.",
+    app_no_options:
+      "Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.",
+    backup_help:
+      "Exportuje nastavení, playlisty a poslední snímek modulů. Obnovení sloučí nastavení a nahradí playlisty.",
+    position_map_hint:
+      "Po aplikaci mapy master najede modulem domů.",
+    char_map_help:
+      "Kliknutím na znak přesuňte vybraný modul tam. Zlaté buňky již mají uloženou pozici v EEPROM.",
+    layout_help:
+      "ID modulů se řadí zleva doprava, pak shora dolů. Prázdné buňky jsou čárkované; krátké řady jsou uprostřed rámu.",
+    layout_summary:
+      "{rows} × {cols} rám • řady {counts} • nalezeno {detected}",
+    builder_empty: "Sem přidejte složené zprávy pro vytvoření playlistu.",
+    saved_empty: "Zatím žádné uložené playlisty.",
+    no_apps: "Žádné registrované aplikace.",
+    no_modules: "Nebyly nalezeny žádné moduly. Spusťte prohledání sběrnice.",
+    playlist_empty: "Playlist je prázdný",
     type_message: "Nejprve napiš zprávu",
     display_cleared: "Displej vymazán",
     settings_saved: "Nastavení uloženo",
@@ -204,54 +453,80 @@ const PANEL_I18N = {
     scanning_bus: "Prohledávání RS485 sběrnice…",
     select_module_first: "Nejprve vyber modul",
     select_module: "Vyber modul",
-    playlist_empty: "Playlist je prázdný",
-    apply_map_to_eeprom: "APLIKOVAT MAPU DO EEPROM",
-    available_apps: "DOSTUPNÉ APLIKACE",
-    cancel: "ZRUŠIT",
-    character_map: "MAPA ZNAKŮ",
-    clear_map: "VYMAZAT MAPU",
-    compose: "SLOŽIT",
-    connecting: "PŘIPOJOVÁNÍ",
-    connection: "PŘIPOJENÍ",
-    delete: "SMAZAT",
-    download_backup_json: "STÁHNOUT ZÁLOHU JSON",
-    flap: "LÍSTEK",
-    get_position: "ZÍSKAT POZICI",
-    goto_drum_index: "PŘEJÍT NA INDEX BUBNU",
-    goto_index: "PŘEJÍT NA INDEX",
-    hardware: "HARDWARE",
-    hardware_actions: "AKCE HARDWARU",
-    home_motor: "NAJET MOTOR",
-    home_offset: "OFFSET DOMOVSKÉ POZICE",
-    index: "INDEX",
-    live_display: "ŽIVÝ DISPLEJ",
-    module: "MODUL",
-    offset: "OFFSET",
-    physical_layout: "FYZICKÉ ROZLOŽENÍ",
-    play_playlist: "PŘEHRÁT PLAYLIST",
-    playlist_builder: "TVORBA PLAYLISTU",
-    push_to_display: "ODESLAT NA DISPLEJ",
-    record: "ZAZNAMENAT",
-    record_at_index: "ZAZNAMENAT NA INDEXU",
-    refresh: "OBNOVIT",
-    refresh_state: "Obnovit stav",
-    remove: "Odebrat",
-    reported: "HLÁŠENO",
-    restore_from_json: "OBNOVIT Z JSON",
-    run: "SPUSTIT",
-    saved_playlists: "ULOŽENÉ PLAYLISTY",
-    scan: "PROHLEDAT",
-    send_order: "POŘADÍ ODESÍLÁNÍ",
-    set_offset: "NASTAVIT OFFSET",
-    settings: "NASTAVENÍ",
-    start_column: "POČÁTEČNÍ SLOUPEC",
-    step: "KROK",
-    step_steps: "KROK KROKY",
-    steps: "kroky",
-    expected: "očekáváno",
-    blank: "(prázdné)",
-    sync: "SYNCHRONIZOVAT",
-    total_steps: "CELKEM KROKŮ",
+    not_connected: "Home Assistant není připojen",
+    connect_failed: "Připojení panelu selhalo: {error}",
+    display_too_small: "displej je příliš malý",
+    app_needs_rows: "Vyžaduje {needed}; toto rozložení má {actual}",
+    app_needs_cols:
+      "Každá řada musí mít alespoň {needed}; nejužší řada má {actual}",
+    fix_layout_first: "Nejprve opravte rozložení displeje: {error}",
+    app_running: "{name} běží",
+    playlist_running: "Playlist běží",
+    playlist_running_progress: "Playlist běží • {current}/{total}",
+    page_of: "stránka {page}/{total}",
+    module_named: "MODUL {id}",
+    layout_error: "Chyba rozložení: {error}",
+    layout_err_whole_numbers:
+      "Rozložení řad musí obsahovat celá čísla, ne {value}",
+    layout_err_positive: "Počty v rozložení řad musí být větší než nula",
+    layout_err_row_mismatch: "Rozložení řad má {count}, ale rám má {frame}",
+    layout_err_columns:
+      "Rozložení řad vyžaduje alespoň {needed}, ale rám má {frame}",
+    layout_err_describes:
+      "Rozložení řad popisuje {layout}; nalezeno {detected}",
+    layout_err_no_fit: "Rozložení řad se do rámu nevejde",
+    layout_err_blank:
+      "Rozložení nechává {blank}; povolena je nejvýše jedna řada ({row})",
+    layout_err_capacity:
+      "Rám {frame} pojme jen {capacity}; nalezeno {detected}",
+    backup_downloaded_at: "Záloha stažena v {time}",
+    restored_file: "Obnoveno {name}",
+    restore_failed: "Obnovení selhalo: {error}",
+    backup_must_be_object: "Záloha musí být objekt JSON",
+    index_zero_confirm:
+      "Zaznamenání indexu 0 také způsobí, že aktuální firmware masteru odešle destruktivní zápis m<id>w0:0. Pokračovat?",
+    sent_text: "Odesláno {chars} na tabuli {rows}×{cols}",
+    page_added: "Přidána stránka {index}",
+    playing_playlist: "Přehrávání playlistu ({pages})",
+    saved_playlist: "Uložen playlist „{name}“",
+    started: "Spuštěno „{name}“",
+    deleted: "Smazáno „{name}“",
+    delete_playlist_confirm: "Smazat playlist „{name}“?",
+    module_homing: "Modul {module} najíždí",
+    recorded_module: "Zaznamenán modul {module}, index {index}",
+    cleared_eeprom: "Vymazána mapa EEPROM pro modul {module}",
+    applied_offset: "Aplikován offset {offset}; modul najíždí",
+    applied_map: "Aplikováno {entries}; modul najíždí",
+    app_settings_named: "Nastavení: {name}",
+    app_settings_saved: "Nastavení aplikace {name} uloženo",
+
+    // Množná čísla: one / few / many.
+    modules_one: "{count} modul",
+    modules_few: "{count} moduly",
+    modules_many: "{count} modulů",
+    rows_one: "{count} řádek",
+    rows_few: "{count} řádky",
+    rows_many: "{count} řádků",
+    columns_one: "{count} sloupec",
+    columns_few: "{count} sloupce",
+    columns_many: "{count} sloupců",
+    characters_one: "{count} znak",
+    characters_few: "{count} znaky",
+    characters_many: "{count} znaků",
+    pages_one: "{count} stránka",
+    pages_few: "{count} stránky",
+    pages_many: "{count} stránek",
+    flaps_one: "{count} lístek",
+    flaps_few: "{count} lístky",
+    flaps_many: "{count} lístků",
+    entries_one: "{count} záznam mapy",
+    entries_few: "{count} záznamy mapy",
+    entries_many: "{count} záznamů mapy",
+    blank_cells_one: "{count} prázdná buňka",
+    blank_cells_few: "{count} prázdné buňky",
+    blank_cells_many: "{count} prázdných buněk",
+
+    // Názvy fyzických barevných lístků.
     color_r: "Červená",
     color_o: "Oranžová",
     color_y: "Žlutá",
@@ -262,7 +537,6 @@ const PANEL_I18N = {
     color_k: "Černá",
   },
 };
-
 
 const APP_ICONS = {
   clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>`,
@@ -280,6 +554,20 @@ const APP_ICONS = {
 };
 
 const APPS_I18N = {
+  en: {
+    clock: { name: "Clock", description: "Local time" },
+    date: { name: "Date", description: "Day, date and time" },
+    dashboard: { name: "Dashboard", description: "Date then weather" },
+    weather: { name: "Weather", description: "Current conditions" },
+    stocks: { name: "Stocks", description: "Live prices" },
+    crypto: { name: "Crypto", description: "Coin prices" },
+    sports: { name: "Sports", description: "NHL scores" },
+    metro: { name: "Metro", description: "Transit arrivals" },
+    countdown: { name: "Countdown", description: "Timer to an event" },
+    world_clock: { name: "World Clock", description: "Multiple time zones" },
+    iss: { name: "ISS", description: "Space station position" },
+    animations: { name: "Animations", description: "Colour effects" },
+  },
   cs: {
     clock: { name: "Hodiny", description: "Místní čas" },
     date: { name: "Datum", description: "Den, datum a čas" },
@@ -297,52 +585,165 @@ const APPS_I18N = {
 };
 
 const SETTINGS_I18N = {
-  groups: {
-    display: "🖥️ Displej",
-    weather: "🌤️ Počasí",
-    markets: "📈 Trhy",
-    sports: "🏒 Sport",
-    transit: "🚇 Doprava",
-    time: "⏳ Čas",
-    animations: "🎨 Animace",
+  en: {
+    groups: {
+      display: "Display",
+      weather: "Weather",
+      markets: "Markets",
+      sports: "Sports",
+      transit: "Transit",
+      time: "Time",
+      animations: "Animations",
+    },
+    labels: {
+      row_counts: "Physical row layout (blank = auto)",
+      rows: "Frame rows (0 = auto)",
+      cols: "Frame columns (0 = auto)",
+      ui_scale: "Preview scale (%)",
+      timezone: "Timezone",
+      units: "Units",
+      page_delay: "Default page delay (s)",
+      weather_entity: "Weather entity",
+      zip_code: "ZIP code (OpenWeather fallback)",
+      weather_api_key: "OpenWeather API key (fallback)",
+      stocks_list: "Stock symbols",
+      crypto_list: "CoinGecko coin ids",
+      sports_teams: "NHL teams",
+      metro_stop: "MBTA stop id",
+      metro_route: "MBTA route",
+      mbta_api_key: "MBTA API key",
+      countdown_event: "Event name",
+      countdown_target: "Target date/time",
+      clock_format: "Clock format",
+      world_clock_zones: "Time zones",
+      anim_effect: "Effect",
+      anim_style: "Send order",
+      anim_speed: "Frame delay (s)",
+    },
+    helps: {
+      row_counts:
+        "One number per physical row, top to bottom. Module IDs are assigned left to right, then top to bottom. Short rows are centred. Blank lets the integration choose from the detected module count.",
+      rows: "Physical frame height. Leave 0 to derive it from the display.",
+      cols: "Physical frame width. Leave 0 to derive it from the display.",
+      ui_scale:
+        "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
+      timezone:
+        "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
+      weather_entity:
+        "Preferred source. Uses Home Assistant's own weather data.",
+      stocks_list: "Comma-separated Yahoo Finance symbols.",
+      crypto_list: "Comma-separated CoinGecko coin ids.",
+      sports_teams:
+        "Comma-separated abbreviations. Empty shows every game.",
+      countdown_target: "Local time in the configured timezone.",
+      world_clock_zones: "Comma-separated IANA zone names.",
+    },
+    placeholders: {
+      timezone: "Home Assistant default",
+      weather_api_key: "optional",
+      mbta_api_key: "optional",
+    },
+    options: {
+      units: { auto: "Auto", imperial: "Imperial", metric: "Metric" },
+      clock_format: { "12h": "12 h", "24h": "24 h" },
+      anim_effect: {
+        rainbow: "Rainbow",
+        sweep: "Sweep",
+        checker: "Checker",
+        twinkle: "Twinkle",
+      },
+      anim_style: {
+        ltr: "Left to right",
+        rtl: "Right to left",
+        columns: "Columns",
+        center_out: "Centre out",
+        outside_in: "Outside in",
+        diagonal: "Diagonal",
+        random: "Random",
+        rain: "Rain",
+        spiral: "Spiral",
+      },
+    },
   },
-  labels: {
-    row_counts: "Fyzické rozložení řad (prázdné = auto)",
-    rows: "Řádky rámu (0 = auto)",
-    cols: "Sloupce rámu (0 = auto)",
-    ui_scale: "Měřítko náhledu (%)",
-    timezone: "Časové pásmo",
-    units: "Jednotky",
-    page_delay: "Výchozí prodleva stránky (s)",
-    weather_entity: "Entita počasí",
-    zip_code: "PSČ (záloha OpenWeather)",
-    weather_api_key: "API klíč OpenWeather (záloha)",
-    stocks_list: "Symboly akcií",
-    crypto_list: "ID coinů CoinGecko",
-    sports_teams: "Týmy NHL",
-    metro_stop: "ID zastávky MBTA",
-    metro_route: "Trasa MBTA",
-    mbta_api_key: "API klíč MBTA",
-    countdown_event: "Název události",
-    countdown_target: "Cílové datum/čas",
-    clock_format: "Formát hodin",
-    world_clock_zones: "Časová pásma",
-    anim_effect: "Efekt",
-    anim_style: "Styl odesílání",
-    anim_speed: "Prodleva snímku (s)",
-  },
-  helps: {
-    row_counts: "Jedno číslo na fyzickou řadu, shora dolů. ID modulů se přiřazují zleva doprava, pak shora dolů. Kratší řady jsou vycentrované. Prázdné nechá integraci zvolit podle počtu nalezených modulů.",
-    rows: "Fyzická výška rámu. Nech 0 pro automatický odhad z displeje.",
-    cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
-    ui_scale: "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
-    timezone: "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
-    weather_entity: "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
-    stocks_list: "Symboly Yahoo Finance oddělené čárkou.",
-    crypto_list: "ID coinů CoinGecko oddělené čárkou.",
-    sports_teams: "Zkratky oddělené čárkou. Prázdné zobrazí všechny zápasy.",
-    countdown_target: "Místní čas v nakonfigurovaném časovém pásmu.",
-    world_clock_zones: "Názvy IANA zón oddělené čárkou.",
+  cs: {
+    groups: {
+      display: "Displej",
+      weather: "Počasí",
+      markets: "Trhy",
+      sports: "Sport",
+      transit: "Doprava",
+      time: "Čas",
+      animations: "Animace",
+    },
+    labels: {
+      row_counts: "Fyzické rozložení řad (prázdné = auto)",
+      rows: "Řádky rámu (0 = auto)",
+      cols: "Sloupce rámu (0 = auto)",
+      ui_scale: "Měřítko náhledu (%)",
+      timezone: "Časové pásmo",
+      units: "Jednotky",
+      page_delay: "Výchozí prodleva stránky (s)",
+      weather_entity: "Entita počasí",
+      zip_code: "PSČ (záloha OpenWeather)",
+      weather_api_key: "API klíč OpenWeather (záloha)",
+      stocks_list: "Symboly akcií",
+      crypto_list: "ID coinů CoinGecko",
+      sports_teams: "Týmy NHL",
+      metro_stop: "ID zastávky MBTA",
+      metro_route: "Trasa MBTA",
+      mbta_api_key: "API klíč MBTA",
+      countdown_event: "Název události",
+      countdown_target: "Cílové datum/čas",
+      clock_format: "Formát hodin",
+      world_clock_zones: "Časová pásma",
+      anim_effect: "Efekt",
+      anim_style: "Styl odesílání",
+      anim_speed: "Prodleva snímku (s)",
+    },
+    helps: {
+      row_counts:
+        "Jedno číslo na fyzickou řadu, shora dolů. ID modulů se přiřazují zleva doprava, pak shora dolů. Kratší řady jsou vycentrované. Prázdné nechá integraci zvolit podle počtu nalezených modulů.",
+      rows: "Fyzická výška rámu. Nech 0 pro automatický odhad z displeje.",
+      cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
+      ui_scale:
+        "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
+      timezone:
+        "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
+      weather_entity:
+        "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
+      stocks_list: "Symboly Yahoo Finance oddělené čárkou.",
+      crypto_list: "ID coinů CoinGecko oddělené čárkou.",
+      sports_teams:
+        "Zkratky oddělené čárkou. Prázdné zobrazí všechny zápasy.",
+      countdown_target: "Místní čas v nakonfigurovaném časovém pásmu.",
+      world_clock_zones: "Názvy IANA zón oddělené čárkou.",
+    },
+    placeholders: {
+      timezone: "Výchozí v Home Assistantu",
+      weather_api_key: "volitelné",
+      mbta_api_key: "volitelné",
+    },
+    options: {
+      units: { auto: "Automaticky", imperial: "Imperiální", metric: "Metrické" },
+      clock_format: { "12h": "12 h", "24h": "24 h" },
+      anim_effect: {
+        rainbow: "Duha",
+        sweep: "Přechod",
+        checker: "Šachovnice",
+        twinkle: "Blikání",
+      },
+      anim_style: {
+        ltr: "Zleva doprava",
+        rtl: "Zprava doleva",
+        columns: "Sloupce",
+        center_out: "Od středu",
+        outside_in: "Zvenku dovnitř",
+        diagonal: "Diagonálně",
+        random: "Náhodně",
+        rain: "Déšť",
+        spiral: "Spirála",
+      },
+    },
   },
 };
 
@@ -376,7 +777,7 @@ class SplitFlapOSPanel extends HTMLElement {
       const saved = window.localStorage.getItem(`${DOMAIN}_tab`);
       if (saved) this._tab = saved;
     } catch (err) {
-      /* localÚložiště může být v privátních oknech nedostupné. */
+      /* local storage may be unavailable in private windows. */
     }
   }
 
@@ -426,7 +827,12 @@ class SplitFlapOSPanel extends HTMLElement {
     } catch (err) {
       this._connected = false;
       this._unsub = null;
-      this._toast(`Připojení panelu selhalo: ${err.message || err}`, "error");
+      this._toast(
+        formatMessage(this._t("connect_failed"), {
+          error: err.message || err,
+        }),
+        "error"
+      );
       this._scheduleReconnect();
     } finally {
       this._connecting = false;
@@ -466,7 +872,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
   async _send(type, payload = {}) {
     if (!this._hass || !this._hass.connection) {
-      throw new Error("Home Asistent není připojen");
+      throw new Error(this._t("not_connected"));
     }
     try {
       return await this._hass.connection.sendMessagePromise({
@@ -476,7 +882,7 @@ class SplitFlapOSPanel extends HTMLElement {
     } catch (err) {
       const message =
         (err && (err.message || err.error || err.code)) || String(err);
-      this._toast(message, "error");
+      this._toast(this._layoutErrorText(message), "error");
       throw err;
     }
   }
@@ -494,6 +900,9 @@ class SplitFlapOSPanel extends HTMLElement {
   // Shell
   // ------------------------------------------------------------------
   _renderShell() {
+    this._settingsBuilt = false;
+    this._inspectorModule = null;
+    this._charSignature = "";
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -707,8 +1116,8 @@ class SplitFlapOSPanel extends HTMLElement {
         }
         .app-card.disabled:hover { transform: none; border-color: var(--divider-color, #ddd); }
         .app-card.running { border-color: #2ea043; background: rgba(46,160,67,.1); }
-        .app-card.running::after {
-          content: "LIVE"; position: absolute; top: 6px; left: 8px;
+        .app-live {
+          position: absolute; top: 6px; left: 8px;
           font-size: .58rem; font-weight: 700; letter-spacing: .08em; color: #2ea043;
         }
         .app-icon {
@@ -844,7 +1253,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="mark">▦</div>
             <div>
               <h1>SPLIT-FLAP OS <span style="font-size:.58rem;opacity:.45;font-weight:600;vertical-align:middle">v${VERSION}</span></h1>
-              <div class="sub" id="subtitle">${this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…'}</div>
+              <div class="sub" id="subtitle">${this._t('connecting_subtitle')}</div>
             </div>
           </div>
           <div class="conn">
@@ -877,7 +1286,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <h2>${this._t('compose')}</h2>
               <textarea id="compose" class="compose-input" rows="3"
-                placeholder="${this._lang()==='cs'?'Napiš zprávu — nové řádky začnou novou řadu':'Type a message — new lines become rows'}"></textarea>
+                placeholder="${escapeAttr(this._t('compose_placeholder'))}"></textarea>
               <div class="palette">
                 ${PALETTE.map(
                   ([emoji, code]) =>
@@ -889,9 +1298,9 @@ class SplitFlapOSPanel extends HTMLElement {
                   <input id="startCol" type="number" min="1" max="512" value="1">
                 </label>
                 <label class="field"><span>${this._t('send_order')}</span>
-                  <select id="styleSelect">${STYLE_OPTIONS}</select>
+                  <select id="styleSelect">${this._styleOptions()}</select>
                 </label>
-                <label class="field"><span>${this._lang()==='cs'?'RYCHLOST (MS/MODUL)':'SPEED (MS/MODULE)'}</span>
+                <label class="field"><span>${this._t('speed')}</span>
                   <input id="speedInput" type="number" min="0" max="500" step="5" value="15">
                 </label>
               </div>
@@ -899,7 +1308,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="muted" id="composeMeta" style="margin-top:8px"></div>
               <div class="actions">
                 <button class="btn" data-action="push-text">${this._t('push_to_display')}</button>
-                <button class="btn secondary" data-action="add-playlist">${this._lang()==='cs'?'+ PŘIDAT DO PLAYLISTU':'+ ADD TO PLAYLIST'}</button>
+                <button class="btn secondary" data-action="add-playlist">${this._t('add_to_playlist')}</button>
                 <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
               </div>
             </div>
@@ -907,14 +1316,14 @@ class SplitFlapOSPanel extends HTMLElement {
             <div class="card">
               <div class="row between">
                 <h2 style="margin:0">${this._t('playlist_builder')}</h2>
-                <label class="field" style="max-width:120px"><span>${this._lang()==='cs'?'PRODLEVA (S)':'DELAY (S)'}</span>
+                <label class="field" style="max-width:120px"><span>${this._t('delay_seconds')}</span>
                   <input id="builderDelay" type="number" min="0.1" max="120" step="0.5" value="5">
                 </label>
               </div>
               <div class="list" id="builderList"></div>
               <div class="actions">
                 <button class="btn" data-action="play-builder">${this._t('play_playlist')}</button>
-                <input id="saveName" type="text" placeholder="${this._lang()==='cs'?'Název playlistu':'Playlist name'}" style="max-width:190px">
+                <input id="saveName" type="text" placeholder="${escapeAttr(this._t('playlist_name'))}" style="max-width:190px">
                 <button class="btn secondary" data-action="save-builder">${this._t("save")}</button>
               </div>
             </div>
@@ -935,7 +1344,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <h2>${this._t('available_apps')}</h2>
               <div class="apps-grid" id="appsGrid"></div>
               <p class="muted" style="margin-bottom:0">
-                ${this._lang()==='cs'?'Kliknutím na aplikaci ji spustíte. Použij ozubené kolečko pro úpravu nastavení, která aplikace čte.':'Tap an app to launch it. Use the gear to edit the settings that app reads.'}
+                ${this._t('apps_help')}
               </p>
             </div>
           </section>
@@ -1001,12 +1410,12 @@ class SplitFlapOSPanel extends HTMLElement {
                   <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
                 </div>
               </div>
-              <label class="field" style="margin-top:12px"><span>${this._lang()==='cs'?'MAPA POZIC (index:krok, jeden na řádek)':'POSITION MAP (index:step, one per line)'}</span>
+              <label class="field" style="margin-top:12px"><span>${this._t('position_map')}</span>
                 <textarea id="posMap" rows="3" placeholder="0:2832&#10;1:2896"></textarea>
               </label>
               <div class="actions">
                 <button class="btn secondary" data-action="module" data-sub="apply_map">${this._t('apply_map_to_eeprom')}</button>
-                <span class="muted">Po aplikaci mapy master najede modulem domů.</span>
+                <span class="muted">${this._t('position_map_hint')}</span>
               </div>
             </div>
 
@@ -1017,7 +1426,7 @@ class SplitFlapOSPanel extends HTMLElement {
               </div>
               <div class="char-map" id="charMap" style="margin-top:12px"></div>
               <p class="muted" style="margin-bottom:0">
-                ${this._lang()==='cs'?'Kliknutím na znak přesuňte vybraný modul tam. Zlaté buňky již mají uložený EEPROM position.':'Click a character to move the selected module there. Gold cells already have a stored position.'}
+                ${this._t('char_map_help')}
               </p>
             </div>
           </section>
@@ -1043,8 +1452,7 @@ class SplitFlapOSPanel extends HTMLElement {
               <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
               <div class="layout-alert" id="layoutError"></div>
               <p class="muted" style="margin-bottom:0">
-                ${this._lang()==='cs'?'ID se řadí zleva doprava, pak shora dolů. Prázdné buňky jsou':'Module IDs run left to right, then top to bottom. Blank cells are'}
-                dashed; short rows sit in the middle of the frame.
+                ${this._t('layout_help')}
               </p>
             </div>
 
@@ -1057,9 +1465,9 @@ class SplitFlapOSPanel extends HTMLElement {
             </div>
 
             <div class="card">
-              <h2>${this._lang()==='cs'?'ZÁLOHA A OBNOVA':'BACKUP &amp; RESTORE'}</h2>
+              <h2>${escapeHtml(this._t('backup_restore'))}</h2>
               <p class="muted" style="margin-top:0">
-                ${this._lang()==='cs'?'Obnovení sloučí nastavení a nahradí playlisty.':'Exports settings, playlists and the last module snapshot.'}
+                ${this._t('backup_help')}
               </p>
               <div class="actions">
                 <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
@@ -1071,7 +1479,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
             <div class="card">
               <h2>${this._t('connection')}</h2>
-              <div class="muted" id="connectionInfo">${this._lang()==='cs'?'Čekání na stav…':'Waiting for state…'}</div>
+              <div class="muted" id="connectionInfo">${this._t('waiting_state')}</div>
             </div>
           </section>
         </main>
@@ -1080,7 +1488,7 @@ class SplitFlapOSPanel extends HTMLElement {
 
         <div class="modal hidden" id="modal">
           <div class="modal-card">
-            <h3 id="modalTitle">${this._lang()==='cs'?'Nastavení aplikace':'App settings'}</h3>
+            <h3 id="modalTitle">${escapeHtml(this._t('app_settings_title'))}</h3>
             <div id="modalFields"></div>
             <div class="actions">
               <button class="btn" data-action="save-app-settings">${this._t("save")}</button>
@@ -1091,13 +1499,16 @@ class SplitFlapOSPanel extends HTMLElement {
       </div>
     `;
 
-    this.shadowRoot.addEventListener("click", (event) => {
-      this._onClick(event).catch((err) => console.error(err));
-    });
-    this.shadowRoot.addEventListener("input", (event) => this._onInput(event));
-    this.shadowRoot.addEventListener("change", (event) =>
-      this._onChange(event)
-    );
+    if (!this._eventsBound) {
+      this._eventsBound = true;
+      this.shadowRoot.addEventListener("click", (event) => {
+        this._onClick(event).catch((err) => console.error(err));
+      });
+      this.shadowRoot.addEventListener("input", (event) => this._onInput(event));
+      this.shadowRoot.addEventListener("change", (event) =>
+        this._onChange(event)
+      );
+    }
 
     this._applyTab();
   }
@@ -1160,19 +1571,122 @@ class SplitFlapOSPanel extends HTMLElement {
     return dict[key] || PANEL_I18N.en[key] || key;
   }
 
+  _pluralCategory(count) {
+    const value = Math.abs(Number(count) || 0);
+    if (this._lang() !== "cs") return value === 1 ? "one" : "many";
+    if (value === 1) return "one";
+    if (Number.isInteger(value) && value >= 2 && value <= 4) return "few";
+    return "many";
+  }
+
+  _plural(key, count, params = {}) {
+    const category = this._pluralCategory(count);
+    const template = this._t(`${key}_${category}`);
+    return formatMessage(template, { count, ...params });
+  }
+
+  _modeLabel(mode) {
+    if (!mode) return this._t("mode_idle");
+    const key = `mode_${mode}`;
+    const dict = PANEL_I18N[this._lang()] || PANEL_I18N.en;
+    return dict[key] || PANEL_I18N.en[key] || String(mode);
+  }
+
+  _layoutErrorText(error) {
+    let text = String(error || "");
+    if (!text) return "";
+    text = text.replace(
+      /Row layout must contain whole numbers, not ([^\n]+)/g,
+      (_match, value) =>
+        formatMessage(this._t("layout_err_whole_numbers"), { value })
+    );
+    text = text.replace(
+      /Row layout counts must be greater than zero/g,
+      () => this._t("layout_err_positive")
+    );
+    text = text.replace(
+      /Row layout has (\d+) row\(s\) but the frame is (\d+) row\(s\)/g,
+      (_match, count, frame) =>
+        formatMessage(this._t("layout_err_row_mismatch"), {
+          count: this._plural("rows", Number(count)),
+          frame: this._plural("rows", Number(frame)),
+        })
+    );
+    text = text.replace(
+      /Row layout needs at least (\d+) columns but the frame has (\d+)/g,
+      (_match, needed, frame) =>
+        formatMessage(this._t("layout_err_columns"), {
+          needed: this._plural("columns", Number(needed)),
+          frame: this._plural("columns", Number(frame)),
+        })
+    );
+    text = text.replace(
+      /Row layout describes (\d+) module\(s\) but (\d+) were detected/g,
+      (_match, layout, detected) =>
+        formatMessage(this._t("layout_err_describes"), {
+          layout: this._plural("modules", Number(layout)),
+          detected: this._plural("modules", Number(detected)),
+        })
+    );
+    text = text.replace(
+      /Row layout does not fit inside the frame/g,
+      () => this._t("layout_err_no_fit")
+    );
+    text = text.replace(
+      /Layout leaves (\d+) blank cell\(s\); at most one row \((\d+)\) is allowed(?:\. Set a row layout such as 3,3,1\.)?/g,
+      (_match, blank, row) =>
+        formatMessage(this._t("layout_err_blank"), {
+          blank: this._plural("blank_cells", Number(blank)),
+          row: Number(row),
+        })
+    );
+    text = text.replace(
+      /The (\d+)×(\d+) frame only fits (\d+) of (\d+) detected module\(s\)/g,
+      (_match, rows, cols, capacity, detected) =>
+        formatMessage(this._t("layout_err_capacity"), {
+          frame: `${rows}×${cols}`,
+          capacity: this._plural("modules", Number(capacity)),
+          detected: this._plural("modules", Number(detected)),
+        })
+    );
+    return text;
+  }
+
+  _styleOptions() {
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    const labels = (dict.options && dict.options.anim_style) || {};
+    return STYLES.map(
+      (style) =>
+        `<option value="${escapeAttr(style)}">${escapeHtml(
+          labels[style] || style
+        )}</option>`
+    ).join("");
+  }
+
+  _optionLabel(fieldKey, option) {
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    const group = dict.options && dict.options[fieldKey];
+    return (group && group[option]) || String(option);
+  }
+
   _settingLabel(key, fallback) {
-    if (this._lang() !== "cs") return fallback || key;
-    return (SETTINGS_I18N.labels && SETTINGS_I18N.labels[key]) || fallback || key;
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    return (dict.labels && dict.labels[key]) || fallback || key;
   }
 
   _settingHelp(key, fallback) {
-    if (this._lang() !== "cs") return fallback || "";
-    return (SETTINGS_I18N.helps && SETTINGS_I18N.helps[key]) || fallback || "";
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    return (dict.helps && dict.helps[key]) || fallback || "";
   }
 
   _settingGroup(key, fallback) {
-    if (this._lang() !== "cs") return fallback || key;
-    return (SETTINGS_I18N.groups && SETTINGS_I18N.groups[key]) || fallback || key;
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    return (dict.groups && dict.groups[key]) || fallback || key;
+  }
+
+  _settingPlaceholder(key, fallback) {
+    const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
+    return (dict.placeholders && dict.placeholders[key]) || fallback || "";
   }
 
   _board() {
@@ -1220,7 +1734,7 @@ class SplitFlapOSPanel extends HTMLElement {
     if (!this._state) {
       pill.textContent = this._t('connecting');
       pill.className = "pill connecting";
-      subtitle.textContent = this._lang()==='cs'?'Připojování k Home Assistantu…':'Connecting to Home Assistant…';
+      subtitle.textContent = this._t('connecting_subtitle');
       return;
     }
 
@@ -1228,16 +1742,21 @@ class SplitFlapOSPanel extends HTMLElement {
     const engine = this._engine();
     const board = this._board();
     const online = Boolean(coordinator.online);
-    pill.textContent = online ? (this._lang()==='cs'?"ONLINE":"ONLINE") : (this._lang()==='cs'?"OFFLINE":"OFFLINE");
+    pill.textContent = this._t(online ? "online" : "offline");
     pill.className = `pill ${online ? "online" : "offline"}`;
 
     const prefix = coordinator.prefix || "—";
-    const mode =
-      engine.active_app ||
-      (engine.mode === "playlist" ? "playlist" : engine.mode || "idle");
-    subtitle.textContent = `${prefix} • ${board.rows}×${board.cols} • ${board.modules} ${this._lang()==='cs'?'modulů':'modules'} • ${mode}${
-      board.error ? (this._lang()==='cs'?" • CHYBA ROZLOŽENÍ":" • LAYOUT ERROR") : ""
-    }`;
+    const mode = engine.active_app
+      ? this._appName(engine.active_app)
+      : this._modeLabel(engine.mode);
+    const parts = [
+      prefix,
+      `${board.rows}×${board.cols}`,
+      this._plural("modules", board.modules),
+      mode,
+    ];
+    if (board.error) parts.push(this._t("layout_error_short"));
+    subtitle.textContent = parts.join(" • ");
   }
 
   _flapHtml(char, flip) {
@@ -1315,13 +1834,27 @@ class SplitFlapOSPanel extends HTMLElement {
     const engine = this._engine();
     const html = this._previewHtml(this._lines(), true);
     const width = this._gridMaxWidth(board.cols, this._previewCell(), 3);
-    const meta = `${engine.mode || "idle"}${
-      engine.current_page_count
-        ? ` • page ${Number(engine.current_page_index || 0) + 1}/${engine.current_page_count}`
-        : ""
-    } • ${board.rows} ${this._lang()==='cs'?'řádek':'row'}${board.rows===1?'':'s'} × ${board.cols} ${this._lang()==='cs'?'sloupec':'column'}${board.cols===1?'':'s'}${
-      board.error ? " • LAYOUT ERROR" : ""
-    }`;
+    const parts = [
+      engine.active_app
+        ? this._appName(engine.active_app)
+        : this._modeLabel(engine.mode),
+    ];
+    if (engine.current_page_count) {
+      parts.push(
+        formatMessage(this._t("page_of"), {
+          page: Number(engine.current_page_index || 0) + 1,
+          total: engine.current_page_count,
+        })
+      );
+    }
+    parts.push(
+      `${this._plural("rows", board.rows)} × ${this._plural(
+        "columns",
+        board.cols
+      )}`
+    );
+    if (board.error) parts.push(this._t("layout_error_short"));
+    const meta = parts.join(" • ");
 
     for (const id of ["live", "liveApps"]) {
       const node = this.shadowRoot.getElementById(id);
@@ -1405,7 +1938,12 @@ class SplitFlapOSPanel extends HTMLElement {
     }
     const meta = this.shadowRoot.getElementById("composeMeta");
     if (meta) {
-      meta.textContent = `${this._composeText.length} ${this._lang()==='cs'?'znaků':'characters'} • ${this._lang()==='cs'?'počáteční sloupec':'start column'} ${start}`;
+      meta.textContent = `${this._plural(
+        "characters",
+        this._composeText.length
+      )} • ${this._t("start_column").toLocaleLowerCase(
+        this._lang()
+      )} ${start}`;
     }
   }
 
@@ -1413,9 +1951,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const node = this.shadowRoot.getElementById("builderList");
     if (!node) return;
     if (!this._builder.length) {
-      node.innerHTML = this._lang()==='cs'
-        ? '<div class="empty">Sem přidejte složené zprávy pro vytvoření playlistu.</div>'
-        : '<div class="empty">Add composed messages here to build a playlist.</div>';
+      node.innerHTML = `<div class="empty">${escapeHtml(
+        this._t("builder_empty")
+      )}</div>`;
       return;
     }
     node.innerHTML = this._builder
@@ -1438,9 +1976,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const playlists = this._engine().saved_playlists || {};
     const names = Object.keys(playlists);
     if (!names.length) {
-      node.innerHTML = this._lang()==='cs'
-        ? '<div class="empty">Zatím žádné uložené playlisty.</div>'
-        : '<div class="empty">No saved playlists yet.</div>';
+      node.innerHTML = `<div class="empty">${escapeHtml(
+        this._t("saved_empty")
+      )}</div>`;
       return;
     }
     node.innerHTML = names
@@ -1452,7 +1990,9 @@ class SplitFlapOSPanel extends HTMLElement {
           <div class="list-item">
             <span class="idx">▶</span>
             <span class="text">${escapeHtml(name)}</span>
-            <span class="muted">${count} ${this._lang()==='cs'?(count===1?'stránka':'stránek'):(count===1?'page':'pages')}</span>
+            <span class="muted">${escapeHtml(
+              this._plural("pages", count)
+            )}</span>
             <button class="btn mini" data-action="run-saved" data-name="${escapeAttr(name)}">${this._t('run')}</button>
             <button class="btn mini danger" data-action="delete-saved" data-name="${escapeAttr(name)}">${this._t('delete')}</button>
           </div>`;
@@ -1461,14 +2001,14 @@ class SplitFlapOSPanel extends HTMLElement {
   }
 
   _appI18n(key) {
-    if (this._lang() !== "cs") return null;
-    return (APPS_I18N.cs && APPS_I18N.cs[key]) || null;
+    const dict = APPS_I18N[this._lang()] || APPS_I18N.en;
+    return (dict && dict[key]) || null;
   }
 
   _appName(key) {
     const apps = (this._engine() && this._engine().apps) || [];
     const app = apps.find((item) => item.key === key);
-    const fallback = app ? app.name : key || (this._lang()==='cs' ? "Nečinnost" : "Idle");
+    const fallback = app ? app.name : key || this._t("app_idle");
     const t = this._appI18n(key);
     return (t && t.name) || fallback;
   }
@@ -1489,16 +2029,24 @@ class SplitFlapOSPanel extends HTMLElement {
     const needCols = Math.max(1, Number(app.min_cols) || 1);
     const rows = Number(board && board.rows) || 0;
     const minCols = Number(board && (board.minCols ?? board.min_cols)) || 0;
-    const layoutError = board && board.error ? String(board.error) : "";
-    if (this._lang() === "cs") {
-      if (layoutError && (needRows > 1 || needCols > 1)) return `Nejprve opravte rozložení displeje: ${layoutError}`;
-      if (rows < needRows) return `Vyžaduje ${needRows} řádků; toto rozložení má ${rows}`;
-      if (minCols < needCols) return `Vyžaduje, aby každý řádek měl alespoň ${needCols} sloupců; nejkratší řádek má ${minCols}`;
-      return app.unavailable_reason || "";
+    const layoutError = board && board.error
+      ? this._layoutErrorText(board.error)
+      : "";
+    if (layoutError && (needRows > 1 || needCols > 1)) {
+      return formatMessage(this._t("fix_layout_first"), { error: layoutError });
     }
-    if (layoutError && (needRows > 1 || needCols > 1)) return `Fix the display layout first: ${layoutError}`;
-    if (rows < needRows) return `Needs ${needRows} rows; this layout has ${rows}`;
-    if (minCols < needCols) return `Needs every row to be at least ${needCols} columns; the narrowest row has ${minCols}`;
+    if (rows < needRows) {
+      return formatMessage(this._t("app_needs_rows"), {
+        needed: this._plural("rows", needRows),
+        actual: this._plural("rows", rows),
+      });
+    }
+    if (minCols < needCols) {
+      return formatMessage(this._t("app_needs_cols"), {
+        needed: this._plural("columns", needCols),
+        actual: this._plural("columns", minCols),
+      });
+    }
     return app.unavailable_reason || "";
   }
 
@@ -1509,9 +2057,9 @@ class SplitFlapOSPanel extends HTMLElement {
     const board = this._board();
     const apps = engine.apps || [];
     if (!apps.length) {
-      node.innerHTML = this._lang()==='cs'
-        ? '<div class="empty">Žádné registrované aplikace.</div>'
-        : '<div class="empty">No apps registered.</div>';
+      node.innerHTML = `<div class="empty">${escapeHtml(
+        this._t("no_apps")
+      )}</div>`;
       return;
     }
     node.innerHTML = apps
@@ -1524,7 +2072,8 @@ class SplitFlapOSPanel extends HTMLElement {
           <div class="app-card${running ? " running" : ""}${available ? "" : " disabled"}"
                ${available ? `data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0"` : 'aria-disabled="true"'}
                title="${escapeAttr(requirement || description)}">
-            <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="${this._lang()==='cs'?'Nastavení':'Settings'}">⚙</button>
+            ${running ? `<span class="app-live">${escapeHtml(this._t("live_badge"))}</span>` : ""}
+            <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="${escapeAttr(this._t('app_settings'))}">⚙</button>
             <div class="app-icon">${this._appIcon(app.key)}</div>
             <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
             <div class="app-desc">${escapeHtml(description)}</div>
@@ -1545,17 +2094,20 @@ class SplitFlapOSPanel extends HTMLElement {
     }
     banner.classList.remove("hidden");
     if (engine.active_app) {
-      text.textContent = this._lang()==='cs'
-        ? `${this._appName(engine.active_app)} běží`
-        : `${this._appName(engine.active_app)} is running`;
+      text.textContent = formatMessage(this._t("app_running"), {
+        name: this._appName(engine.active_app),
+      });
     } else if (engine.mode === "playlist") {
       const total = engine.current_page_count || (engine.playlist || []).length || 0;
       const current = total ? Number(engine.current_page_index || 0) + 1 : 0;
-      text.textContent = this._lang()==='cs'
-        ? `Playlist běží${total ? ` • ${current}/${total}` : ""}`
-        : `Playlist running${total ? ` • ${current}/${total}` : ""}`;
+      text.textContent = total
+        ? formatMessage(this._t("playlist_running_progress"), {
+            current,
+            total,
+          })
+        : this._t("playlist_running");
     } else {
-      text.textContent = String(engine.mode || "idle");
+      text.textContent = this._modeLabel(engine.mode);
     }
   }
 
@@ -1605,7 +2157,7 @@ class SplitFlapOSPanel extends HTMLElement {
             <button class="mod${selected ? " selected" : ""}${offline ? " offline" : ""}"
                     data-action="select-module" data-id="${escapeAttr(module.id)}"
                     title="${escapeAttr(this._t('module'))} ${escapeAttr(module.id)} • ${escapeAttr(
-                      module.state || "unknown"
+                      module.state || this._t("unknown")
                     )}">
               <span class="mid">${escapeHtml(module.id)}</span>
               <span class="mchar">${flap === " " ? "␣" : escapeHtml(flap)}</span>
@@ -1634,15 +2186,15 @@ class SplitFlapOSPanel extends HTMLElement {
         matrix.style.marginLeft = "";
         matrix.style.marginRight = "";
       }
-      matrix.innerHTML = html || (this._lang()==='cs'
-        ? '<div class="empty">Nebyly nalezeny žádné moduly. Spustit prohledání sběrnice.</div>'
-        : '<div class="empty">No modules detected. Run a bus scan.</div>');
+      matrix.innerHTML =
+        html ||
+        `<div class="empty">${escapeHtml(this._t("no_modules"))}</div>`;
     }
 
     if (meta) {
-      meta.textContent = `${modules.length} module${modules.length === 1 ? "" : "s"} • ${
+      meta.textContent = `${this._plural("modules", modules.length)} • ${
         coordinator.prefix || "—"
-      } • ${coordinator.online ? "master online" : "master offline"}`;
+      } • ${this._t(coordinator.online ? "master_online" : "master_offline")}`;
     }
 
     const selected = this._moduleFor(this._selectedModule);
@@ -1659,12 +2211,18 @@ class SplitFlapOSPanel extends HTMLElement {
     if (inspector) inspector.classList.remove("hidden");
 
     const title = this.shadowRoot.getElementById("inspectTitle");
-    if (title) title.textContent = `MODULE ${selected.id}`;
+    if (title) {
+      title.textContent = formatMessage(this._t("module_named"), {
+        id: selected.id,
+      });
+    }
     const state = this.shadowRoot.getElementById("inspectState");
     if (state) {
-      state.textContent = `${String(selected.state || "unknown").toUpperCase()} • ${
-        selected.online === false ? "OFFLINE" : "ONLINE"
-      }`;
+      state.textContent = `${String(
+        selected.state || this._t("unknown")
+      ).toUpperCase()} • ${this._t(
+        selected.online === false ? "offline" : "online"
+      )}`;
     }
 
     const values = {
@@ -1721,7 +2279,9 @@ class SplitFlapOSPanel extends HTMLElement {
       const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
       for (let col = 0; col < board.cols; col += 1) {
         if (col < offset || col >= offset + count) {
-          html += this._lang()==='cs'?'<div class="mod void" title="Prázdná buňka rámu"></div>':'<div class="mod void" title="Blank frame cell"></div>';
+          html += `<div class="mod void" title="${escapeAttr(
+            this._t("blank_cell")
+          )}"></div>`;
           continue;
         }
         const slot = slotBase + col - offset;
@@ -1749,11 +2309,19 @@ class SplitFlapOSPanel extends HTMLElement {
     this._fitPreview(node, width);
 
     if (summary) {
-      const rows = board.rowCounts.join(",");
-      summary.textContent = `${board.rows} × ${board.cols} frame • rows ${rows} • ${board.modules} detected`;
+      summary.textContent = formatMessage(this._t("layout_summary"), {
+        rows: board.rows,
+        cols: board.cols,
+        counts: board.rowCounts.join(","),
+        detected: this._plural("modules", board.modules),
+      });
     }
     if (errorNode) {
-      errorNode.textContent = board.error ? `Layout error: ${board.error}` : "";
+      errorNode.textContent = board.error
+        ? formatMessage(this._t("layout_error"), {
+            error: this._layoutErrorText(board.error),
+          })
+        : "";
       errorNode.style.display = board.error ? "block" : "none";
     }
   }
@@ -1764,7 +2332,9 @@ class SplitFlapOSPanel extends HTMLElement {
     if (!node) return;
     if (!module) {
       if (title) title.textContent = this._t('select_module');
-      node.innerHTML = this._lang()==='cs'?'<div class="empty">Vyber modul výše pro ladění znaků.</div>':'<div class="empty">Select a module above to tune characters.</div>';
+      node.innerHTML = `<div class="empty">${escapeHtml(
+        this._t("select_module_hint")
+      )}</div>`;
       this._charSignature = "";
       return;
     }
@@ -1792,7 +2362,12 @@ class SplitFlapOSPanel extends HTMLElement {
     if (signature === this._charSignature) return;
     this._charSignature = signature;
 
-    if (title) title.textContent = `Module ${module.id} • ${drum.length} flaps`;
+    if (title) {
+      title.textContent = formatMessage(this._t("char_map_title"), {
+        id: module.id,
+        flaps: this._plural("flaps", drum.length),
+      });
+    }
     node.innerHTML = drum
       .map((char, index) => {
         const color = "roygbpw".includes(char) ? ` color-${char}` : "";
@@ -1801,7 +2376,9 @@ class SplitFlapOSPanel extends HTMLElement {
           index === currentIndex ? " current" : ""
         }" data-action="module" data-sub="goto_flap" data-flap="${escapeAttr(
           char
-        )}" title="Index ${index}${tuned ? ` • ${positions[String(index)]}` : ""}">
+        )}" title="${escapeAttr(
+          formatMessage(this._t("index_named"), { index })
+        )}${tuned ? ` • ${positions[String(index)]}` : ""}">
           ${char === " " ? "␣" : escapeHtml(char)}<small>${index}</small>
         </button>`;
       })
@@ -1822,7 +2399,7 @@ class SplitFlapOSPanel extends HTMLElement {
           (option) =>
             `<option value="${escapeAttr(option)}"${
               String(option) === current ? " selected" : ""
-            }>${escapeHtml(option)}</option>`
+            }>${escapeHtml(this._optionLabel(field.key, option))}</option>`
         )
         .join("")}</select>`;
     } else {
@@ -1835,7 +2412,11 @@ class SplitFlapOSPanel extends HTMLElement {
               ? "datetime-local"
               : "text";
       const attrs = [`type="${inputType}"`, `data-setting="${key}"`];
-      if (field.placeholder) attrs.push(`placeholder="${escapeAttr(field.placeholder)}"`);
+      const placeholder = this._settingPlaceholder(
+        field.key,
+        field.placeholder || ""
+      );
+      if (placeholder) attrs.push(`placeholder="${escapeAttr(placeholder)}"`);
       if (field.min != null) attrs.push(`min="${escapeAttr(field.min)}"`);
       if (field.max != null) attrs.push(`max="${escapeAttr(field.max)}"`);
       if (field.step != null) attrs.push(`step="${escapeAttr(field.step)}"`);
@@ -1843,11 +2424,12 @@ class SplitFlapOSPanel extends HTMLElement {
       input = `<input ${attrs.join(" ")} value="${escapeAttr(current)}">`;
     }
 
+    const help = this._settingHelp(field.key, field.help || "");
     return `
       <label class="field">
         <span>${escapeHtml(this._settingLabel(field.key, field.label || field.key))}</span>
         ${input}
-        ${field.help ? `<small>${escapeHtml(this._settingHelp(field.key, field.help))}</small>` : ""}
+        ${help ? `<small>${escapeHtml(help)}</small>` : ""}
       </label>`;
   }
 
@@ -1893,13 +2475,17 @@ class SplitFlapOSPanel extends HTMLElement {
     const engine = this._engine();
     const board = this._board();
     const parts = [
-      `MQTT prefix: ${coordinator.prefix || "—"}`,
-      `Master: ${coordinator.online ? "online" : "offline"}`,
-      `Last status: ${coordinator.last_status || "never"}`,
-      `Modules: ${coordinator.modules_count || 0}`,
-      `Board: ${board.rows} × ${board.cols}`,
-      `Engine: ${engine.mode}${engine.active_app ? ` (${engine.active_app})` : ""}`,
-      `Integration: v${this._state.version || VERSION}`,
+      `${this._t("mqtt_prefix")}: ${coordinator.prefix || "—"}`,
+      `${this._t("master")}: ${this._t(
+        coordinator.online ? "master_online" : "master_offline"
+      )}`,
+      `${this._t("last_status")}: ${coordinator.last_status || this._t("never")}`,
+      `${this._t("modules_label")}: ${coordinator.modules_count || 0}`,
+      `${this._t("board")}: ${board.rows} × ${board.cols}`,
+      `${this._t("engine")}: ${this._modeLabel(engine.mode)}${
+        engine.active_app ? ` (${this._appName(engine.active_app)})` : ""
+      }`,
+      `${this._t("integration")}: v${this._state.version || VERSION}`,
     ];
     node.textContent = parts.join(" • ");
   }
@@ -1984,7 +2570,9 @@ class SplitFlapOSPanel extends HTMLElement {
         const apps = (this._engine() && this._engine().apps) || [];
         const app = apps.find((item) => item.key === target.dataset.app);
         if (app && app.available === false) {
-          const reason = this._appRequirement(app, this._board()) || (this._lang()==='cs' ? "displej je příliš malý" : "display too small");
+          const reason =
+            this._appRequirement(app, this._board()) ||
+            this._t("display_too_small");
           this._toast(`${this._appName(target.dataset.app)}: ${reason}`, "warn");
           break;
         }
@@ -2042,7 +2630,13 @@ class SplitFlapOSPanel extends HTMLElement {
       speed: Math.max(0, Number(speedNode.value) || 0),
       stop: true,
     });
-    this._toast(`Odesláno ${text.length} znaků na tabuli ${board.rows}×${board.cols}`);
+    this._toast(
+      formatMessage(this._t("sent_text"), {
+        chars: text.length,
+        rows: board.rows,
+        cols: board.cols,
+      })
+    );
   }
 
   async _clearText() {
@@ -2075,7 +2669,9 @@ class SplitFlapOSPanel extends HTMLElement {
     }
     this._builder.push({ text });
     this._renderBuilder();
-    this._toast(`Přidána stránka ${this._builder.length}`);
+    this._toast(
+      formatMessage(this._t("page_added"), { index: this._builder.length })
+    );
   }
 
   async _playBuilder() {
@@ -2090,9 +2686,11 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
       loop: true,
     });
-    this._toast(this._lang()==='cs'
-      ? `Přehrávání playlistu (${this._builder.length} stránek)`
-      : `Playing playlist (${this._builder.length} pages)`);
+    this._toast(
+      formatMessage(this._t("playing_playlist"), {
+        pages: this._plural("pages", this._builder.length),
+      })
+    );
   }
 
   async _saveBuilder() {
@@ -2114,21 +2712,21 @@ class SplitFlapOSPanel extends HTMLElement {
       delay,
     });
     nameNode.value = "";
-    this._toast(this._lang()==='cs' ? `Uložen playlist „${name}“` : `Saved playlist "${name}"`);
+    this._toast(formatMessage(this._t("saved_playlist"), { name }));
   }
 
   async _runSaved(name) {
     if (!name) return;
     await this._send("run_saved_playlist", { name });
-    this._toast(this._lang()==='cs' ? `Spuštěno „${name}“` : `Started "${name}"`);
+    this._toast(formatMessage(this._t("started"), { name }));
   }
 
   async _deleteSaved(name) {
     if (!name) return;
-    const msg = this._lang()==='cs' ? `Smazat playlist „${name}“?` : `Delete playlist "${name}"?`;
+    const msg = formatMessage(this._t("delete_playlist_confirm"), { name });
     if (!window.confirm(msg)) return;
     await this._send("delete_playlist", { name });
-    this._toast(this._lang()==='cs' ? `Smazáno „${name}“` : `Deleted "${name}"`);
+    this._toast(formatMessage(this._t("deleted"), { name }));
   }
 
   _openAppSettings(key) {
@@ -2138,12 +2736,13 @@ class SplitFlapOSPanel extends HTMLElement {
     this._modalApp = key;
     const settings = (this._engine() && this._engine().settings) || {};
     const fields = app.fields || [];
-    this.shadowRoot.getElementById("modalTitle").textContent = this._lang()==='cs'
-      ? `Nastavení: ${this._appName(key)}`
-      : `${this._appName(key)} settings`;
+    this.shadowRoot.getElementById("modalTitle").textContent = formatMessage(
+      this._t("app_settings_named"),
+      { name: this._appName(key) }
+    );
     this.shadowRoot.getElementById("modalFields").innerHTML = fields.length
       ? fields.map((field) => this._fieldHtml(field, settings[field.key])).join("")
-      : (this._lang()==='cs'?'<p class="muted">Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.</p>':'<p class="muted">This app has no options of its own. It uses the display and data settings from the Settings tab.</p>');
+      : `<p class="muted">${escapeHtml(this._t("app_no_options"))}</p>`;
     this.shadowRoot.getElementById("modal").classList.remove("hidden");
   }
 
@@ -2185,9 +2784,11 @@ class SplitFlapOSPanel extends HTMLElement {
     const settings = this._collectSettings(root);
     await this._send("set_settings", { settings });
     this._closeModal();
-    this._toast(this._lang()==='cs'
-      ? `Nastavení aplikace ${this._appName(key)} uloženo`
-      : `${this._appName(key)} settings saved`);
+    this._toast(
+      formatMessage(this._t("app_settings_saved"), {
+        name: this._appName(key),
+      })
+    );
   }
 
   _moduleValue(id) {
@@ -2222,7 +2823,9 @@ class SplitFlapOSPanel extends HTMLElement {
 
     if (sub === "home") {
       await this._send("calibrate", { module, action: "home" });
-      this._toast(this._lang()==='cs'?`Modul ${module} najíždí`:`Module ${module} homing`);
+      this._toast(
+        formatMessage(this._t("module_homing"), { module })
+      );
       return;
     }
     if (sub === "get_pos") {
@@ -2264,19 +2867,21 @@ class SplitFlapOSPanel extends HTMLElement {
       }
       if (
         index === 0 &&
-        !window.confirm(
-          "Recording index 0 also makes the current master firmware send a destructive m<id>w0:0 write. Continue?"
-        )
+        !window.confirm(this._t("index_zero_confirm"))
       ) {
         return;
       }
       await this._send("calibrate", { module, action: "record", index });
-      this._toast(this._lang()==='cs'?`Zaznamenán modul ${module}, index ${index}`:`Recorded module ${module} index ${index}`);
+      this._toast(
+        formatMessage(this._t("recorded_module"), { module, index })
+      );
       return;
     }
     if (sub === "clear_map") {
       await this._send("calibrate", { module, action: "clear_map" });
-      this._toast(this._lang()==='cs'?`Vymazána mapa EEPROM pro modul ${module}`:`Cleared the EEPROM map for module ${module}`);
+      this._toast(
+        formatMessage(this._t("cleared_eeprom"), { module })
+      );
       return;
     }
     if (sub === "apply_offset") {
@@ -2290,7 +2895,9 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         home_offset: offset,
       });
-      this._toast(this._lang()==='cs'?`Aplikován offset ${offset}; modul najíždí`:`Applied offset ${offset}; module is homing`);
+      this._toast(
+        formatMessage(this._t("applied_offset"), { offset })
+      );
       return;
     }
     if (sub === "apply_map") {
@@ -2304,7 +2911,11 @@ class SplitFlapOSPanel extends HTMLElement {
         action: "apply",
         positions,
       });
-      this._toast(this._lang()==='cs'?`Aplikováno ${Object.keys(positions).length} záznamů mapy; modul najíždí`:`Applied ${Object.keys(positions).length} map entries; module is homing`);
+      this._toast(
+        formatMessage(this._t("applied_map"), {
+          entries: this._plural("entries", Object.keys(positions).length),
+        })
+      );
     }
   }
 
@@ -2346,7 +2957,11 @@ class SplitFlapOSPanel extends HTMLElement {
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     const status = this.shadowRoot.getElementById("backupStatus");
-    if (status) status.textContent = this._lang()==='cs'?`Záloha stažena v ${new Date().toLocaleTimeString()}`:`Backup downloaded at ${new Date().toLocaleTimeString()}`;
+    if (status) {
+      status.textContent = formatMessage(this._t("backup_downloaded_at"), {
+        time: new Date().toLocaleTimeString(this._lang()),
+      });
+    }
     this._toast(this._t("backup_downloaded"));
   }
 
@@ -2357,15 +2972,24 @@ class SplitFlapOSPanel extends HTMLElement {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!data || typeof data !== "object" || Array.isArray(data)) {
-        throw new Error(this._lang()==='cs'?"Záloha musí být: JSON object":"Backup must be a JSON object");
+        throw new Error(this._t("backup_must_be_object"));
       }
       await this._send("restore", { data });
       const status = this.shadowRoot.getElementById("backupStatus");
-      if (status) status.textContent = `Restored ${file.name}`;
+      if (status) {
+        status.textContent = formatMessage(this._t("restored_file"), {
+          name: file.name,
+        });
+      }
       this._toast(this._t("backup_restored"));
       this._settingsDirty = false;
     } catch (err) {
-      this._toast(`Restore failed: ${err.message || err}`, "error");
+      this._toast(
+        formatMessage(this._t("restore_failed"), {
+          error: err.message || err,
+        }),
+        "error"
+      );
     } finally {
       input.value = "";
     }

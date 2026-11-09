@@ -78,6 +78,7 @@ python3 -m json.tool custom_components/splitflap_os/translations/en.json >/dev/n
 python3 -m json.tool custom_components/splitflap_os/translations/cs.json >/dev/null
 python3 tests/test_layout.py
 python3 tests/test_positions.py
+python3 tests/test_translations.py
 ```
 
 ## Style

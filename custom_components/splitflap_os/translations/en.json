@@ -39,15 +39,61 @@
   "services": {
     "send_text": {
       "name": "Send text",
-      "description": "Send wrapped text to the split-flap display. Characters missing from a module's reported flap list are rejected."
+      "description": "Send wrapped text to the split-flap display. Characters missing from a module's reported flap list are rejected.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "Text to display. New lines start a new row."
+        },
+        "start": {
+          "name": "Start column",
+          "description": "1-based column offset (use 1 for no offset)."
+        },
+        "style": {
+          "name": "Send order",
+          "description": "Animation order used when sending characters to the modules."
+        },
+        "speed": {
+          "name": "Speed",
+          "description": "Delay in milliseconds per module. Sent with the display command; the current master firmware ignores it."
+        },
+        "stop": {
+          "name": "Stop current app",
+          "description": "Stop any running app or playlist before showing the text."
+        },
+        "raw": {
+          "name": "Raw board",
+          "description": "Use the text as complete board data; do not wrap it or change case."
+        }
+      }
     },
     "play_playlist": {
       "name": "Play playlist",
-      "description": "Play a list of pages, optionally looping. All pages are checked against the modules' flap lists before playback."
+      "description": "Play a list of pages, optionally looping. All pages are checked against the modules' flap lists before playback.",
+      "fields": {
+        "pages": {
+          "name": "Pages",
+          "description": "JSON array of strings or page objects with text, delay, style and speed keys."
+        },
+        "delay": {
+          "name": "Delay",
+          "description": "Seconds to wait after each page finishes moving."
+        },
+        "loop": {
+          "name": "Loop",
+          "description": "Repeat the playlist until stopped."
+        }
+      }
     },
     "start_app": {
       "name": "Start app",
-      "description": "Start a data app."
+      "description": "Start a data app.",
+      "fields": {
+        "app": {
+          "name": "App",
+          "description": "App key, for example clock, weather, stocks, crypto, sports, metro, countdown, world_clock, iss or animations."
+        }
+      }
     },
     "stop_app": {
       "name": "Stop app",
@@ -67,7 +113,41 @@
     },
     "calibrate": {
       "name": "Calibrate module",
-      "description": "Send a calibration command to one module."
+      "description": "Send a calibration command to one module.",
+      "fields": {
+        "module": {
+          "name": "Module",
+          "description": "Module ID."
+        },
+        "action": {
+          "name": "Action",
+          "description": "Calibration action."
+        },
+        "index": {
+          "name": "Drum index",
+          "description": "Zero-based flap index."
+        },
+        "flap": {
+          "name": "Flap",
+          "description": "Character to move the module to when the action is goto and index is omitted."
+        },
+        "home_offset": {
+          "name": "Home offset",
+          "description": "Steps from the hall sensor to the first flap (apply action)."
+        },
+        "positions": {
+          "name": "Position map",
+          "description": "Drum index to absolute position step mapping (apply action)."
+        },
+        "clear_map": {
+          "name": "Clear map",
+          "description": "Clear the stored position map in EEPROM before applying (apply action)."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "Relative steps; the integration converts them to an absolute position using the module's last reported step."
+        }
+      }
     },
     "home_all": {
       "name": "Home all",
@@ -75,23 +155,58 @@
     },
     "record_all": {
       "name": "Record all",
-      "description": "Record one drum index on every known module."
+      "description": "Record one drum index on every known module.",
+      "fields": {
+        "index": {
+          "name": "Drum index",
+          "description": "Zero-based flap index to record."
+        }
+      }
     },
     "save_playlist": {
       "name": "Save playlist",
-      "description": "Save a named playlist."
+      "description": "Save a named playlist.",
+      "fields": {
+        "name": {
+          "name": "Name"
+        },
+        "pages": {
+          "name": "Pages",
+          "description": "JSON array of strings or page objects."
+        },
+        "delay": {
+          "name": "Delay",
+          "description": "Seconds between pages."
+        }
+      }
     },
     "delete_playlist": {
       "name": "Delete playlist",
-      "description": "Delete a saved playlist."
+      "description": "Delete a saved playlist.",
+      "fields": {
+        "name": {
+          "name": "Name"
+        }
+      }
     },
     "run_saved_playlist": {
       "name": "Run saved playlist",
-      "description": "Run a named playlist in a loop."
+      "description": "Run a named playlist in a loop.",
+      "fields": {
+        "name": {
+          "name": "Name"
+        }
+      }
     },
     "set_settings": {
       "name": "Set settings",
-      "description": "Merge and persist Split-Flap OS settings."
+      "description": "Merge and persist Split-Flap OS settings.",
+      "fields": {
+        "settings": {
+          "name": "Settings",
+          "description": "Settings keys and values to merge."
+        }
+      }
     }
   },
   "entity": {
