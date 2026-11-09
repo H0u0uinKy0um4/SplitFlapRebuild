@@ -2,7 +2,7 @@
 
 import { APP_ICONS, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.5";
 import { APPS_I18N } from "../i18n/index.js?v=0.1.5";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../helpers.js?v=0.1.5";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.5";
 import { PANEL_STYLES } from "../styles.js?v=0.1.5";
 
 
