@@ -1,6 +1,6 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.7";
+import { formatMessage } from "../utils.js?v=0.1.8";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -14,10 +14,12 @@ export const PanelMixin = (Base) => class extends Base {
       return;
     }
     if (target.id === "defaultDrum") {
+      this._settingsDirty = true;
       this._updateDrumCharCount();
       return;
     }
     if (target.id === "moduleDrum") {
+      this._settingsDirty = true;
       this._updateModuleDrumCharCount();
       return;
     }

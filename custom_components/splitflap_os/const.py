@@ -11,7 +11,7 @@ from .settings import DEFAULT_SETTINGS, SETTINGS_GROUPS, SETTINGS_KEYS
 
 DOMAIN: Final = "splitflap_os"
 NAME: Final = "Split-Flap OS"
-VERSION: Final = "0.1.7"
+VERSION: Final = "0.1.8"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"

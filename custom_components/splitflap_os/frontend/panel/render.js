@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.7";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.7";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.7";
-import { PANEL_STYLES } from "../styles.js?v=0.1.7";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.8";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.8";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.8";
+import { PANEL_STYLES } from "../styles.js?v=0.1.8";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -197,11 +197,11 @@ export const PanelMixin = (Base) => class extends Base {
                 <span class="muted">${this._t('position_map_hint')}</span>
               </div>
 
-              <div class="field" style="margin-top:16px">
+              <label class="field" style="margin-top:16px">
                 <span>${this._t('module_drum')}</span>
                 <textarea id="moduleDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
                 <small class="muted">${this._t('module_drum_help')}</small>
-              </div>
+              </label>
               <div class="actions">
                 <button class="btn secondary" data-action="save-module-drum">${this._t('save')}</button>
                 <button class="btn secondary" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
@@ -878,15 +878,15 @@ export const PanelMixin = (Base) => class extends Base {
         .map((key) => `${key}:${positions[key]}`)
         .join("\n");
       set("posMap", text);
-    }
 
-    // Load the module-specific drum override from settings.
-    const moduleDrumTextarea = this.shadowRoot.getElementById("moduleDrum");
-    if (moduleDrumTextarea) {
-      const engine = this._engine();
-      const settings = (engine && engine.settings) || {};
-      const drum = settings[`drum_${selected.id}`] || "";
-      if (moduleDrumTextarea.value !== drum) moduleDrumTextarea.value = drum;
+      // Load the module-specific drum override from settings.
+      const moduleDrumTextarea = this.shadowRoot.getElementById("moduleDrum");
+      if (moduleDrumTextarea) {
+        const engine = this._engine();
+        const settings = (engine && engine.settings) || {};
+        const drum = settings[`drum_${selected.id}`] || "";
+        moduleDrumTextarea.value = drum;
+      }
     }
     this._updateModuleDrumCharCount();
 
