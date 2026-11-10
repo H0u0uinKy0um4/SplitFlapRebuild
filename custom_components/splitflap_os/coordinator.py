@@ -8,6 +8,7 @@ translation from board characters to per-module targets happens here.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import re
@@ -35,6 +36,7 @@ from .const import (
     STORAGE_SAVE_DELAY,
     signal_update,
 )
+from .ota import normalize_ota
 from .positions import POSITION_MAP_UNSET, normalize_position_map
 
 _LOGGER = logging.getLogger(__name__)
@@ -517,6 +519,9 @@ class SplitFlapCoordinator:
             "desired_chars": dict(self.desired_chars),
             "last_status": self.data.get("last_status"),
             "restored": bool(self.data.get("restored", False)),
+            # Slave-module OTA state; "idle" until the master reports a
+            # collection or a flash session.
+            "ota": self.data.get("ota") or {"state": "idle"},
         }
 
     # ------------------------------------------------------------------
@@ -635,6 +640,11 @@ class SplitFlapCoordinator:
             data["modules_count"] = _coerce_count(
                 payload.get("modules_count"), data.get("modules_count", 0)
             )
+
+        # Slave-module OTA session state (see normalize_ota). Only trusted
+        # while online: the offline last-will payload never carries it.
+        if online and "ota" in payload:
+            data["ota"] = normalize_ota(payload.get("ota"))
 
         data["last_status"] = dt_util.now().isoformat()
         data["restored"] = False if online else bool(data.get("restored", False))
@@ -838,6 +848,46 @@ class SplitFlapCoordinator:
         if action_norm == "drum_write" and isinstance(drum, str):
             return await self._wait_for_drum(module_id, drum)
         return None
+
+    # ------------------------------------------------------------------
+    # Slave-module OTA
+    # ------------------------------------------------------------------
+
+    async def async_firmware_begin(self, module_id: int | str) -> None:
+        """Start collecting a firmware image for one module.
+
+        The master keeps the chunks until ``flash`` or ``cancel``; repeat
+        ``begin`` to restart an aborted collection.
+        """
+        await self._publish("firmware", {"action": "begin", "module": module_payload_id(module_id)})
+
+    async def async_firmware_chunk(self, data: bytes | str) -> None:
+        """Append base64 image bytes to the collection.
+
+        The decoded data must be the raw application image of the slave's
+        ``ATtiny1616_OTA`` build (linked at 0x0800, gaps 0xFF). Chunks may
+        split the image anywhere; keep each message well under the master's
+        2048-byte MQTT buffer (~1 KB of base64 per message is safe).
+        """
+        encoded = data if isinstance(data, str) else base64.b64encode(data).decode("ascii")
+        await self._publish("firmware", {"action": "chunk", "data": encoded})
+
+    async def async_firmware_flash(self) -> None:
+        """Flash the collected image to the module.
+
+        The session blocks the master's display loop for ~20-25 s; the
+        display/scan/update/calibrate commands are refused while it runs
+        and the ``ota`` status object tracks progress.
+        """
+        await self._publish("firmware", {"action": "flash"})
+
+    async def async_firmware_cancel(self) -> None:
+        """Abort a running flash session or discard a collected image."""
+        await self._publish("firmware", {"action": "cancel"})
+
+    async def async_firmware_reset(self, module_id: int | str) -> None:
+        """Boot a module stuck in the bootloader back into its application."""
+        await self._publish("firmware", {"action": "reset", "module": module_payload_id(module_id)})
 
     async def _wait_for_drum(
         self, module_id: Any, drum: str, timeout: float = 10.0

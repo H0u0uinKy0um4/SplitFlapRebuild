@@ -47,6 +47,11 @@ COMMAND_TOPICS: Final = {
     "scan": "command/scan",
     "update": "command/update",
     "calibrate": "command/calibrate",
+    # Slave-module OTA (see the master's include/ota/SlaveFlasher.h for the
+    # message schema): begin/chunk/flash/cancel/reset JSON actions. The
+    # master owns the binary framing to the modules; this side only ships
+    # base64 image chunks.
+    "firmware": "command/firmware",
 }
 
 # After this many seconds without a status payload the master is considered
