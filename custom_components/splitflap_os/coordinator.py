@@ -12,6 +12,7 @@ import base64
 import json
 import logging
 import re
+import zlib
 from typing import Any
 
 from homeassistant.components import mqtt
@@ -36,7 +37,12 @@ from .const import (
     STORAGE_SAVE_DELAY,
     signal_update,
 )
-from .ota import normalize_ota
+from .ota import (
+    OTA_APP_MAX_SIZE,
+    OTA_CHUNK_BYTES,
+    OTA_STATES_ACTIVE,
+    normalize_ota,
+)
 from .positions import POSITION_MAP_UNSET, normalize_position_map
 
 _LOGGER = logging.getLogger(__name__)
@@ -888,6 +894,50 @@ class SplitFlapCoordinator:
     async def async_firmware_reset(self, module_id: int | str) -> None:
         """Boot a module stuck in the bootloader back into its application."""
         await self._publish("firmware", {"action": "reset", "module": module_payload_id(module_id)})
+
+    async def async_flash_image(
+        self, module_id: int | str, image: bytes
+    ) -> dict[str, Any]:
+        """Ship a complete application image and start the flash session.
+
+        ``image`` must be the raw application region of the slave's
+        ``ATtiny1616_OTA`` build (see ``firmware.image_from_hex``). The
+        whole image is collected by the master first, so a failure before
+        ``flash`` leaves the module untouched. Once the session starts the
+        display loop is paused for roughly 20-25 s; progress is reported
+        through the ``ota`` status object.
+        """
+
+        payload_id = module_payload_id(module_id)
+        if not isinstance(payload_id, int) or not 1 <= payload_id <= 255:
+            raise ValueError("module id must be a number between 1 and 255")
+        if not self.online:
+            raise ValueError("the split-flap master is offline")
+        if not image:
+            raise ValueError("the firmware image is empty")
+        if len(image) > OTA_APP_MAX_SIZE:
+            raise ValueError(
+                f"the firmware image is {len(image)} bytes, larger than the "
+                f"{OTA_APP_MAX_SIZE}-byte application region"
+            )
+        state = (self.data.get("ota") or {}).get("state")
+        if state in OTA_STATES_ACTIVE:
+            raise ValueError(f"an OTA session is already running ({state})")
+        # A module stuck in its bootloader no longer answers the ASCII scan,
+        # so a missing module entry must not block the recovery flash.
+
+        await self.async_firmware_begin(payload_id)
+        for offset in range(0, len(image), OTA_CHUNK_BYTES):
+            await self.async_firmware_chunk(image[offset : offset + OTA_CHUNK_BYTES])
+        await self.async_firmware_flash()
+
+        return {
+            "ok": True,
+            "module": payload_id,
+            "size": len(image),
+            "chunks": (len(image) + OTA_CHUNK_BYTES - 1) // OTA_CHUNK_BYTES,
+            "crc32": f"{zlib.crc32(image) & 0xFFFFFFFF:08X}",
+        }
 
     async def _wait_for_drum(
         self, module_id: Any, drum: str, timeout: float = 10.0

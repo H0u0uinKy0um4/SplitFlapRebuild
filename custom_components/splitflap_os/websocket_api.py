@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN, VERSION
+from .firmware import MAX_HEX_CHARS, FirmwareImageError, image_from_hex
 from .positions import normalize_position_map
 from .runtime import get_runtime
 
@@ -446,6 +447,78 @@ async def websocket_restore(hass: HomeAssistant, connection, msg) -> None:
     )
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/flash_firmware",
+        vol.Required("module"): vol.Coerce(int),
+        vol.Required("hex"): vol.All(str, vol.Length(min=1, max=MAX_HEX_CHARS)),
+    }
+)
+@websocket_api.async_response
+async def websocket_flash_firmware(hass: HomeAssistant, connection, msg) -> None:
+    """Validate an Intel HEX image and flash one module over RS485.
+
+    The panel reads the ``ATtiny1616_OTA`` ``firmware.hex`` and sends its
+    text; the integration extracts the application region, publishes it in
+    ``chunk`` messages and finally starts the (blocking) flash session.
+    Progress then arrives through the ``ota`` status object.
+    """
+
+    if _require_runtime(hass, connection, msg) is None:
+        return
+    try:
+        image = image_from_hex(msg["hex"])
+    except FirmwareImageError as err:
+        connection.send_error(msg["id"], "invalid_request", str(err))
+        return
+
+    await _run_action(
+        hass,
+        connection,
+        msg,
+        lambda runtime: runtime["coordinator"].async_flash_image(msg["module"], image),
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/cancel_firmware"}
+)
+@websocket_api.async_response
+async def websocket_cancel_firmware(hass: HomeAssistant, connection, msg) -> None:
+    """Abort a running flash session or discard a collected image."""
+
+    await _run_action(
+        hass,
+        connection,
+        msg,
+        lambda runtime: runtime["coordinator"].async_firmware_cancel(),
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/reset_firmware",
+        vol.Required("module"): vol.Coerce(int),
+    }
+)
+@websocket_api.async_response
+async def websocket_reset_firmware(hass: HomeAssistant, connection, msg) -> None:
+    """Boot a module stuck in the bootloader back into its application.
+
+    A module that stayed in update mode after a cancelled or interrupted
+    flash no longer answers the ASCII scan, so the panel lets the user
+    enter its id directly. The master refuses the reset while an image is
+    being collected or a flash session is running.
+    """
+
+    await _run_action(
+        hass,
+        connection,
+        msg,
+        lambda runtime: runtime["coordinator"].async_firmware_reset(msg["module"]),
+    )
+
+
 COMMANDS = (
     websocket_get_state,
     websocket_subscribe,
@@ -467,6 +540,9 @@ COMMANDS = (
     websocket_record_all,
     websocket_backup,
     websocket_restore,
+    websocket_flash_firmware,
+    websocket_cancel_firmware,
+    websocket_reset_firmware,
 )
 
 

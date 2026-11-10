@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.20";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.20";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.20";
-import { PANEL_STYLES } from "../styles.js?v=0.1.20";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.22";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.22";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.22";
+import { PANEL_STYLES } from "../styles.js?v=0.1.22";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -330,6 +330,31 @@ export const PanelMixin = (Base) => class extends Base {
               </div>
 
               <div class="card">
+                <h2>${this._t('firmware_update')}</h2>
+                <p class="muted" style="margin-top:0">
+                  ${this._t('firmware_help')}
+                </p>
+                <div class="row" style="align-items:flex-end">
+                  <label class="field" style="flex:1 1 120px">
+                    <span>${this._t('module')}</span>
+                    <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
+                    <datalist id="otaModuleList"></datalist>
+                  </label>
+                  <label class="field" style="flex:2 1 240px">
+                    <span>${this._t('firmware_file')}</span>
+                    <input id="otaFile" type="file" accept=".hex,text/plain">
+                  </label>
+                </div>
+                <div class="actions">
+                  <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                  <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
+                  <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
+                </div>
+                <div class="ota-progress"><span id="otaBar"></span></div>
+                <div class="muted" id="otaStatus" style="margin-top:8px">${this._t('ota_state_idle')}</div>
+              </div>
+
+              <div class="card">
                 <h2>${escapeHtml(this._t('backup_restore'))}</h2>
                 <p class="muted" style="margin-top:0">
                   ${this._t('backup_help')}
@@ -439,6 +464,7 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderTuning();
     this._renderLayout();
     this._renderSettings();
+    this._renderOta();
     this._renderConnectionInfo();
   }
 
@@ -1312,6 +1338,59 @@ export const PanelMixin = (Base) => class extends Base {
         if (input.value !== next) input.value = next;
       });
     }
+  }
+
+  _renderOta() {
+    const coordinator = this._coordinator() || {};
+    const modules = coordinator.modules || [];
+    const ids = modules.map((module) => String(module.id));
+    const list = this.shadowRoot.getElementById("otaModuleList");
+    if (list) {
+      const signature = ids.join(",");
+      if (list.dataset.signature !== signature) {
+        list.innerHTML = ids
+          .map((id) => `<option value="${escapeAttr(id)}"></option>`)
+          .join("");
+        list.dataset.signature = signature;
+      }
+    }
+    // The id is freely editable: a module stuck in the bootloader no longer
+    // answers the scan, so it must still be targetable for a re-flash or a
+    // reset back into its application.
+    const input = this.shadowRoot.getElementById("otaModule");
+    if (input && !input.value && ids.length) input.value = ids[0];
+
+    const ota = coordinator.ota || { state: "idle" };
+    const state = String(ota.state || "idle");
+    const active = ["collecting", "entering", "flashing", "verifying"].includes(state);
+    const cancelBtn = this.shadowRoot.querySelector('[data-action="cancel-firmware"]');
+    if (cancelBtn) cancelBtn.disabled = !(active || this._otaBusy);
+    const resetBtn = this.shadowRoot.querySelector('[data-action="reset-firmware"]');
+    if (resetBtn) resetBtn.disabled = active || this._otaBusy;
+
+    let percent = null;
+    if (typeof ota.progress === "number") {
+      percent = Math.max(0, Math.min(100, ota.progress));
+    } else if (state === "collecting" && this._otaSize && ota.received) {
+      percent = Math.min(100, Math.round((ota.received / this._otaSize) * 100));
+    }
+    const bar = this.shadowRoot.getElementById("otaBar");
+    if (bar) bar.style.width = `${percent == null ? 0 : percent}%`;
+
+    const status = this.shadowRoot.getElementById("otaStatus");
+    if (!status) return;
+    if (this._otaBusy && !active) {
+      status.textContent = this._t("ota_uploading");
+      return;
+    }
+    const parts = [this._t(`ota_state_${state}`)];
+    if (ota.module != null) {
+      parts.push(formatMessage(this._t("ota_module"), { module: ota.module }));
+    }
+    if (percent != null) parts.push(`${percent}%`);
+    let text = parts.join(" — ");
+    if (ota.error) text += ` — ${ota.error}`;
+    status.textContent = text;
   }
 
   _renderConnectionInfo() {

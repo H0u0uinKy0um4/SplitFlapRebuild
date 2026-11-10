@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.20";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.20";
+import { formatMessage } from "../utils.js?v=0.1.22";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.22";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -141,6 +141,15 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "hardware":
         await this._hardwareAction(target.dataset.sub);
+        break;
+      case "flash-firmware":
+        await this._flashFirmware();
+        break;
+      case "cancel-firmware":
+        await this._cancelFirmware();
+        break;
+      case "reset-firmware":
+        await this._resetFirmware();
         break;
       case "save-settings":
         await this._saveSettings();
@@ -628,6 +637,89 @@ export const PanelMixin = (Base) => class extends Base {
     if (sub === "home_all") {
       await this._send("home_all");
       this._toast(this._t("homing_every_module"));
+    }
+  }
+
+  async _cancelFirmware() {
+    await this._send("cancel_firmware");
+    this._toast(this._t("ota_cancel_requested"));
+  }
+
+  _otaModuleId() {
+    const node = this.shadowRoot.getElementById("otaModule");
+    const value = Number(node && node.value);
+    return Number.isInteger(value) && value >= 1 && value <= 255 ? value : null;
+  }
+
+  async _resetFirmware() {
+    const moduleId = this._otaModuleId();
+    if (moduleId == null) {
+      this._toast(this._t("ota_no_module"), "warn");
+      return;
+    }
+    if (!window.confirm(formatMessage(this._t("ota_reset_confirm"), { module: moduleId }))) {
+      return;
+    }
+    await this._send("reset_firmware", { module: moduleId });
+    this._toast(formatMessage(this._t("ota_reset_requested"), { module: moduleId }));
+  }
+
+  async _flashFirmware() {
+    const fileNode = this.shadowRoot.getElementById("otaFile");
+    const file = fileNode && fileNode.files ? fileNode.files[0] : null;
+    if (!file) {
+      this._toast(this._t("ota_no_file"), "warn");
+      return;
+    }
+    if (!/\.hex$/i.test(file.name)) {
+      this._toast(this._t("ota_not_hex"), "warn");
+      return;
+    }
+    const moduleId = this._otaModuleId();
+    if (moduleId == null) {
+      this._toast(this._t("ota_no_module"), "warn");
+      return;
+    }
+    if (!window.confirm(formatMessage(this._t("ota_confirm"), { module: moduleId }))) {
+      return;
+    }
+
+    let text;
+    try {
+      text = await file.text();
+    } catch (err) {
+      this._toast(
+        formatMessage(this._t("ota_read_failed"), {
+          error: err.message || err,
+        }),
+        "error"
+      );
+      return;
+    }
+    if (!text.trimStart().startsWith(":")) {
+      this._toast(this._t("ota_not_hex"), "warn");
+      return;
+    }
+
+    this._otaBusy = true;
+    this._renderOta();
+    try {
+      const result = await this._send("flash_firmware", {
+        module: moduleId,
+        hex: text,
+      });
+      this._otaSize = Number(result && result.size) || 0;
+      this._toast(
+        formatMessage(this._t("ota_sent"), {
+          size: this._otaSize,
+          crc: (result && result.crc32) || "—",
+        })
+      );
+    } catch (err) {
+      /* _send already reported the error. */
+    } finally {
+      this._otaBusy = false;
+      this._renderOta();
     }
   }
 

@@ -35,6 +35,17 @@ OTA_STATES: Final = frozenset(
     }
 )
 
+# States in which the session owns the bus. A second upload or flash is
+# refused while one of these is reported.
+OTA_STATES_ACTIVE: Final = frozenset(
+    {
+        OTA_STATE_COLLECTING,
+        OTA_STATE_ENTERING,
+        OTA_STATE_FLASHING,
+        OTA_STATE_VERIFYING,
+    }
+)
+
 # Actions accepted on <prefix>/command/firmware (see the master's
 # include/ota/SlaveFlasher.h for the full JSON schema).
 FIRMWARE_ACTION_BEGIN: Final = "begin"
@@ -50,6 +61,12 @@ OTA_APP_START: Final = 0x0800
 OTA_APP_MAX_SIZE: Final = 14336
 OTA_PAGE_SIZE: Final = 64
 OTA_MAX_PAGES: Final = OTA_APP_MAX_SIZE // OTA_PAGE_SIZE
+
+#: Image bytes per ``chunk`` message. A multiple of 3 keeps every chunk's
+#: base64 padding-free (the master's decoder ends the stream at the first
+#: ``=``), and 768 bytes -> 1024 base64 characters stays well inside the
+#: master's 2048-byte MQTT buffer.
+OTA_CHUNK_BYTES: Final = 768
 
 
 def normalize_ota(raw: Any) -> dict[str, Any]:

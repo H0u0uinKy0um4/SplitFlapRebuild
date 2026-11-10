@@ -5,7 +5,8 @@ Run with ``python3 tests/test_ota.py`` (Home Assistant is not required).
 Two halves:
 
 * ``normalize_ota`` from the integration's ``ota.py`` (the status object
-  the panel will read).
+  the panel will read) and the Intel HEX loader from ``firmware.py`` that
+  turns the panel's uploaded ``firmware.hex`` into the application image.
 * A Python mirror of the wire protocol shared by the ATtiny bootloader
   (``bootloader/src/codec.h`` in the slave repo) and the master flasher
   (``src/ota/SlaveFlasher.cpp`` in the master repo). The reference
@@ -28,6 +29,7 @@ COMPONENT_DIR = os.path.join(os.path.dirname(HERE), "custom_components", "splitf
 sys.path.insert(0, COMPONENT_DIR)
 
 import ota  # noqa: E402  (path is prepared above)
+import firmware  # noqa: E402  (same directory)
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +358,76 @@ class LayoutConstantsTests(unittest.TestCase):
         self.assertEqual(ota.OTA_APP_MAX_SIZE, 14336)
         self.assertEqual(ota.OTA_PAGE_SIZE, 64)
         self.assertEqual(ota.OTA_MAX_PAGES, 224)
+
+
+class FirmwareImageTests(unittest.TestCase):
+    """The panel uploads the ATtiny1616_OTA .hex; firmware.py extracts it."""
+
+    @staticmethod
+    def record(address: int, kind: int, data: bytes = b"") -> str:
+        payload = bytes((len(data), (address >> 8) & 0xFF, address & 0xFF, kind)) + data
+        checksum = (-sum(payload)) & 0xFF
+        return ":" + payload.hex().upper() + f"{checksum:02X}"
+
+    @classmethod
+    def hex_file(cls, *records: str) -> str:
+        return "\n".join((*records, cls.record(0, 0x01))) + "\n"
+
+    def test_extracts_the_application_region(self) -> None:
+        text = self.hex_file(self.record(ota.OTA_APP_START, 0x00, b"\x0c\x94\x40\x04"))
+        self.assertEqual(firmware.image_from_hex(text), b"\x0c\x94\x40\x04")
+
+    def test_unwritten_addresses_become_erased_flash(self) -> None:
+        text = self.hex_file(
+            self.record(0x0800, 0x00, b"\xAA"),
+            self.record(0x0804, 0x00, b"\xBB"),
+        )
+        image = firmware.image_from_hex(text)
+        self.assertEqual(image, b"\xAA\xFF\xFF\xFF\xBB")
+        # Exactly the bytes the master hashes: no page rounding.
+        self.assertEqual(len(image), 5)
+        self.assertEqual(firmware.image_crc32(image), f"{zlib.crc32(image) & 0xFFFFFFFF:08X}")
+
+    def test_extended_segment_address_records_are_honoured(self) -> None:
+        text = self.hex_file(
+            self.record(0x0000, 0x02, b"\x00\x80"),  # base 0x0080 << 4 = 0x0800
+            self.record(0x0000, 0x00, b"\x11"),      # -> 0x0800
+            self.record(0x0010, 0x00, b"\x42"),      # -> 0x0810
+        )
+        self.assertEqual(
+            firmware.image_from_hex(text), b"\x11" + b"\xFF" * 15 + b"\x42"
+        )
+
+    def test_image_linked_at_zero_is_refused(self) -> None:
+        text = self.hex_file(self.record(0x0000, 0x00, b"\x0c\x94"))
+        with self.assertRaises(firmware.FirmwareImageError):
+            firmware.image_from_hex(text)
+
+    def test_oversized_image_is_refused(self) -> None:
+        data = b"\x00" * (ota.OTA_APP_MAX_SIZE + 1)
+        records = [
+            self.record(ota.OTA_APP_START + offset, 0x00, data[offset : offset + 32])
+            for offset in range(0, len(data), 32)
+        ]
+        with self.assertRaises(firmware.FirmwareImageError):
+            firmware.image_from_hex(self.hex_file(*records))
+
+    def test_bad_checksum_is_refused(self) -> None:
+        record = self.record(0x0800, 0x00, b"\x01\x02")
+        broken = record[:-2] + ("00" if record[-2:] != "00" else "01")
+        with self.assertRaises(firmware.FirmwareImageError):
+            firmware.image_from_hex(self.hex_file(broken))
+
+    def test_missing_eof_record_is_refused(self) -> None:
+        text = self.record(0x0800, 0x00, b"\x01") + "\n"
+        with self.assertRaises(firmware.FirmwareImageError):
+            firmware.image_from_hex(text)
+
+    def test_garbage_is_refused(self) -> None:
+        for text in ("", "not a hex file", ":00000001FF\n:ZZ"):
+            with self.subTest(text=text):
+                with self.assertRaises(firmware.FirmwareImageError):
+                    firmware.image_from_hex(text)
 
 
 if __name__ == "__main__":
