@@ -109,11 +109,15 @@ class AppEngine:
         if isinstance(stored, dict):
             raw_settings = stored.get("settings")
             if isinstance(raw_settings, dict):
+                # Old versions stored per-module "drum_<id>" overrides here.
+                # They were shadowed by the module's reported drum for every
+                # online module, so they are dropped; the drum lives in the
+                # slave's EEPROM and is written from the Tuning tab.
                 self.settings.update(
                     {
                         key: value
                         for key, value in raw_settings.items()
-                        if key in SETTINGS_KEYS or key.startswith("drum_")
+                        if key in SETTINGS_KEYS
                     }
                 )
             playlists = stored.get("saved_playlists")
@@ -285,7 +289,10 @@ class AppEngine:
     async def async_set_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
         cleaned: dict[str, Any] = {}
         for key, value in (updates or {}).items():
-            if key not in SETTINGS_KEYS and not key.startswith("drum_"):
+            # Per-module "drum_<id>" overrides are gone: they were shadowed
+            # by the module's reported drum for every online module. The
+            # drum is written to the slave's EEPROM from the Tuning tab.
+            if key not in SETTINGS_KEYS:
                 continue
             if key in {"rows", "cols"}:
                 try:
@@ -782,11 +789,13 @@ class AppEngine:
 
         settings = data.get("settings")
         if isinstance(settings, dict):
+            # Backups made by older versions may carry per-module
+            # "drum_<id>" overrides; they are ignored (see async_setup).
             self.settings.update(
                 {
                     key: value
                     for key, value in settings.items()
-                    if key in SETTINGS_KEYS or key.startswith("drum_")
+                    if key in SETTINGS_KEYS
                 }
             )
 

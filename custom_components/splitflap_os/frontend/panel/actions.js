@@ -1,6 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.14";
+import { formatMessage } from "../utils.js?v=0.1.15";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.15";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -134,9 +135,6 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "reset-default-drum":
         this._resetDefaultDrum();
-        break;
-      case "save-module-drum":
-        await this._saveModuleDrum();
         break;
       case "reset-module-drum":
         this._resetModuleDrum();
@@ -456,12 +454,24 @@ export const PanelMixin = (Base) => class extends Base {
         this._toast(this._t("drum_length_error"), "warn");
         return;
       }
-      await this._send("calibrate", {
+      // The write also re-queries the module on the master, so the result
+      // reports whether the EEPROM readback matches what we sent.
+      const result = await this._send("calibrate", {
         module,
         action: "drum_write",
         drum,
       });
-      this._toast(this._t("drum_written"));
+      if (result && result.verified === false) {
+        this._toast(
+          formatMessage(this._t("drum_verify_failed"), { module }),
+          "error"
+        );
+      } else {
+        this._toast(this._t("drum_written"));
+      }
+      // Re-sync the editor with the drum the module now reports.
+      this._inspectorModule = null;
+      this._renderTuning();
     }
   }
 
@@ -558,10 +568,16 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   _resetDefaultDrum() {
+    // Stage the stock drum in the editor; Save persists it as the fallback.
     const textarea = this.shadowRoot.getElementById("defaultDrum");
     if (textarea) {
-      textarea.value = "";
+      textarea.value = DEFAULT_DRUM;
       this._updateDrumCharCount();
+      this._toast(
+        formatMessage(this._t("drum_reset_staged"), {
+          button: this._t("save"),
+        })
+      );
     }
   }
 
@@ -586,29 +602,18 @@ export const PanelMixin = (Base) => class extends Base {
     return drum.length === 64 && !/[\r\n]/.test(drum);
   }
 
-  async _saveModuleDrum() {
-    const textarea = this.shadowRoot.getElementById("moduleDrum");
-    if (!textarea) return;
-    const moduleId = this._selectedModule;
-    if (moduleId === null || moduleId === undefined) return;
-    const value = String(textarea.value || "");
-    // An empty value clears the override. Anything else must be a complete
-    // 64-character drum, otherwise the indices would shift.
-    if (value !== "" && !this._validDrum(value)) {
-      this._toast(this._t("drum_length_error"), "warn");
-      return;
-    }
-    const settings = { [`drum_${moduleId}`]: value };
-    await this._send("set_settings", { settings });
-    this._settingsDirty = false;
-    this._toast(this._t("settings_saved"));
-  }
-
   _resetModuleDrum() {
+    // Stage the stock drum in the editor; Write to EEPROM persists it in
+    // the module's EEPROM. There is no HA-side per-module override anymore.
     const textarea = this.shadowRoot.getElementById("moduleDrum");
     if (textarea) {
-      textarea.value = "";
+      textarea.value = DEFAULT_DRUM;
       this._updateModuleDrumCharCount();
+      this._toast(
+        formatMessage(this._t("drum_reset_staged"), {
+          button: this._t("write_to_eeprom"),
+        })
+      );
     }
   }
 

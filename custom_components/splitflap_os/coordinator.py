@@ -455,10 +455,11 @@ class SplitFlapCoordinator:
         """Return the effective drum for a module.
 
         Priority:
-        1. Module's reported drum (flap_list).
-        2. Per-module override from settings (key ``drum_<id>``).
-        3. Global ``default_drum`` setting.
-        4. Built-in ``DEFAULT_DRUM``.
+        1. Module's reported drum (flap_list, read from its EEPROM by the
+           master). This is the single source of truth - to change it, write
+           the module's EEPROM from the Tuning tab.
+        2. Global ``default_drum`` fallback (modules that have not reported).
+        3. Built-in ``DEFAULT_DRUM``.
         """
         reported = self.flap_list_for(module_id)
         if reported:
@@ -472,9 +473,6 @@ class SplitFlapCoordinator:
                 engine = runtime.get("engine")
                 if engine is not None:
                     settings = getattr(engine, "settings", {}) or {}
-                    override = settings.get(f"drum_{module_id}")
-                    if _valid_drum(override):
-                        return list(override)
                     default = settings.get("default_drum")
                     if _valid_drum(default):
                         return list(default)
@@ -748,8 +746,12 @@ class SplitFlapCoordinator:
         clear_map: bool = False,
         steps: int | None = None,
         drum: str | None = None,
-    ) -> None:
-        """Publish one calibration command to the master."""
+    ) -> dict[str, Any] | None:
+        """Publish one calibration command to the master.
+
+        Returns ``{"ok": ..., "verified": ...}`` for a drum write once the
+        readback has been checked; ``None`` for every other action.
+        """
 
         cleaned_positions: dict[int, int] = {}
         if isinstance(positions, dict):
@@ -828,6 +830,40 @@ class SplitFlapCoordinator:
                 )
 
         await self._publish("calibrate", payload)
+
+        # The master writes the 64 characters, re-queries the module and
+        # republishes its status (a few seconds of bus time). Wait for that
+        # readback so the caller learns whether the EEPROM really took the
+        # drum instead of optimistically reporting success.
+        if action_norm == "drum_write" and isinstance(drum, str):
+            return await self._wait_for_drum(module_id, drum)
+        return None
+
+    async def _wait_for_drum(
+        self, module_id: Any, drum: str, timeout: float = 10.0
+    ) -> dict[str, Any]:
+        """Wait until the module reports ``drum`` and return the outcome.
+
+        The status updates arrive through the MQTT subscription while this
+        coroutine sleeps, so polling ``self.modules`` is enough.
+        """
+
+        key = str(module_payload_id(module_id))
+        expected = list(drum)
+        reported: Any = None
+        for _ in range(max(1, int(timeout / 0.5))):
+            module = self.modules.get(key) or {}
+            reported = module.get("flap_list")
+            if isinstance(reported, list) and reported == expected:
+                return {"ok": True, "verified": True}
+            await asyncio.sleep(0.5)
+        return {
+            "ok": True,
+            "verified": False,
+            "reported": "".join(reported)
+            if isinstance(reported, list)
+            else None,
+        }
 
     async def async_home_all(self) -> None:
         for module_id in self.module_ids:

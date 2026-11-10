@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.14";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.14";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.14";
-import { PANEL_STYLES } from "../styles.js?v=0.1.14";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.15";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.15";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.15";
+import { PANEL_STYLES } from "../styles.js?v=0.1.15";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -141,6 +141,7 @@ export const PanelMixin = (Base) => class extends Base {
                 <button class="btn secondary" data-action="reset-default-drum">${this._t('reset_to_stock')}</button>
                 <span class="muted" id="drumCharCount"></span>
               </div>
+              <small class="muted">${this._t('default_drum_fallback_note')}</small>
             </div>
 
             <div class="card inspector hidden" id="inspector">
@@ -203,7 +204,6 @@ export const PanelMixin = (Base) => class extends Base {
                 <small class="muted">${this._t('module_drum_help')}</small>
               </label>
               <div class="actions">
-                <button class="btn secondary" id="saveModuleDrumBtn" data-action="save-module-drum">${this._t('save')}</button>
                 <button class="btn secondary" id="resetModuleDrumBtn" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
                 <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
                 <span class="muted" id="moduleDrumCharCount"></span>
@@ -880,20 +880,22 @@ export const PanelMixin = (Base) => class extends Base {
         .join("\n");
       set("posMap", text);
 
-      // Load the module-specific drum override from settings.
+      // Load the module's reported drum (or the effective fallback when it
+      // has not reported one) so the editor always stages reality. The only
+      // write path is the EEPROM write; there is no per-module override.
       const moduleDrumTextarea = this.shadowRoot.getElementById("moduleDrum");
       if (moduleDrumTextarea) {
-        const engine = this._engine();
-        const settings = (engine && engine.settings) || {};
-        const drum = settings[`drum_${selected.id}`] || "";
+        const drum =
+          Array.isArray(selected.effective_drum) &&
+          selected.effective_drum.length === 64
+            ? selected.effective_drum.join("")
+            : "";
         moduleDrumTextarea.value = drum;
       }
     }
     this._updateModuleDrumCharCount();
 
-    const saveModDrumBtn = this.shadowRoot.getElementById("saveModuleDrumBtn");
     const resetModDrumBtn = this.shadowRoot.getElementById("resetModuleDrumBtn");
-    if (saveModDrumBtn) saveModDrumBtn.onclick = () => this._saveModuleDrum();
     if (resetModDrumBtn) resetModDrumBtn.onclick = () => this._resetModuleDrum();
 
     this._renderCharMap(selected);

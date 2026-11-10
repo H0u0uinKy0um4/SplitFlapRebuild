@@ -224,14 +224,17 @@ export const PANEL = {
   color_k: "Černá",
   color_c: "Azurová",
   color_m: "Purpurová",
-  default_drum: "Výchozí bubna",
+  default_drum: "Náhradní bubna",
   drum_editor_help: "64 znaků, jeden na lístek (pozice 0-63)",
   default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
+  default_drum_fallback_note: "Používá se jen pro moduly, které nenahlásily vlastní bubnu (offline nebo nenaskenované). Online moduly vždy používají bubnu uloženou ve své EEPROM.",
   reset_to_stock: "Obnovit výchozí",
   module_drum: "Bubna modulu",
-  module_drum_help: "Vlastní bubna o 64 znacích pro tento modul. Ponechte prázdné pro použití výchozí bubny.",
+  module_drum_help: "Bubna uložená v EEPROM modulu, jak ji modul hlásí. Uprav ji a stiskni Zapsat do EEPROM pro změnu hardware; Obnovit výchozí připraví výchozí bubnu ke kontrole.",
   write_to_eeprom: "Zapsat do EEPROM",
-  drum_written: "Bubna zapsána do modulu",
+  drum_written: "Bubna zapsána do modulu a ověřena",
+  drum_verify_failed: "Modul {module} nenahlásil zapsanou bubnu; zkontroluj jeho připojení a zkus to znovu",
+  drum_reset_staged: "Výchozí bubna načtena do editoru - použij tlačítko {button}",
 };
 
 export const APPS = {
@@ -267,6 +270,7 @@ export const SETTINGS = {
     timezone: "Časové pásmo",
     units: "Jednotky",
     page_delay: "Výchozí prodleva stránky (s)",
+    default_drum: "Náhradní bubna (64 znaků)",
     weather_entity: "Entita počasí",
     zip_code: "PSČ (záloha OpenWeather)",
     weather_api_key: "API klíč OpenWeather (záloha)",
@@ -293,6 +297,8 @@ export const SETTINGS = {
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     timezone:
       "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
+    default_drum:
+      "Používá se jen pro moduly, které nenahlásily vlastní bubnu (offline nebo ještě nenaskenované). Online moduly vždy používají bubnu uloženou ve své EEPROM - tu změň přes Zapsat do EEPROM na kartě Ladění. Prázdné znamená výchozí bubnu. Malá písmena jsou fyzické barevné lístky.",
     weather_entity:
       "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
     stocks_list: "Symboly Yahoo Finance oddělené čárkou.",

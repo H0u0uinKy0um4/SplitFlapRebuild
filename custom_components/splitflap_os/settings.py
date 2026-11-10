@@ -32,14 +32,16 @@ DISPLAY_FIELDS = (
     ),
     SettingField(
         key="default_drum",
-        label="Default drum (64 chars)",
+        label="Fallback drum (64 chars)",
         type="text",
         default="",
         placeholder=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
         help=(
-            "Override the 64-character drum used when a module has not "
-            "reported its own drum. Leave blank for the stock drum. "
-            "Use lowercase letters for colour flaps."
+            "Used only for modules that have not reported their own drum "
+            "(offline or not scanned yet). Online modules always use the "
+            "drum stored in their EEPROM - change that with Write to EEPROM "
+            "in Tuning. Leave blank for the stock drum. Lowercase letters "
+            "are the physical colour flaps."
         ),
     ),
     SettingField(
@@ -191,5 +193,7 @@ def settings_for_ui(settings: dict[str, Any]) -> dict[str, Any]:
     """Return a merged, JSON-safe settings dictionary for the panel."""
 
     merged = dict(DEFAULT_SETTINGS)
-    merged.update({key: value for key, value in settings.items() if key in SETTINGS_KEYS or key.startswith("drum_")})
+    merged.update(
+        {key: value for key, value in settings.items() if key in SETTINGS_KEYS}
+    )
     return merged

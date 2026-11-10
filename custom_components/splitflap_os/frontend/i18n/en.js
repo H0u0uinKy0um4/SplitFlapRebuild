@@ -223,14 +223,17 @@ export const PANEL = {
   color_k: "Black",
   color_c: "Cyan",
   color_m: "Magenta",
-  default_drum: "Default drum",
+  default_drum: "Fallback drum",
   drum_editor_help: "64 characters, one per flap (position 0-63)",
   default_drum_placeholder: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
+  default_drum_fallback_note: "Used only for modules that have not reported their own drum (offline or not scanned). Online modules always use the drum stored in their EEPROM.",
   reset_to_stock: "Reset to stock",
   module_drum: "Module drum",
-  module_drum_help: "Custom 64-character drum for this module. Leave blank to use the default drum.",
+  module_drum_help: "The drum stored in the module's EEPROM, as reported by the module. Edit it and press Write to EEPROM to change the hardware; Reset to stock stages the stock drum for review.",
   write_to_eeprom: "Write to EEPROM",
-  drum_written: "Drum written to module",
+  drum_written: "Drum written to the module and verified",
+  drum_verify_failed: "Module {module} did not report the written drum; check its connection and try again",
+  drum_reset_staged: "Stock drum loaded into the editor - press {button} to apply",
 };
 
 export const APPS = {
@@ -266,6 +269,7 @@ export const SETTINGS = {
     timezone: "Timezone",
     units: "Units",
     page_delay: "Default page delay (s)",
+    default_drum: "Fallback drum (64 chars)",
     weather_entity: "Weather entity",
     zip_code: "ZIP code (OpenWeather fallback)",
     weather_api_key: "OpenWeather API key (fallback)",
@@ -292,6 +296,8 @@ export const SETTINGS = {
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     timezone:
       "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
+    default_drum:
+      "Used only for modules that have not reported their own drum (offline or not scanned yet). Online modules always use the drum stored in their EEPROM - change that with Write to EEPROM in Tuning. Leave blank for the stock drum. Lowercase letters are the physical colour flaps.",
     weather_entity:
       "Preferred source. Uses Home Assistant's own weather data.",
     stocks_list: "Comma-separated Yahoo Finance symbols.",

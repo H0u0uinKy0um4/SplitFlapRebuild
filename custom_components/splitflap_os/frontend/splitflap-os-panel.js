@@ -1,9 +1,9 @@
 /* Split-Flap OS sidebar panel entry point. */
 
-import { PANEL_ELEMENT } from "./constants.js?v=0.1.14";
-import { PanelMixin as PanelCore } from "./panel/core.js?v=0.1.14";
-import { PanelMixin as PanelRender } from "./panel/render.js?v=0.1.14";
-import { PanelMixin as PanelActions } from "./panel/actions.js?v=0.1.14";
+import { PANEL_ELEMENT } from "./constants.js?v=0.1.15";
+import { PanelMixin as PanelCore } from "./panel/core.js?v=0.1.15";
+import { PanelMixin as PanelRender } from "./panel/render.js?v=0.1.15";
+import { PanelMixin as PanelActions } from "./panel/actions.js?v=0.1.15";
 
 class SplitFlapOSPanel extends PanelActions(PanelRender(PanelCore(HTMLElement))) {}
 
