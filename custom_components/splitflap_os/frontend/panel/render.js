@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.17";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.17";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.17";
-import { PANEL_STYLES } from "../styles.js?v=0.1.17";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.18";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.18";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.18";
+import { PANEL_STYLES } from "../styles.js?v=0.1.18";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -119,161 +119,193 @@ export const PanelMixin = (Base) => class extends Base {
           </section>
 
           <section class="page" data-page="tuning">
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('hardware')}</h2>
-                <div class="actions" style="margin:0">
-                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
-                </div>
-              </div>
-              <div class="mod-matrix" id="moduleMatrix" style="margin-top:12px"></div>
-              <div class="muted" id="matrixMeta" style="margin-top:8px"></div>
-            </div>
+            <nav class="subtabs">
+              <button class="subtab active" data-action="subtab" data-group="tuning" data-sub="modules">${this._t("subtab_modules")}</button>
+              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="map">${this._t("subtab_map")}</button>
+              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="drum">${this._t("subtab_drum")}</button>
+            </nav>
 
-            <div class="card">
-              <h2 style="margin:0">${this._t('default_drum')}</h2>
-              <label class="field" style="margin-top:12px">
-                <span>${this._t('drum_editor_help')}</span>
-                <textarea id="defaultDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
-              </label>
-              <div class="row" style="margin-top:8px;align-items:center">
-                <button class="btn secondary" data-action="save-default-drum">${this._t('save')}</button>
-                <button class="btn secondary" data-action="reset-default-drum">${this._t('reset_to_stock')}</button>
-                <span class="muted" id="drumCharCount"></span>
-              </div>
-              <small class="muted">${this._t('default_drum_fallback_note')}</small>
-            </div>
-
-            <div class="card inspector hidden" id="inspector">
-              <div class="row between">
-                <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
-                <span class="muted" id="inspectState"></span>
-              </div>
-              <div class="stats">
-                <div class="stat"><b id="statFlap">–</b><span>${this._t('flap')}</span></div>
-                <div class="stat"><b id="statActual">–</b><span>${this._t('reported')}</span></div>
-                <div class="stat"><b id="statStep">–</b><span>${this._t('step')}</span></div>
-                <div class="stat"><b id="statIndex">–</b><span>${this._t('index')}</span></div>
-                <div class="stat"><b id="statOffset">–</b><span>${this._t('offset')}</span></div>
-                <div class="stat"><b id="statTotal">–</b><span>${this._t('total_steps')}</span></div>
-              </div>
-              <div class="grid2">
-                <label class="field"><span>${this._t('goto_drum_index')}</span>
-                  <input id="gotoIndex" type="number" min="0" max="63" placeholder="0-63">
-                </label>
-                <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="goto_index">${this._t('goto_index')}</button>
-                  <button class="btn secondary" data-action="module" data-sub="get_pos">${this._t('get_position')}</button>
+            <div class="subpage active" data-subpage="tuning" data-sub="modules">
+              <div class="card">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('hardware')}</h2>
+                  <div class="actions" style="margin:0">
+                    <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
+                  </div>
                 </div>
-                <label class="field"><span>${this._t('step_steps')}</span>
-                  <input id="stepAmount" type="number" step="1" value="32">
-                </label>
-                <div class="step-row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="step" data-step="-32">-32</button>
-                  <button class="btn secondary" data-action="module" data-sub="step" data-step="-1">-1</button>
-                  <button class="btn secondary" data-action="module" data-sub="step" data-step="1">+1</button>
-                  <button class="btn secondary" data-action="module" data-sub="step" data-step="32">+32</button>
-                  <button class="btn secondary" data-action="module" data-sub="step">${this._t('step')}</button>
-                </div>
-                <label class="field"><span>${this._t('record_at_index')}</span>
-                  <input id="recordIndex" type="number" min="0" max="63" placeholder="0-63">
-                </label>
-                <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="record">${this._t('record')}</button>
-                  <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
-                  <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
-                </div>
-                <label class="field"><span>${this._t('home_offset')}</span>
-                  <input id="offsetValue" type="number" min="0" max="65535" placeholder="${escapeAttr(this._t('steps'))}">
-                </label>
-                <div class="row" style="align-items:flex-end">
-                  <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
-                </div>
-              </div>
-              <label class="field" style="margin-top:12px"><span>${this._t('position_map')}</span>
-                <textarea id="posMap" rows="3" placeholder="0:2832&#10;1:2896"></textarea>
-              </label>
-              <div class="actions">
-                <button class="btn secondary" data-action="module" data-sub="apply_map">${this._t('apply_map_to_eeprom')}</button>
-                <span class="muted">${this._t('position_map_hint')}</span>
-              </div>
-
-              <label class="field" style="margin-top:16px">
-                <span>${this._t('module_drum')}</span>
-                <textarea id="moduleDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
-                <small class="muted">${this._t('module_drum_help')}</small>
-              </label>
-              <div class="actions">
-                <button class="btn secondary" id="resetModuleDrumBtn" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
-                <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
-                <span class="muted" id="moduleDrumCharCount"></span>
+                <div class="mod-matrix" id="moduleMatrix" style="margin-top:12px"></div>
+                <div class="muted" id="matrixMeta" style="margin-top:8px"></div>
               </div>
             </div>
 
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('character_map')}</h2>
-                <span class="muted" id="charMapTitle"></span>
+            <div class="subpage" data-subpage="tuning" data-sub="map">
+              <div class="card inspector" id="mapCard">
+                <div class="row between">
+                  <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
+                  <span class="muted" id="inspectState"></span>
+                </div>
+                <div class="empty hidden" id="mapEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div class="hidden" id="mapBody">
+                  <div class="stats">
+                    <div class="stat"><b id="statFlap">–</b><span>${this._t('flap')}</span></div>
+                    <div class="stat"><b id="statActual">–</b><span>${this._t('reported')}</span></div>
+                    <div class="stat"><b id="statStep">–</b><span>${this._t('step')}</span></div>
+                    <div class="stat"><b id="statIndex">–</b><span>${this._t('index')}</span></div>
+                    <div class="stat"><b id="statOffset">–</b><span>${this._t('offset')}</span></div>
+                    <div class="stat"><b id="statTotal">–</b><span>${this._t('total_steps')}</span></div>
+                  </div>
+                  <div class="grid2">
+                    <label class="field"><span>${this._t('goto_drum_index')}</span>
+                      <input id="gotoIndex" type="number" min="0" max="63" placeholder="0-63">
+                    </label>
+                    <div class="row" style="align-items:flex-end">
+                      <button class="btn secondary" data-action="module" data-sub="goto_index">${this._t('goto_index')}</button>
+                      <button class="btn secondary" data-action="module" data-sub="get_pos">${this._t('get_position')}</button>
+                    </div>
+                    <label class="field"><span>${this._t('step_steps')}</span>
+                      <input id="stepAmount" type="number" step="1" value="32">
+                    </label>
+                    <div class="row" style="align-items:flex-end">
+                      <button class="btn secondary" data-action="module" data-sub="step">${this._t('step')}</button>
+                    </div>
+                    <label class="field"><span>${this._t('record_at_index')}</span>
+                      <input id="recordIndex" type="number" min="0" max="63" placeholder="0-63">
+                    </label>
+                    <div class="row" style="align-items:flex-end">
+                      <button class="btn secondary" data-action="module" data-sub="record">${this._t('record')}</button>
+                      <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
+                      <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
+                    </div>
+                    <label class="field"><span>${this._t('home_offset')}</span>
+                      <input id="offsetValue" type="number" min="0" max="65535" placeholder="${escapeAttr(this._t('steps'))}">
+                    </label>
+                    <div class="row" style="align-items:flex-end">
+                      <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
+                    </div>
+                  </div>
+                  <label class="field" style="margin-top:12px"><span>${this._t('position_map')}</span>
+                    <textarea id="posMap" rows="3" placeholder="0:2832&#10;1:2896"></textarea>
+                  </label>
+                  <div class="actions">
+                    <button class="btn secondary" data-action="module" data-sub="apply_map">${this._t('apply_map_to_eeprom')}</button>
+                    <span class="muted">${this._t('position_map_hint')}</span>
+                  </div>
+                </div>
               </div>
-              <div class="char-map" id="charMap" style="margin-top:12px"></div>
-              <p class="muted" style="margin-bottom:0">
-                ${this._t('char_map_help')}
-              </p>
+            </div>
+
+            <div class="subpage" data-subpage="tuning" data-sub="drum">
+              <div class="card inspector" id="drumCard">
+                <div class="row between">
+                  <h2 style="margin:0" id="drumTitle">${this._t('module')}</h2>
+                  <span class="muted" id="drumState"></span>
+                </div>
+                <div class="empty hidden" id="drumEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div class="hidden" id="drumBody">
+                  <label class="field">
+                    <span>${this._t('module_drum')}</span>
+                    <textarea id="moduleDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+                    <small class="muted">${this._t('module_drum_help')}</small>
+                  </label>
+                  <div class="actions">
+                    <button class="btn secondary" id="resetModuleDrumBtn" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
+                    <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
+                    <span class="muted" id="moduleDrumCharCount"></span>
+                  </div>
+                  <div class="row between" style="margin-top:16px">
+                    <h3 style="margin:0">${this._t('character_map')}</h3>
+                    <span class="muted" id="charMapTitle"></span>
+                  </div>
+                  <div class="char-map" id="charMap" style="margin-top:12px"></div>
+                  <p class="muted" style="margin-bottom:0">
+                    ${this._t('char_map_help')}
+                  </p>
+                </div>
+              </div>
             </div>
           </section>
 
           <section class="page" data-page="settings">
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('hardware_actions')}</h2>
-                <div class="actions" style="margin:0">
-                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t('scan')}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t('sync')}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
-                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
+            <nav class="subtabs">
+              <button class="subtab active" data-action="subtab" data-group="settings" data-sub="general">${this._t("subtab_general")}</button>
+              <button class="subtab" data-action="subtab" data-group="settings" data-sub="layout">${this._t("subtab_layout")}</button>
+              <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drum")}</button>
+              <button class="subtab" data-action="subtab" data-group="settings" data-sub="system">${this._t("subtab_system")}</button>
+            </nav>
+
+            <div class="subpage active" data-subpage="settings" data-sub="general">
+              <div class="card">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('settings')}</h2>
+                  <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+                </div>
+                <div id="settingsGroups" style="margin-top:14px"></div>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="settings" data-sub="layout">
+              <div class="card">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('physical_layout')}</h2>
+                  <span class="muted" id="layoutSummary"></span>
+                </div>
+                <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
+                <div class="layout-alert" id="layoutError"></div>
+                <p class="muted" style="margin-bottom:0">
+                  ${this._t('layout_help')}
+                </p>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="settings" data-sub="drum">
+              <div class="card">
+                <h2 style="margin:0">${this._t('default_drum')}</h2>
+                <label class="field" style="margin-top:12px">
+                  <span>${this._t('drum_editor_help')}</span>
+                  <textarea id="defaultDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+                </label>
+                <div class="row" style="margin-top:8px;align-items:center">
+                  <button class="btn secondary" data-action="save-default-drum">${this._t('save')}</button>
+                  <button class="btn secondary" data-action="reset-default-drum">${this._t('reset_to_stock')}</button>
+                  <span class="muted" id="drumCharCount"></span>
+                </div>
+                <small class="muted">${this._t('default_drum_fallback_note')}</small>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="settings" data-sub="system">
+              <div class="card">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('hardware_actions')}</h2>
+                  <div class="actions" style="margin:0">
+                    <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t('scan')}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t('sync')}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
+                    <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('physical_layout')}</h2>
-                <span class="muted" id="layoutSummary"></span>
+              <div class="card">
+                <h2>${escapeHtml(this._t('backup_restore'))}</h2>
+                <p class="muted" style="margin-top:0">
+                  ${this._t('backup_help')}
+                </p>
+                <div class="actions">
+                  <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
+                  <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
+                  <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+                </div>
+                <div class="muted" id="backupStatus" style="margin-top:8px"></div>
               </div>
-              <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
-              <div class="layout-alert" id="layoutError"></div>
-              <p class="muted" style="margin-bottom:0">
-                ${this._t('layout_help')}
-              </p>
-            </div>
 
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('settings')}</h2>
-                <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+              <div class="card">
+                <h2>${this._t('connection')}</h2>
+                <div class="muted" id="connectionInfo">${this._t('waiting_state')}</div>
               </div>
-              <div id="settingsGroups" style="margin-top:14px"></div>
-            </div>
-
-            <div class="card">
-              <h2>${escapeHtml(this._t('backup_restore'))}</h2>
-              <p class="muted" style="margin-top:0">
-                ${this._t('backup_help')}
-              </p>
-              <div class="actions">
-                <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
-                <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
-                <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
-              </div>
-              <div class="muted" id="backupStatus" style="margin-top:8px"></div>
-            </div>
-
-            <div class="card">
-              <h2>${this._t('connection')}</h2>
-              <div class="muted" id="connectionInfo">${this._t('waiting_state')}</div>
             </div>
           </section>
         </main>
@@ -314,6 +346,32 @@ export const PanelMixin = (Base) => class extends Base {
     this.shadowRoot.querySelectorAll("[data-page]").forEach((page) => {
       page.classList.toggle("active", page.dataset.page === this._tab);
     });
+    this._applySubtabs();
+  }
+
+  _applySubtabs() {
+    this.shadowRoot.querySelectorAll('[data-action="subtab"]').forEach((button) => {
+      const group = button.dataset.group;
+      button.classList.toggle(
+        "active",
+        this._subtabs[group] === button.dataset.sub
+      );
+    });
+    this.shadowRoot.querySelectorAll("[data-subpage]").forEach((node) => {
+      const group = node.dataset.subpage;
+      node.classList.toggle("active", this._subtabs[group] === node.dataset.sub);
+    });
+  }
+
+  _setSubtab(group, sub) {
+    if (!this._subtabs || !(group in this._subtabs)) return;
+    this._subtabs[group] = sub;
+    try {
+      window.localStorage.setItem(`${DOMAIN}_subtab_${group}`, sub);
+    } catch (err) {
+      /* ignore */
+    }
+    this._applySubtabs();
   }
 
   _setTab(tab) {
@@ -812,7 +870,7 @@ export const PanelMixin = (Base) => class extends Base {
       } • ${this._t(coordinator.online ? "master_online" : "master_offline")}`;
     }
 
-    // Load default drum into the editor textarea.
+    // Load default drum into the editor textarea (Settings > Drum).
     const drumTextarea = this.shadowRoot.getElementById("defaultDrum");
     if (drumTextarea && !this._settingsDirty) {
       const engine = this._engine();
@@ -823,31 +881,47 @@ export const PanelMixin = (Base) => class extends Base {
     this._updateDrumCharCount();
 
     const selected = this._moduleFor(this._selectedModule);
+    const hasModule = Boolean(selected);
+    const mapBody = this.shadowRoot.getElementById("mapBody");
+    const mapEmpty = this.shadowRoot.getElementById("mapEmpty");
+    const drumBody = this.shadowRoot.getElementById("drumBody");
+    const drumEmpty = this.shadowRoot.getElementById("drumEmpty");
+    if (mapBody) mapBody.classList.toggle("hidden", !hasModule);
+    if (mapEmpty) mapEmpty.classList.toggle("hidden", hasModule);
+    if (drumBody) drumBody.classList.toggle("hidden", !hasModule);
+    if (drumEmpty) drumEmpty.classList.toggle("hidden", hasModule);
+
     if (!selected) {
       this._selectedModule = null;
       this._inspectorModule = null;
-      const inspector = this.shadowRoot.getElementById("inspector");
-      if (inspector) inspector.classList.add("hidden");
+      const titles = ["inspectTitle", "drumTitle"];
+      for (const id of titles) {
+        const node = this.shadowRoot.getElementById(id);
+        if (node) node.textContent = this._t("module");
+      }
+      for (const id of ["inspectState", "drumState"]) {
+        const node = this.shadowRoot.getElementById(id);
+        if (node) node.textContent = "";
+      }
       this._renderCharMap(null);
       return;
     }
 
-    const inspector = this.shadowRoot.getElementById("inspector");
-    if (inspector) inspector.classList.remove("hidden");
-
-    const title = this.shadowRoot.getElementById("inspectTitle");
-    if (title) {
-      title.textContent = formatMessage(this._t("module_named"), {
-        id: selected.id,
-      });
+    const moduleTitle = formatMessage(this._t("module_named"), {
+      id: selected.id,
+    });
+    for (const id of ["inspectTitle", "drumTitle"]) {
+      const node = this.shadowRoot.getElementById(id);
+      if (node) node.textContent = moduleTitle;
     }
-    const state = this.shadowRoot.getElementById("inspectState");
-    if (state) {
-      state.textContent = `${String(
-        selected.state || this._t("unknown")
-      ).toUpperCase()} • ${this._t(
-        selected.online === false ? "offline" : "online"
-      )}`;
+    const stateText = `${String(
+      selected.state || this._t("unknown")
+    ).toUpperCase()} • ${this._t(
+      selected.online === false ? "offline" : "online"
+    )}`;
+    for (const id of ["inspectState", "drumState"]) {
+      const node = this.shadowRoot.getElementById(id);
+      if (node) node.textContent = stateText;
     }
 
     const values = {

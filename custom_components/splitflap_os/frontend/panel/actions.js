@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.17";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.17";
+import { formatMessage } from "../utils.js?v=0.1.18";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.18";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -53,6 +53,9 @@ export const PanelMixin = (Base) => class extends Base {
     switch (action) {
       case "tab":
         this._setTab(target.dataset.tab);
+        break;
+      case "subtab":
+        this._setSubtab(target.dataset.group, target.dataset.sub);
         break;
       case "refresh":
         await this._loadState();

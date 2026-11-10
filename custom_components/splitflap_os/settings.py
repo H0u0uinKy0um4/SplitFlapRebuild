@@ -31,20 +31,6 @@ DISPLAY_FIELDS = (
         ),
     ),
     SettingField(
-        key="default_drum",
-        label="Fallback drum (64 chars)",
-        type="text",
-        default="",
-        placeholder=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&()-+=;q:%'.,/?*roygbpw",
-        help=(
-            "Used only for modules that have not reported their own drum "
-            "(offline or not scanned yet). Online modules always use the "
-            "drum stored in their EEPROM - change that with Write to EEPROM "
-            "in Tuning. Leave blank for the stock drum. Lowercase letters "
-            "are the physical colour flaps."
-        ),
-    ),
-    SettingField(
         key="rows",
         label="Frame rows (0 = auto)",
         type="number",

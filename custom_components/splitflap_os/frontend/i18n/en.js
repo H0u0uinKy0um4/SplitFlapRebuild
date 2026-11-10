@@ -7,6 +7,12 @@ export const PANEL = {
   tab_apps: "APPS",
   tab_tuning: "TUNING",
   tab_settings: "SETTINGS",
+  subtab_modules: "MODULES",
+  subtab_map: "MAP",
+  subtab_drum: "DRUM",
+  subtab_general: "GENERAL",
+  subtab_layout: "LAYOUT",
+  subtab_system: "SYSTEM",
   stop: "STOP",
   clear: "CLEAR",
   save: "SAVE",
@@ -86,7 +92,7 @@ export const PANEL = {
   master_online: "master online",
   master_offline: "master offline",
   blank_cell: "Blank frame cell",
-  select_module_hint: "Select a module above to tune characters.",
+  select_module_hint: "Select a module in the Modules tab first.",
   char_map_title: "Module {id} • {flaps}",
   index_named: "Index {index}",
   mode_idle: "idle",
@@ -270,7 +276,6 @@ export const SETTINGS = {
     timezone: "Timezone",
     units: "Units",
     page_delay: "Default page delay (s)",
-    default_drum: "Fallback drum (64 chars)",
     weather_entity: "Weather entity",
     zip_code: "ZIP code (OpenWeather fallback)",
     weather_api_key: "OpenWeather API key (fallback)",
@@ -297,8 +302,6 @@ export const SETTINGS = {
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     timezone:
       "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
-    default_drum:
-      "Used only for modules that have not reported their own drum (offline or not scanned yet). Online modules always use the drum stored in their EEPROM - change that with Write to EEPROM in Tuning. Leave blank for the stock drum. Lowercase letters are the physical colour flaps.",
     weather_entity:
       "Preferred source. Uses Home Assistant's own weather data.",
     stocks_list: "Comma-separated Yahoo Finance symbols.",

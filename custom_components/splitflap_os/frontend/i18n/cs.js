@@ -7,6 +7,12 @@ export const PANEL = {
   tab_apps: "APLIKACE",
   tab_tuning: "LADĚNÍ",
   tab_settings: "NASTAVENÍ",
+  subtab_modules: "MODULY",
+  subtab_map: "MAPA",
+  subtab_drum: "BUBEN",
+  subtab_general: "OBECNÉ",
+  subtab_layout: "ROZLOŽENÍ",
+  subtab_system: "SYSTÉM",
   stop: "STOP",
   clear: "SMAZAT",
   save: "ULOŽIT",
@@ -86,7 +92,7 @@ export const PANEL = {
   master_online: "master online",
   master_offline: "master offline",
   blank_cell: "Prázdná buňka rámu",
-  select_module_hint: "Vyber modul výše pro ladění znaků.",
+  select_module_hint: "Nejprve vyberte modul na kartě Moduly.",
   char_map_title: "Modul {id} • {flaps}",
   index_named: "Index {index}",
   mode_idle: "nečinnost",
@@ -271,7 +277,6 @@ export const SETTINGS = {
     timezone: "Časové pásmo",
     units: "Jednotky",
     page_delay: "Výchozí prodleva stránky (s)",
-    default_drum: "Náhradní bubna (64 znaků)",
     weather_entity: "Entita počasí",
     zip_code: "PSČ (záloha OpenWeather)",
     weather_api_key: "API klíč OpenWeather (záloha)",
@@ -298,8 +303,6 @@ export const SETTINGS = {
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     timezone:
       "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
-    default_drum:
-      "Používá se jen pro moduly, které nenahlásily vlastní bubnu (offline nebo ještě nenaskenované). Online moduly vždy používají bubnu uloženou ve své EEPROM - tu změň přes Zapsat do EEPROM na kartě Ladění. Prázdné znamená výchozí bubnu. Malá písmena jsou fyzické barevné lístky.",
     weather_entity:
       "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
     stocks_list: "Symboly Yahoo Finance oddělené čárkou.",
