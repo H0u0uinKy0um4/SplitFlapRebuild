@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.15";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.15";
+import { formatMessage } from "../utils.js?v=0.1.17";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.17";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -199,6 +199,9 @@ export const PanelMixin = (Base) => class extends Base {
       return;
     }
     this._builder.push({ text });
+    // The builder lives on the Playlists tab; switch to it so the new page
+    // is actually visible instead of landing in a hidden list.
+    this._setTab("playlists");
     this._renderBuilder();
     this._toast(
       formatMessage(this._t("page_added"), { index: this._builder.length })

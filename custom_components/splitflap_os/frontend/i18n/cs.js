@@ -3,6 +3,7 @@
 export const PANEL = {
   // Navigace a globální akce.
   tab_control: "OVLÁDÁNÍ",
+  tab_playlists: "PLAYLISTY",
   tab_apps: "APLIKACE",
   tab_tuning: "LADĚNÍ",
   tab_settings: "NASTAVENÍ",

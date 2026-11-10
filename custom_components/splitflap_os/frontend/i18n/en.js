@@ -3,6 +3,7 @@
 export const PANEL = {
   // Navigation and global actions.
   tab_control: "CONTROL",
+  tab_playlists: "PLAYLISTS",
   tab_apps: "APPS",
   tab_tuning: "TUNING",
   tab_settings: "SETTINGS",

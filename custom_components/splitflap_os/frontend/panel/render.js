@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.15";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.15";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.15";
-import { PANEL_STYLES } from "../styles.js?v=0.1.15";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.17";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.17";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.17";
+import { PANEL_STYLES } from "../styles.js?v=0.1.17";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -36,6 +36,7 @@ export const PanelMixin = (Base) => class extends Base {
 
         <nav class="tabs">
           <button class="tab active" data-action="tab" data-tab="control">${this._t("tab_control")}</button>
+          <button class="tab" data-action="tab" data-tab="playlists">${this._t("tab_playlists")}</button>
           <button class="tab" data-action="tab" data-tab="apps">${this._t("tab_apps")}</button>
           <button class="tab" data-action="tab" data-tab="tuning">${this._t("tab_tuning")}</button>
           <button class="tab" data-action="tab" data-tab="settings">${this._t("tab_settings")}</button>
@@ -78,7 +79,9 @@ export const PanelMixin = (Base) => class extends Base {
                 <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
               </div>
             </div>
+          </section>
 
+          <section class="page" data-page="playlists">
             <div class="card">
               <div class="row between">
                 <h2 style="margin:0">${this._t('playlist_builder')}</h2>
@@ -895,8 +898,9 @@ export const PanelMixin = (Base) => class extends Base {
     }
     this._updateModuleDrumCharCount();
 
-    const resetModDrumBtn = this.shadowRoot.getElementById("resetModuleDrumBtn");
-    if (resetModDrumBtn) resetModDrumBtn.onclick = () => this._resetModuleDrum();
+    // No direct onclick wiring here: every button carries data-action and is
+    // handled by the single delegated click listener. A second, direct
+    // handler made one click run the action (and its toast) twice.
 
     this._renderCharMap(selected);
   }
