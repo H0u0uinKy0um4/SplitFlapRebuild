@@ -140,6 +140,23 @@ class ResolveLayoutTests(unittest.TestCase):
         self.assertTrue(layout.app_fits(small, 1, 1)[0])
         self.assertFalse(layout.app_fits(small, 3, 9)[0])
 
+    def test_unscanned_bus_is_valid_in_any_frame(self) -> None:
+        # The docstring promises that module_count == 0 (bus not scanned yet)
+        # only validates the structure; the blank-cell rule must not fire
+        # before modules are detected.
+        for rows, cols in ((1, 1), (3, 3), (3, 15), (7, 8)):
+            resolved = layout.resolve_layout(0, rows, cols)
+            self.assertTrue(
+                resolved.valid,
+                f"unscanned bus in a {rows}x{cols} frame must not be a layout error",
+            )
+
+    def test_unscanned_bus_assumes_a_full_board(self) -> None:
+        resolved = layout.resolve_layout(0, 3, 15)
+        self.assertTrue(resolved.valid)
+        self.assertEqual(resolved.module_count, 45)
+        self.assertEqual(resolved.row_counts, (15, 15, 15))
+
 
 class FormattingTests(unittest.TestCase):
     def test_format_lines_centres_and_pads(self) -> None:

@@ -72,13 +72,31 @@ and must not be treated as production code or deleted.
 
 ## Known firmware bugs / caveats
 
-- Master `calibrate` action `record` with index `0` also sends a destructive
-  `m<id>w0:0` write. Documented in README; avoid relying on index 0 recording.
-- Master publishes `busy: false` and `position_known: online` unconditionally.
-  Do not build logic on those fields; use `current_step`, `home_offset`,
-  `total_steps`, and explicit sync/refresh.
-- `module["flap"]` may fall back to the master's `current_text`; the coordinator
-  keeps `actual_flap` and `desired_flap` separate for the UI.
+- Slave moves are **blocking**. The master defers the post-move refresh by
+  `MOVE_SETTLE_MS` (5 s); do not query a module immediately after
+  `goto`/`home`/`step`/`apply` or it will look offline.
+- Master publishes `busy: false` unconditionally because moves are blocking.
+  `position_known` is now the real slave flag, but only trust it while the
+  module is online.
+- Position is open loop between homes on deployed slave firmware; there is no
+  per-step hall correction. Slave firmware with mid-move hall re-referencing
+  (see the slave repo's PROTOCOL.md, "Motion") zeroes `pos` on the hall
+  entering edge during any move that crosses the magnet and recomputes the
+  remaining distance, so drift cannot survive a magnet crossing. Re-home after
+  mechanical changes or a wrong revolution count either way.
+- Recording index `0` is supported and redefines `homeOffset` on the slave. The
+  old destructive `m<id>w0:0` compatibility write has been removed.
+- `module["flap"]` is the master's best knowledge, not a true readback: when
+  the module reports `position_known`, the master derives the real flap from
+  the position map (or the slave's linear formula) and publishes that plus
+  `current_index`; otherwise it falls back to the last requested character.
+  On deployed (old) slave firmware the open-loop position can drift, so
+  `position_known` is only trustworthy with the mid-move hall re-referencing
+  slave firmware. The coordinator keeps `actual_flap` and `desired_flap`
+  separate for the UI.
+- Drums are exactly 64 characters. Shorter overrides are rejected instead of
+  being space-padded, and line breaks are rejected because they would terminate
+  the RS485 command.
 
 ## Validation commands
 

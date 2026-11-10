@@ -140,6 +140,7 @@ calibrate:
             - record
             - apply
             - clear_map
+            - drum_write
             - get_pos
     index:
       name: Drum index
@@ -181,6 +182,11 @@ calibrate:
           min: -65535
           max: 65535
           mode: box
+    drum:
+      name: Drum
+      description: Exactly 64 characters, one per flap, without line breaks (action drum_write).
+      selector:
+        text:
 
 home_all:
   name: Home all

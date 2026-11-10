@@ -245,14 +245,19 @@ out-of-range entries are ignored in the same way. An explicit `positions`
 object sent to the `calibrate` service may still contain `65535` to clear a
 single entry on the slave.
 
-## Firmware caveat: recording index 0
+## Coordinate system and recording index 0
 
-The current master firmware's `record` action sends `m<id>r<idx>`, then also
-sends `m<id>w0:0` when `idx == 0` "for compatibility". That legacy write can
-corrupt the first entry of the EEPROM map. Prefer recording nonzero indexes, or
-patch the firmware to remove the extra `w0:0` write. The integration does not
-send that write itself; it only sends `{"action": "record", "index": 0}` and the
-master expands it.
+The slave counts `pos` from the hall entering edge. Flap 0 sits at `homeOffset`,
+and the fallback position for an unset map entry is
+`homeOffset + round(index * totalStepsPerRev / 64)`, modulo
+`totalStepsPerRev`. The integration mirrors this when it estimates a flap
+position, so `home_offset` and `total_steps` in the status payload are enough to
+locate any flap.
+
+Recording index 0 is supported: `m<id>r0` stores the current position as
+`map[0]` and redefines `homeOffset`. That is the intended way to re-centre flap
+0, not a destructive compatibility write. Older master firmware also sent a
+second `m<id>w0:0`; current firmware does not.
 
 ## Adding an app
 

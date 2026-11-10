@@ -146,6 +146,10 @@
         "steps": {
           "name": "Kroky",
           "description": "Relativní kroky; integrace je převede na absolutní pozici podle posledního hlášeného kroku modulu."
+        },
+        "drum": {
+          "name": "Buben",
+          "description": "Přesně 64 znaků, jeden na každý lístek, bez konců řádků (akce drum_write)."
         }
       }
     },

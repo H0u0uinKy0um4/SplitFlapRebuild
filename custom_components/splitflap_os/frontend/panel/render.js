@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.12";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.12";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.12";
-import { PANEL_STYLES } from "../styles.js?v=0.1.12";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.14";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.14";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.14";
+import { PANEL_STYLES } from "../styles.js?v=0.1.14";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -977,9 +977,11 @@ export const PanelMixin = (Base) => class extends Base {
     }
 
     const drum =
-      Array.isArray(module.flap_list) && module.flap_list.length
-        ? module.flap_list
-        : DEFAULT_DRUM.split("");
+      Array.isArray(module.effective_drum) && module.effective_drum.length
+        ? module.effective_drum
+        : Array.isArray(module.flap_list) && module.flap_list.length
+          ? module.flap_list
+          : DEFAULT_DRUM.split("");
     const positions = module.map_of_positions || {};
     const currentIndex =
       module.display_flap_index != null

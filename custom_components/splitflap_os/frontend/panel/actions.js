@@ -1,6 +1,6 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.12";
+import { formatMessage } from "../utils.js?v=0.1.14";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -48,9 +48,6 @@ export const PanelMixin = (Base) => class extends Base {
     const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
     if (!target) return;
     const action = target.dataset.action;
-    if (action === "save-module-drum" || action === "reset-module-drum") {
-      console.log("Module drum action:", action, "selected:", this._selectedModule);
-    }
 
     switch (action) {
       case "tab":
@@ -454,9 +451,9 @@ export const PanelMixin = (Base) => class extends Base {
       );
     }
     if (sub === "drum_write") {
-      const drum = String(this._moduleValue("moduleDrum") || "").slice(0, 64);
-      if (drum.length !== 64) {
-        this._toast(this._t("enter_drum_index"), "warn");
+      const drum = String(this._moduleValue("moduleDrum") || "");
+      if (!this._validDrum(drum)) {
+        this._toast(this._t("drum_length_error"), "warn");
         return;
       }
       await this._send("calibrate", {
@@ -547,7 +544,13 @@ export const PanelMixin = (Base) => class extends Base {
   async _saveDefaultDrum() {
     const textarea = this.shadowRoot.getElementById("defaultDrum");
     if (!textarea) return;
-    const value = String(textarea.value || "").slice(0, 64);
+    const value = String(textarea.value || "");
+    // An empty value clears the override. Anything else must be a complete
+    // 64-character drum, otherwise the indices would shift.
+    if (value !== "" && !this._validDrum(value)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
     const settings = { default_drum: value };
     await this._send("set_settings", { settings });
     this._settingsDirty = false;
@@ -557,7 +560,7 @@ export const PanelMixin = (Base) => class extends Base {
   _resetDefaultDrum() {
     const textarea = this.shadowRoot.getElementById("defaultDrum");
     if (textarea) {
-      textarea.value = this._t("default_drum_placeholder");
+      textarea.value = "";
       this._updateDrumCharCount();
     }
   }
@@ -578,12 +581,23 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  _validDrum(value) {
+    const drum = String(value || "");
+    return drum.length === 64 && !/[\r\n]/.test(drum);
+  }
+
   async _saveModuleDrum() {
     const textarea = this.shadowRoot.getElementById("moduleDrum");
     if (!textarea) return;
     const moduleId = this._selectedModule;
     if (moduleId === null || moduleId === undefined) return;
-    const value = String(textarea.value || "").slice(0, 64);
+    const value = String(textarea.value || "");
+    // An empty value clears the override. Anything else must be a complete
+    // 64-character drum, otherwise the indices would shift.
+    if (value !== "" && !this._validDrum(value)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
     const settings = { [`drum_${moduleId}`]: value };
     await this._send("set_settings", { settings });
     this._settingsDirty = false;
@@ -593,7 +607,7 @@ export const PanelMixin = (Base) => class extends Base {
   _resetModuleDrum() {
     const textarea = this.shadowRoot.getElementById("moduleDrum");
     if (textarea) {
-      textarea.value = this._t("default_drum_placeholder");
+      textarea.value = "";
       this._updateModuleDrumCharCount();
     }
   }

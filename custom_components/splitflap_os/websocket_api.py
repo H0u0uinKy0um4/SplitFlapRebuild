@@ -279,6 +279,7 @@ async def websocket_run_saved_playlist(
         vol.Optional("positions"): vol.Any(dict, str),
         vol.Optional("clear_map", default=False): bool,
         vol.Optional("steps"): vol.Coerce(int),
+        vol.Optional("drum"): vol.All(str, vol.Length(min=64, max=64)),
     }
 )
 @websocket_api.async_response
@@ -302,6 +303,7 @@ async def websocket_calibrate(hass: HomeAssistant, connection, msg) -> None:
             positions=positions if isinstance(positions, dict) else None,
             clear_map=msg.get("clear_map", False),
             steps=msg.get("steps"),
+            drum=msg.get("drum"),
         ),
     )
 

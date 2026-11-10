@@ -105,6 +105,21 @@ def normalize_flap_list(value: Any) -> list[str] | None:
     return [str(value)]
 
 
+def _valid_drum(value: Any) -> bool:
+    """Return True for a full 64-character drum with no line breaks.
+
+    A short drum used to be space-padded, which shifted every flap index. A
+    newline would also terminate the RS485 command that writes it.
+    """
+
+    return (
+        isinstance(value, str)
+        and len(value) == len(DEFAULT_DRUM)
+        and "\r" not in value
+        and "\n" not in value
+    )
+
+
 MODULE_STAT_ALIASES: dict[str, tuple[str, ...]] = {
     "flap_list": (
         "flap_list",
@@ -449,27 +464,20 @@ class SplitFlapCoordinator:
         if reported:
             return list(reported)
 
-        # Check for per-module override in settings.
-        module_key = f"drum_{module_id}"
-        try:
-            from .engine import AppEngine  # noqa: F401
-        except Exception:  # noqa: BLE001
-            pass
-
-        # The coordinator does not have direct access to engine settings,
-        # so we check the runtime store via hass.data.
+        # The coordinator does not have direct access to engine settings, so
+        # read them through the runtime stored in hass.data.
         try:
             runtime = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
             if runtime:
                 engine = runtime.get("engine")
                 if engine is not None:
                     settings = getattr(engine, "settings", {}) or {}
-                    override = settings.get(module_key)
-                    if isinstance(override, str) and len(override) >= 1:
-                        return list(override[:64].ljust(64, " "))
+                    override = settings.get(f"drum_{module_id}")
+                    if _valid_drum(override):
+                        return list(override)
                     default = settings.get("default_drum")
-                    if isinstance(default, str) and len(default) >= 1:
-                        return list(default[:64].ljust(64, " "))
+                    if _valid_drum(default):
+                        return list(default)
         except Exception:  # noqa: BLE001
             pass
 
@@ -491,6 +499,7 @@ class SplitFlapCoordinator:
                 "displayed_flap": displayed_flap,
                 "display_flap_index": display_index,
                 "display_flap_position": display_position,
+                "effective_drum": self.get_effective_drum(module_id),
                 "flap": actual_flap,
                 "state": module_state(module),
                 "online": bool(module.get("online", True)) and self.online,
@@ -751,6 +760,10 @@ class SplitFlapCoordinator:
                     entry_index is not None
                     and 0 <= entry_index < 64
                     and entry_position is not None
+                    # POSITION_MAP_UNSET (0xFFFF) is accepted here on purpose:
+                    # writing it to the slave clears that map entry (the slave
+                    # stores 0xFFFF as "unset").  This is the documented way
+                    # to clear a single entry; see README "Position maps".
                     and 0 <= entry_position <= POSITION_MAP_UNSET
                 ):
                     cleaned_positions[entry_index] = entry_position
@@ -795,11 +808,6 @@ class SplitFlapCoordinator:
                 payload["steps"] = step_value
         elif action_norm == "record" and index is not None:
             payload["index"] = int(index)
-            if int(index) == 0:
-                _LOGGER.warning(
-                    "Recording index 0 also makes the current master send a "
-                    "destructive m<id>w0:0 write; prefer a nonzero index"
-                )
         elif action_norm == "apply":
             if home_offset is not None:
                 payload["home_offset"] = int(home_offset)
@@ -809,12 +817,15 @@ class SplitFlapCoordinator:
                 payload["positions"] = {
                     str(key): value for key, value in sorted(cleaned_positions.items())
                 }
-        elif action_norm in {"drum_write", "drumwrite", "write_drum"}:
-            if drum is not None and len(drum) == 64:
+        elif action_norm == "drum_write":
+            # All drum-write aliases were normalized to "drum_write" above.
+            if _valid_drum(drum):
                 payload["action"] = "drum_write"
                 payload["drum"] = drum
             else:
-                raise ValueError("drum must be a 64-character string")
+                raise ValueError(
+                    "drum must be a 64-character string without line breaks"
+                )
 
         await self._publish("calibrate", payload)
 
@@ -824,11 +835,6 @@ class SplitFlapCoordinator:
             await asyncio.sleep(0.05)
 
     async def async_record_all(self, index: int) -> None:
-        if int(index) == 0:
-            _LOGGER.warning(
-                "Recording index 0 on every module also triggers the master's "
-                "destructive m<id>w0:0 write"
-            )
         for module_id in self.module_ids:
             await self.async_calibrate(module_id=module_id, action="record", index=index)
             await asyncio.sleep(0.05)

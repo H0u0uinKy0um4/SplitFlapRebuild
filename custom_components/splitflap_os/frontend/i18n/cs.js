@@ -128,6 +128,7 @@ export const PANEL = {
   backup_restored: "Záloha obnovena",
   compose_message_first: "Nejprve slož zprávu",
   enter_drum_index: "Zadej index bubnu",
+  drum_length_error: "Buben musí mít přesně 64 znaků a nesmí obsahovat zalomení řádku",
   enter_nonzero_steps: "Zadej nenulový počet kroků",
   enter_index_step_pair: "Zadej alespoň jeden pár index:krok",
   enter_valid_home_offset: "Zadej platný offset domovské pozice",
@@ -170,7 +171,7 @@ export const PANEL = {
   restore_failed: "Obnovení selhalo: {error}",
   backup_must_be_object: "Záloha musí být objekt JSON",
   index_zero_confirm:
-    "Zaznamenání indexu 0 také způsobí, že aktuální firmware masteru odešle destruktivní zápis m<id>w0:0. Pokračovat?",
+    "Zaznamenání indexu 0 uloží tuto pozici pro lístek 0 a předefinuje home offset modulu (referenci pro homing). Pokračovat?",
   sent_text: "Odesláno {chars} na tabuli {rows}×{cols}",
   page_added: "Přidána stránka {index}",
   playing_playlist: "Přehrávání playlistu ({pages})",

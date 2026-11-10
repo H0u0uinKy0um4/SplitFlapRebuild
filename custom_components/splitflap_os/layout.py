@@ -316,7 +316,9 @@ def resolve_layout(
 
     counts = _filled_row_counts(count, frame_rows, frame_cols)
     blank = capacity - min(count, capacity)
-    if blank > frame_cols:
+    # With an unscanned bus (count 0) the board is assumed full, so the blank
+    # comparison is meaningless until modules are actually detected.
+    if known_count and blank > frame_cols:
         errors.append(
             f"Layout leaves {blank} blank cell(s); at most one row "
             f"({frame_cols}) is allowed. Set a row layout such as 3,3,1."
@@ -601,21 +603,26 @@ def estimate_rotation_seconds(
     """
 
     drums = drums or {}
-    worst = 0
+    worst_fraction = 0.0
     for module_id, target_char in target.items():
         drum = drums.get(module_id) or DEFAULT_DRUM
+        length = len(list(drum))
+        if length <= 0:
+            continue
         target_index = _flap_index(target_char, drum)
         if target_index is None:
             continue
         previous_char = previous.get(module_id)
         previous_index = _flap_index(previous_char, drum)
         if previous_index is None:
-            distance = len(list(drum))
+            distance = length
         else:
-            distance = (target_index - previous_index) % len(list(drum))
-        worst = max(worst, distance)
+            distance = (target_index - previous_index) % length
+        # Each module may have a different drum length, so compare the
+        # fraction of a revolution rather than raw flap counts.
+        worst_fraction = max(worst_fraction, distance / length)
 
-    seconds = (worst / max(1, len(DEFAULT_DRUM))) * seconds_per_revolution
+    seconds = worst_fraction * seconds_per_revolution
     return min(maximum, max(0.0, seconds))
 
 

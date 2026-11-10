@@ -128,6 +128,7 @@ export const PANEL = {
   backup_restored: "Backup restored",
   compose_message_first: "Compose a message first",
   enter_drum_index: "Enter a drum index",
+  drum_length_error: "The drum must be exactly 64 characters and contain no line breaks",
   enter_nonzero_steps: "Enter a non-zero step count",
   enter_index_step_pair: "Enter at least one index:step pair",
   enter_valid_home_offset: "Enter a valid home offset",
@@ -169,7 +170,7 @@ export const PANEL = {
   restore_failed: "Restore failed: {error}",
   backup_must_be_object: "Backup must be a JSON object",
   index_zero_confirm:
-    "Recording index 0 also makes the current master firmware send a destructive m<id>w0:0 write. Continue?",
+    "Recording index 0 stores this position for flap 0 and redefines the module's home offset (its homing reference). Continue?",
   sent_text: "Sent {chars} to the {rows}×{cols} board",
   page_added: "Added page {index}",
   playing_playlist: "Playing playlist ({pages})",

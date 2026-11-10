@@ -146,6 +146,10 @@
         "steps": {
           "name": "Steps",
           "description": "Relative steps; the integration converts them to an absolute position using the module's last reported step."
+        },
+        "drum": {
+          "name": "Drum",
+          "description": "Exactly 64 characters, one per flap, without line breaks (drum_write action)."
         }
       }
     },
