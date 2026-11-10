@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.19";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.19";
+import { formatMessage } from "../utils.js?v=0.1.20";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.20";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -17,11 +17,6 @@ export const PanelMixin = (Base) => class extends Base {
     if (target.id === "defaultDrum") {
       this._settingsDirty = true;
       this._updateDrumCharCount();
-      return;
-    }
-    if (target.id === "moduleDrum") {
-      this._settingsDirty = true;
-      this._updateModuleDrumCharCount();
       return;
     }
     if (target.id === "drumEditor") {
@@ -46,6 +41,10 @@ export const PanelMixin = (Base) => class extends Base {
     if (!target) return;
     if (target.id === "restoreFile") {
       await this._restoreFile(target);
+      return;
+    }
+    if (target.id === "moduleDrumSelect") {
+      this._updateModuleDrumPreview();
     }
   }
 
@@ -157,9 +156,6 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "reset-default-drum":
         this._resetDefaultDrum();
-        break;
-      case "reset-module-drum":
-        this._resetModuleDrum();
         break;
       default:
         break;
@@ -580,7 +576,14 @@ export const PanelMixin = (Base) => class extends Base {
       );
     }
     if (sub === "drum_write") {
-      const drum = String(this._moduleValue("moduleDrum") || "");
+      // The per-module editor is a dropdown: pick a saved drum set (or the
+      // stock drum) from the library and write it to the module's EEPROM.
+      const select = this.shadowRoot.getElementById("moduleDrumSelect");
+      if (!select) return;
+      const drum =
+        select.value === "__stock__"
+          ? DEFAULT_DRUM
+          : this._savedDrum(select.value);
       if (!this._validDrum(drum)) {
         this._toast(this._t("drum_length_error"), "warn");
         return;
@@ -720,14 +723,6 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
-  _updateModuleDrumCharCount() {
-    const textarea = this.shadowRoot.getElementById("moduleDrum");
-    const counter = this.shadowRoot.getElementById("moduleDrumCharCount");
-    if (textarea && counter) {
-      counter.textContent = `${textarea.value.length} / 64`;
-    }
-  }
-
   _updateDrumEditorCharCount() {
     const textarea = this.shadowRoot.getElementById("drumEditor");
     const counter = this.shadowRoot.getElementById("drumEditorCharCount");
@@ -739,21 +734,6 @@ export const PanelMixin = (Base) => class extends Base {
   _validDrum(value) {
     const drum = String(value || "");
     return drum.length === 64 && !/[\r\n]/.test(drum);
-  }
-
-  _resetModuleDrum() {
-    // Stage the stock drum in the editor; Write to EEPROM persists it in
-    // the module's EEPROM. There is no HA-side per-module override anymore.
-    const textarea = this.shadowRoot.getElementById("moduleDrum");
-    if (textarea) {
-      textarea.value = DEFAULT_DRUM;
-      this._updateModuleDrumCharCount();
-      this._toast(
-        formatMessage(this._t("drum_reset_staged"), {
-          button: this._t("write_to_eeprom"),
-        })
-      );
-    }
   }
 
 

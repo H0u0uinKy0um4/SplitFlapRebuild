@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.19";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.19";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.19";
-import { PANEL_STYLES } from "../styles.js?v=0.1.19";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.20";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.20";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.20";
+import { PANEL_STYLES } from "../styles.js?v=0.1.20";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -119,30 +119,27 @@ export const PanelMixin = (Base) => class extends Base {
           </section>
 
           <section class="page" data-page="tuning">
+            <div class="card">
+              <div class="row between">
+                <h2 style="margin:0">${this._t('hardware')}</h2>
+                <div class="actions" style="margin:0">
+                  <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
+                  <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
+                </div>
+              </div>
+              <div class="mod-matrix" id="moduleMatrix" style="margin-top:12px"></div>
+              <div class="muted" id="matrixMeta" style="margin-top:8px"></div>
+            </div>
+
             <nav class="subtabs">
-              <button class="subtab active" data-action="subtab" data-group="tuning" data-sub="modules">${this._t("subtab_modules")}</button>
-              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="commands">${this._t("subtab_commands")}</button>
+              <button class="subtab active" data-action="subtab" data-group="tuning" data-sub="commands">${this._t("subtab_commands")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="map">${this._t("subtab_map")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="drum">${this._t("subtab_drum")}</button>
             </nav>
 
-            <div class="subpage active" data-subpage="tuning" data-sub="modules">
-              <div class="card">
-                <div class="row between">
-                  <h2 style="margin:0">${this._t('hardware')}</h2>
-                  <div class="actions" style="margin:0">
-                    <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t("scan_bus")}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t("sync")}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
-                  </div>
-                </div>
-                <div class="mod-matrix" id="moduleMatrix" style="margin-top:12px"></div>
-                <div class="muted" id="matrixMeta" style="margin-top:8px"></div>
-              </div>
-            </div>
-
-            <div class="subpage" data-subpage="tuning" data-sub="commands">
+            <div class="subpage active" data-subpage="tuning" data-sub="commands">
               <div class="card inspector" id="controlsCard">
                 <div class="row between">
                   <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
@@ -213,34 +210,6 @@ export const PanelMixin = (Base) => class extends Base {
             </div>
 
             <div class="subpage" data-subpage="tuning" data-sub="drum">
-              <div class="card inspector" id="drumCard">
-                <div class="row between">
-                  <h2 style="margin:0" id="drumTitle">${this._t('module')}</h2>
-                  <span class="muted" id="drumState"></span>
-                </div>
-                <div class="empty hidden" id="drumEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
-                <div class="hidden" id="drumBody">
-                  <label class="field">
-                    <span>${this._t('module_drum')}</span>
-                    <textarea id="moduleDrum" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
-                    <small class="muted">${this._t('module_drum_help')}</small>
-                  </label>
-                  <div class="actions">
-                    <button class="btn secondary" id="resetModuleDrumBtn" data-action="reset-module-drum">${this._t('reset_to_stock')}</button>
-                    <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
-                    <span class="muted" id="moduleDrumCharCount"></span>
-                  </div>
-                  <div class="row between" style="margin-top:16px">
-                    <h3 style="margin:0">${this._t('character_map')}</h3>
-                    <span class="muted" id="charMapTitle"></span>
-                  </div>
-                  <div class="char-map" id="charMap" style="margin-top:12px"></div>
-                  <p class="muted" style="margin-bottom:0">
-                    ${this._t('char_map_help')}
-                  </p>
-                </div>
-              </div>
-
               <div class="card" id="drumLibraryCard">
                 <h2 style="margin:0">${this._t('drum_library')}</h2>
                 <p class="muted" style="margin:6px 0 0">
@@ -257,6 +226,33 @@ export const PanelMixin = (Base) => class extends Base {
                   <span class="muted" id="drumEditorCharCount"></span>
                 </div>
                 <div class="list" id="savedDrums" style="margin-top:14px"></div>
+              </div>
+
+              <div class="card inspector" id="drumCard">
+                <div class="row between">
+                  <h2 style="margin:0" id="drumTitle">${this._t('module')}</h2>
+                  <span class="muted" id="drumState"></span>
+                </div>
+                <div class="empty hidden" id="drumEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div class="hidden" id="drumBody">
+                  <label class="field">
+                    <span>${this._t('module_drum')}</span>
+                    <select id="moduleDrumSelect"></select>
+                    <small class="muted">${this._t('drum_select_help')}</small>
+                  </label>
+                  <div class="actions">
+                    <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
+                    <span class="muted mono" id="moduleDrumPreview"></span>
+                  </div>
+                  <div class="row between" style="margin-top:16px">
+                    <h3 style="margin:0">${this._t('character_map')}</h3>
+                    <span class="muted" id="charMapTitle"></span>
+                  </div>
+                  <div class="char-map" id="charMap" style="margin-top:12px"></div>
+                  <p class="muted" style="margin-bottom:0">
+                    ${this._t('char_map_help')}
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -718,6 +714,48 @@ export const PanelMixin = (Base) => class extends Base {
       .join("");
   }
 
+  _renderModuleDrumSelect() {
+    const select = this.shadowRoot.getElementById("moduleDrumSelect");
+    if (!select) return;
+    const drums = (this._engine() && this._engine().saved_drums) || {};
+    // Capture the choice BEFORE rebuilding: replacing <option>s resets the
+    // selection to the first entry. Skip the rebuild entirely while the
+    // select is focused so an open dropdown is never closed under the user.
+    const current = select.value;
+    if (this.shadowRoot.activeElement !== select) {
+      const names = Object.keys(drums).sort((a, b) => a.localeCompare(b));
+      // "__stock__" is a sentinel value: the stock drum is not a saved set,
+      // so it cannot collide with a user-chosen name.
+      let html = `<option value="__stock__">${escapeHtml(this._t("stock_drum"))}</option>`;
+      for (const name of names) {
+        html += `<option value="${escapeAttr(name)}">${escapeHtml(name)}</option>`;
+      }
+      select.innerHTML = html;
+    }
+    // Keep the current choice across re-renders; fall back to stock when it
+    // was deleted from the library.
+    select.value =
+      current && (current === "__stock__" || drums[current])
+        ? current
+        : "__stock__";
+    this._updateModuleDrumPreview();
+  }
+
+  _updateModuleDrumPreview() {
+    const select = this.shadowRoot.getElementById("moduleDrumSelect");
+    const preview = this.shadowRoot.getElementById("moduleDrumPreview");
+    if (!select || !preview) return;
+    const drum =
+      select.value === "__stock__" ? DEFAULT_DRUM : this._savedDrum(select.value);
+    if (!this._validDrum(drum)) {
+      preview.textContent = "";
+      preview.title = "";
+      return;
+    }
+    preview.textContent = drum;
+    preview.title = drum;
+  }
+
   _renderDrumLibrary() {
     const node = this.shadowRoot.getElementById("savedDrums");
     if (!node) return;
@@ -1039,21 +1077,8 @@ export const PanelMixin = (Base) => class extends Base {
         .map((key) => `${key}:${positions[key]}`)
         .join("\n");
       set("posMap", text);
-
-      // Load the module's reported drum (or the effective fallback when it
-      // has not reported one) so the editor always stages reality. The only
-      // write path is the EEPROM write; there is no per-module override.
-      const moduleDrumTextarea = this.shadowRoot.getElementById("moduleDrum");
-      if (moduleDrumTextarea) {
-        const drum =
-          Array.isArray(selected.effective_drum) &&
-          selected.effective_drum.length === 64
-            ? selected.effective_drum.join("")
-            : "";
-        moduleDrumTextarea.value = drum;
-      }
     }
-    this._updateModuleDrumCharCount();
+    this._renderModuleDrumSelect();
 
     // No direct onclick wiring here: every button carries data-action and is
     // handled by the single delegated click listener. A second, direct
