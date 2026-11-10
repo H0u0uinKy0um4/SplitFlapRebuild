@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.18";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.18";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.18";
-import { PANEL_STYLES } from "../styles.js?v=0.1.18";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.19";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.19";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.19";
+import { PANEL_STYLES } from "../styles.js?v=0.1.19";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -121,6 +121,7 @@ export const PanelMixin = (Base) => class extends Base {
           <section class="page" data-page="tuning">
             <nav class="subtabs">
               <button class="subtab active" data-action="subtab" data-group="tuning" data-sub="modules">${this._t("subtab_modules")}</button>
+              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="commands">${this._t("subtab_commands")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="map">${this._t("subtab_map")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="drum">${this._t("subtab_drum")}</button>
             </nav>
@@ -141,14 +142,14 @@ export const PanelMixin = (Base) => class extends Base {
               </div>
             </div>
 
-            <div class="subpage" data-subpage="tuning" data-sub="map">
-              <div class="card inspector" id="mapCard">
+            <div class="subpage" data-subpage="tuning" data-sub="commands">
+              <div class="card inspector" id="controlsCard">
                 <div class="row between">
                   <h2 style="margin:0" id="inspectTitle">${this._t('module')}</h2>
                   <span class="muted" id="inspectState"></span>
                 </div>
-                <div class="empty hidden" id="mapEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
-                <div class="hidden" id="mapBody">
+                <div class="empty hidden" id="controlsEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div class="hidden" id="controlsBody">
                   <div class="stats">
                     <div class="stat"><b id="statFlap">–</b><span>${this._t('flap')}</span></div>
                     <div class="stat"><b id="statActual">–</b><span>${this._t('reported')}</span></div>
@@ -170,13 +171,27 @@ export const PanelMixin = (Base) => class extends Base {
                     </label>
                     <div class="row" style="align-items:flex-end">
                       <button class="btn secondary" data-action="module" data-sub="step">${this._t('step')}</button>
+                      <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="tuning" data-sub="map">
+              <div class="card inspector" id="mapCard">
+                <div class="row between">
+                  <h2 style="margin:0" id="mapTitle">${this._t('module')}</h2>
+                  <span class="muted" id="mapState"></span>
+                </div>
+                <div class="empty hidden" id="mapEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div class="hidden" id="mapBody">
+                  <div class="grid2">
                     <label class="field"><span>${this._t('record_at_index')}</span>
                       <input id="recordIndex" type="number" min="0" max="63" placeholder="0-63">
                     </label>
                     <div class="row" style="align-items:flex-end">
                       <button class="btn secondary" data-action="module" data-sub="record">${this._t('record')}</button>
-                      <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
                       <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
                     </div>
                     <label class="field"><span>${this._t('home_offset')}</span>
@@ -225,24 +240,53 @@ export const PanelMixin = (Base) => class extends Base {
                   </p>
                 </div>
               </div>
+
+              <div class="card" id="drumLibraryCard">
+                <h2 style="margin:0">${this._t('drum_library')}</h2>
+                <p class="muted" style="margin:6px 0 0">
+                  ${this._t('drum_library_help')}
+                </p>
+                <label class="field" style="margin-top:12px">
+                  <span>${this._t('drum_editor_help')}</span>
+                  <textarea id="drumEditor" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+                </label>
+                <div class="row" style="margin-top:8px;align-items:center">
+                  <input id="drumName" type="text" placeholder="${escapeAttr(this._t('drum_name'))}" style="max-width:190px">
+                  <button class="btn secondary" data-action="save-drum">${this._t('save')}</button>
+                  <button class="btn secondary" data-action="load-module-drum">${this._t('load_from_module')}</button>
+                  <span class="muted" id="drumEditorCharCount"></span>
+                </div>
+                <div class="list" id="savedDrums" style="margin-top:14px"></div>
+              </div>
             </div>
           </section>
 
           <section class="page" data-page="settings">
             <nav class="subtabs">
-              <button class="subtab active" data-action="subtab" data-group="settings" data-sub="general">${this._t("subtab_general")}</button>
+              <button class="subtab active" data-action="subtab" data-group="settings" data-sub="display">${this._t("subtab_display")}</button>
+              <button class="subtab" data-action="subtab" data-group="settings" data-sub="apps">${this._t("subtab_apps")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="layout">${this._t("subtab_layout")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drum")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="system">${this._t("subtab_system")}</button>
             </nav>
 
-            <div class="subpage active" data-subpage="settings" data-sub="general">
+            <div class="subpage active" data-subpage="settings" data-sub="display">
               <div class="card">
                 <div class="row between">
-                  <h2 style="margin:0">${this._t('settings')}</h2>
+                  <h2 style="margin:0">${this._t('display_settings')}</h2>
                   <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
                 </div>
-                <div id="settingsGroups" style="margin-top:14px"></div>
+                <div id="displaySettingsGroups" class="settings-groups" style="margin-top:14px"></div>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="settings" data-sub="apps">
+              <div class="card">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('app_settings')}</h2>
+                  <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+                </div>
+                <div id="appsSettingsGroups" class="settings-groups" style="margin-top:14px"></div>
               </div>
             </div>
 
@@ -393,6 +437,7 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderComposePreview();
     this._renderBuilder();
     this._renderSaved();
+    this._renderDrumLibrary();
     this._renderApps();
     this._renderBanner();
     this._renderTuning();
@@ -673,6 +718,39 @@ export const PanelMixin = (Base) => class extends Base {
       .join("");
   }
 
+  _renderDrumLibrary() {
+    const node = this.shadowRoot.getElementById("savedDrums");
+    if (!node) return;
+    const drums = (this._engine() && this._engine().saved_drums) || {};
+    const names = Object.keys(drums);
+    if (!names.length) {
+      node.innerHTML = `<div class="empty">${escapeHtml(
+        this._t("no_saved_drums")
+      )}</div>`;
+      return;
+    }
+    node.innerHTML = names
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => {
+        const drum = String(drums[name] || "");
+        // Show a readable preview; the full 64 characters ride along in
+        // the title tooltip. Trim only the display: flap 0 is a space.
+        const preview =
+          drum.length > 24 ? `${drum.slice(0, 24).trimEnd()}…` : drum.trim();
+        return `
+          <div class="list-item">
+            <span class="text" title="${escapeAttr(drum)}">${escapeHtml(name)}</span>
+            <span class="muted mono" title="${escapeAttr(drum)}">${escapeHtml(
+              preview || "␣"
+            )}</span>
+            <button class="btn mini" data-action="write-drum" data-name="${escapeAttr(name)}">${this._t('write_drum_to_module')}</button>
+            <button class="icon-btn" data-action="edit-drum" data-name="${escapeAttr(name)}" title="${escapeAttr(this._t('edit'))}">✎</button>
+            <button class="icon-btn" data-action="delete-drum" data-name="${escapeAttr(name)}" title="${escapeAttr(this._t('delete'))}">✕</button>
+          </div>`;
+      })
+      .join("");
+  }
+
   _appI18n(key) {
     const dict = APPS_I18N[this._lang()] || APPS_I18N.en;
     return (dict && dict[key]) || null;
@@ -882,24 +960,29 @@ export const PanelMixin = (Base) => class extends Base {
 
     const selected = this._moduleFor(this._selectedModule);
     const hasModule = Boolean(selected);
-    const mapBody = this.shadowRoot.getElementById("mapBody");
-    const mapEmpty = this.shadowRoot.getElementById("mapEmpty");
-    const drumBody = this.shadowRoot.getElementById("drumBody");
-    const drumEmpty = this.shadowRoot.getElementById("drumEmpty");
-    if (mapBody) mapBody.classList.toggle("hidden", !hasModule);
-    if (mapEmpty) mapEmpty.classList.toggle("hidden", hasModule);
-    if (drumBody) drumBody.classList.toggle("hidden", !hasModule);
-    if (drumEmpty) drumEmpty.classList.toggle("hidden", hasModule);
+    // Three module-scoped cards: Commands, Map and Drum. Each has its own
+    // body/empty pair toggled by whether a module is selected.
+    const bodyEmptyPairs = [
+      ["controlsBody", "controlsEmpty"],
+      ["mapBody", "mapEmpty"],
+      ["drumBody", "drumEmpty"],
+    ];
+    for (const [bodyId, emptyId] of bodyEmptyPairs) {
+      const body = this.shadowRoot.getElementById(bodyId);
+      const empty = this.shadowRoot.getElementById(emptyId);
+      if (body) body.classList.toggle("hidden", !hasModule);
+      if (empty) empty.classList.toggle("hidden", hasModule);
+    }
 
     if (!selected) {
       this._selectedModule = null;
       this._inspectorModule = null;
-      const titles = ["inspectTitle", "drumTitle"];
+      const titles = ["inspectTitle", "mapTitle", "drumTitle"];
       for (const id of titles) {
         const node = this.shadowRoot.getElementById(id);
         if (node) node.textContent = this._t("module");
       }
-      for (const id of ["inspectState", "drumState"]) {
+      for (const id of ["inspectState", "mapState", "drumState"]) {
         const node = this.shadowRoot.getElementById(id);
         if (node) node.textContent = "";
       }
@@ -910,7 +993,7 @@ export const PanelMixin = (Base) => class extends Base {
     const moduleTitle = formatMessage(this._t("module_named"), {
       id: selected.id,
     });
-    for (const id of ["inspectTitle", "drumTitle"]) {
+    for (const id of ["inspectTitle", "mapTitle", "drumTitle"]) {
       const node = this.shadowRoot.getElementById(id);
       if (node) node.textContent = moduleTitle;
     }
@@ -919,7 +1002,7 @@ export const PanelMixin = (Base) => class extends Base {
     ).toUpperCase()} • ${this._t(
       selected.online === false ? "offline" : "online"
     )}`;
-    for (const id of ["inspectState", "drumState"]) {
+    for (const id of ["inspectState", "mapState", "drumState"]) {
       const node = this.shadowRoot.getElementById(id);
       if (node) node.textContent = stateText;
     }
@@ -1153,16 +1236,32 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   _renderSettings() {
-    const node = this.shadowRoot.getElementById("settingsGroups");
-    if (!node) return;
+    if (!this._state) return;
     const engine = this._engine();
     const groups = engine.settings_groups || [];
     const settings = engine.settings || {};
 
+    // Two containers: Display sub-tab and Apps sub-tab. The group's
+    // "category" field routes it; anything unrecognized falls to Display so
+    // a new backend group can never end up invisible.
+    const nodes = [
+      { id: "displaySettingsGroups", match: (group) => group.category !== "apps" },
+      { id: "appsSettingsGroups", match: (group) => group.category === "apps" },
+    ]
+      .map(({ id, match }) => ({
+        node: this.shadowRoot.getElementById(id),
+        match,
+      }))
+      .filter(({ node }) => node);
+
+    if (!nodes.length) return;
+
     if (!this._settingsBuilt) {
-      node.innerHTML = groups
-        .map(
-          (group) => `
+      for (const { node, match } of nodes) {
+        node.innerHTML = groups
+          .filter(match)
+          .map(
+            (group) => `
             <div class="settings-group">
               <h3>${escapeHtml(group.icon || "")} ${escapeHtml(this._settingGroup(group.key, group.name || group.key))}</h3>
               <div class="settings-grid">
@@ -1171,20 +1270,23 @@ export const PanelMixin = (Base) => class extends Base {
                   .join("")}
               </div>
             </div>`
-        )
-        .join("");
+          )
+          .join("");
+      }
       this._settingsBuilt = true;
     }
 
     if (this._settingsDirty) return;
     const active = this.shadowRoot.activeElement;
-    node.querySelectorAll("[data-setting]").forEach((input) => {
-      if (input === active) return;
-      const key = input.dataset.setting;
-      const value = settings[key];
-      const next = value == null ? "" : String(value);
-      if (input.value !== next) input.value = next;
-    });
+    for (const { node } of nodes) {
+      node.querySelectorAll("[data-setting]").forEach((input) => {
+        if (input === active) return;
+        const key = input.dataset.setting;
+        const value = settings[key];
+        const next = value == null ? "" : String(value);
+        if (input.value !== next) input.value = next;
+      });
+    }
   }
 
   _renderConnectionInfo() {

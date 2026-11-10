@@ -93,36 +93,44 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
         "key": "display",
         "name": "Display",
         "icon": "🖥️",
+        # "category" routes the group to the panel's Display or Apps
+        # settings sub-tab.
+        "category": "display",
         "fields": [field.as_dict() for field in DISPLAY_FIELDS],
     },
     {
         "key": "weather",
         "name": "Weather",
         "icon": "🌤️",
+        "category": "apps",
         "fields": [field.as_dict() for field in WEATHER_FIELDS],
     },
     {
         "key": "markets",
         "name": "Markets",
         "icon": "📈",
+        "category": "apps",
         "fields": [field.as_dict() for field in (*STOCK_FIELDS, *CRYPTO_FIELDS)],
     },
     {
         "key": "sports",
         "name": "Sports",
         "icon": "🏒",
+        "category": "apps",
         "fields": [field.as_dict() for field in SPORTS_FIELDS],
     },
     {
         "key": "transit",
         "name": "Transit",
         "icon": "🚇",
+        "category": "apps",
         "fields": [field.as_dict() for field in METRO_FIELDS],
     },
     {
         "key": "time",
         "name": "Time",
         "icon": "⏳",
+        "category": "apps",
         "fields": [
             field.as_dict()
             for field in (*COUNTDOWN_FIELDS, *WORLD_CLOCK_FIELDS)
@@ -132,6 +140,7 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
         "key": "animations",
         "name": "Animations",
         "icon": "🎨",
+        "category": "display",
         "fields": [field.as_dict() for field in ANIMATION_FIELDS],
     },
 ]

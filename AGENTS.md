@@ -65,8 +65,10 @@ and must not be treated as production code or deleted.
 - Entities live on the same dispatcher signal; they do not poll.
 - Settings/playlists live in an engine `Store`; the module snapshot and desired
   characters live in a coordinator `Store`. `async_remove_entry` removes both.
-- The panel checks `engine.settings_groups`, `engine.apps`, and
-  `engine.saved_playlists`; keeping those shapes stable avoids frontend changes.
+- The panel checks `engine.settings_groups` (each group carries a `category`
+  of `display` or `apps` that routes it to a settings sub-tab), `engine.apps`,
+  `engine.saved_playlists`, and `engine.saved_drums`; keeping those shapes
+  stable avoids frontend changes.
 - App providers are `async def provider(engine, now) -> list[Page] | Page | None`.
   Register them in `apps/__init__.py`.
 

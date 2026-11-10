@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.18";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.18";
+import { formatMessage } from "../utils.js?v=0.1.19";
+import { DEFAULT_DRUM } from "../constants.js?v=0.1.19";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -24,6 +24,10 @@ export const PanelMixin = (Base) => class extends Base {
       this._updateModuleDrumCharCount();
       return;
     }
+    if (target.id === "drumEditor") {
+      this._updateDrumEditorCharCount();
+      return;
+    }
     if (target.id === "startCol" || target.id === "styleSelect" || target.id === "speedInput") {
       this._renderComposePreview();
       return;
@@ -32,7 +36,7 @@ export const PanelMixin = (Base) => class extends Base {
       this._playDelay = Number(target.value) || 5;
       return;
     }
-    if (target.dataset && target.dataset.setting && target.closest("#settingsGroups")) {
+    if (target.dataset && target.dataset.setting && target.closest(".settings-groups")) {
       this._settingsDirty = true;
     }
   }
@@ -87,6 +91,21 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "delete-saved":
         await this._deleteSaved(target.dataset.name);
+        break;
+      case "save-drum":
+        await this._saveDrum();
+        break;
+      case "delete-drum":
+        await this._deleteDrum(target.dataset.name);
+        break;
+      case "edit-drum":
+        this._loadDrumToEditor(target.dataset.name);
+        break;
+      case "write-drum":
+        await this._writeSavedDrum(target.dataset.name);
+        break;
+      case "load-module-drum":
+        this._loadModuleDrumToEditor();
         break;
       case "stop":
         await this._send("stop_app");
@@ -266,6 +285,106 @@ export const PanelMixin = (Base) => class extends Base {
     this._toast(formatMessage(this._t("deleted"), { name }));
   }
 
+  async _saveDrum() {
+    const editor = this.shadowRoot.getElementById("drumEditor");
+    const nameNode = this.shadowRoot.getElementById("drumName");
+    if (!editor || !nameNode) return;
+    const drum = String(editor.value || "");
+    if (!this._validDrum(drum)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
+    const name = String(nameNode.value || "").trim();
+    if (!name) {
+      this._toast(this._t("give_drum_name"), "warn");
+      return;
+    }
+    await this._send("save_drum", { name, drum });
+    this._toast(formatMessage(this._t("drum_saved"), { name }));
+  }
+
+  async _deleteDrum(name) {
+    if (!name) return;
+    const msg = formatMessage(this._t("delete_drum_confirm"), { name });
+    if (!window.confirm(msg)) return;
+    await this._send("delete_drum", { name });
+    this._toast(formatMessage(this._t("drum_deleted"), { name }));
+  }
+
+  _savedDrum(name) {
+    const drums = (this._engine() && this._engine().saved_drums) || {};
+    return String(drums[name] || "");
+  }
+
+  _loadDrumToEditor(name) {
+    if (!name) return;
+    const drum = this._savedDrum(name);
+    if (!this._validDrum(drum)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
+    const editor = this.shadowRoot.getElementById("drumEditor");
+    const nameNode = this.shadowRoot.getElementById("drumName");
+    if (editor) editor.value = drum;
+    // Pre-fill the name so an edited drum saves over itself by default.
+    if (nameNode) nameNode.value = name;
+    this._updateDrumEditorCharCount();
+    this._toast(formatMessage(this._t("drum_loaded"), { name }));
+  }
+
+  _loadModuleDrumToEditor() {
+    const selected = this._moduleFor(this._selectedModule);
+    if (!selected) {
+      this._toast(this._t("select_module_first"), "warn");
+      return;
+    }
+    const drum = Array.isArray(selected.effective_drum)
+      ? selected.effective_drum.join("")
+      : "";
+    if (!this._validDrum(drum)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
+    const editor = this.shadowRoot.getElementById("drumEditor");
+    if (editor) editor.value = drum;
+    this._updateDrumEditorCharCount();
+    this._toast(this._t("module_drum_loaded"));
+  }
+
+  async _writeSavedDrum(name) {
+    if (!name) return;
+    const drum = this._savedDrum(name);
+    if (!this._validDrum(drum)) {
+      this._toast(this._t("drum_length_error"), "warn");
+      return;
+    }
+    const module = this._selectedModule;
+    if (module === null || !this._moduleFor(module)) {
+      this._toast(this._t("select_module_first"), "warn");
+      return;
+    }
+    // Same path as the module drum editor: the master writes the EEPROM and
+    // verifies it with a readback, reporting `verified`.
+    const result = await this._send("calibrate", {
+      module,
+      action: "drum_write",
+      drum,
+    });
+    if (result && result.verified === false) {
+      this._toast(
+        formatMessage(this._t("drum_verify_failed"), { module }),
+        "error"
+      );
+    } else {
+      this._toast(
+        formatMessage(this._t("drum_written_named"), { name })
+      );
+    }
+    // Re-sync the module drum editor with what the module now reports.
+    this._inspectorModule = null;
+    this._renderTuning();
+  }
+
   _openAppSettings(key) {
     const apps = (this._engine() && this._engine().apps) || [];
     const app = apps.find((item) => item.key === key);
@@ -304,9 +423,15 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _saveSettings() {
-    const root = this.shadowRoot.getElementById("settingsGroups");
-    const settings = this._collectSettings(root);
-    await this._send("set_settings", { settings });
+    // Settings now live in two containers (Display and Apps sub-tabs);
+    // saving always persists everything that is visible.
+    const values = {};
+    for (const id of ["displaySettingsGroups", "appsSettingsGroups"]) {
+      const root = this.shadowRoot.getElementById(id);
+      if (!root) continue;
+      Object.assign(values, this._collectSettings(root));
+    }
+    await this._send("set_settings", { settings: values });
     this._settingsDirty = false;
     this._toast(this._t("settings_saved"));
   }
@@ -598,6 +723,14 @@ export const PanelMixin = (Base) => class extends Base {
   _updateModuleDrumCharCount() {
     const textarea = this.shadowRoot.getElementById("moduleDrum");
     const counter = this.shadowRoot.getElementById("moduleDrumCharCount");
+    if (textarea && counter) {
+      counter.textContent = `${textarea.value.length} / 64`;
+    }
+  }
+
+  _updateDrumEditorCharCount() {
+    const textarea = this.shadowRoot.getElementById("drumEditor");
+    const counter = this.shadowRoot.getElementById("drumEditorCharCount");
     if (textarea && counter) {
       counter.textContent = `${textarea.value.length} / 64`;
     }

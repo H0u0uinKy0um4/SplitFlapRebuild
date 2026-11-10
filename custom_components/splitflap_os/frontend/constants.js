@@ -1,7 +1,7 @@
 /** Shared constants, palettes, and icon markup. */
 
 export const DOMAIN = "splitflap_os";
-export const VERSION = "0.1.18";
+export const VERSION = "0.1.19";
 
 export const STYLES = [
   "ltr",

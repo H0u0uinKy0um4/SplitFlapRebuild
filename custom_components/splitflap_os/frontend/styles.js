@@ -90,6 +90,7 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .between { justify-content: space-between; }
 .muted { opacity: .6; font-size: .8rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .preview {
   background: #080808; border: 1px solid #2c2c2c;
   border-radius: 10px; padding: 10px;

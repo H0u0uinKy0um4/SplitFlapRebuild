@@ -250,6 +250,45 @@ async def websocket_delete_playlist(hass: HomeAssistant, connection, msg) -> Non
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): f"{DOMAIN}/save_drum",
+        vol.Required("name"): str,
+        vol.Required("drum"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_save_drum(hass: HomeAssistant, connection, msg) -> None:
+    """Save a named drum (64 characters, one per flap)."""
+
+    await _run_action(
+        hass,
+        connection,
+        msg,
+        lambda runtime: runtime["engine"].async_save_drum(
+            msg["name"], msg["drum"]
+        ),
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/delete_drum",
+        vol.Required("name"): str,
+    }
+)
+@websocket_api.async_response
+async def websocket_delete_drum(hass: HomeAssistant, connection, msg) -> None:
+    """Delete a saved drum."""
+
+    await _run_action(
+        hass,
+        connection,
+        msg,
+        lambda runtime: runtime["engine"].async_delete_drum(msg["name"]),
+    )
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): f"{DOMAIN}/run_saved_playlist",
         vol.Required("name"): str,
     }
@@ -417,6 +456,8 @@ COMMANDS = (
     websocket_set_settings,
     websocket_save_playlist,
     websocket_delete_playlist,
+    websocket_save_drum,
+    websocket_delete_drum,
     websocket_run_saved_playlist,
     websocket_calibrate,
     websocket_scan,

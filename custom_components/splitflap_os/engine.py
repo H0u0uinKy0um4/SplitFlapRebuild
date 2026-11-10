@@ -69,6 +69,7 @@ class AppEngine:
 
         self.settings: dict[str, Any] = dict(DEFAULT_SETTINGS)
         self.saved_playlists: dict[str, dict[str, Any]] = {}
+        self.saved_drums: dict[str, str] = {}
         self.playlist: list[Page] = []
         self.playlist_delay = 5.0
 
@@ -126,6 +127,9 @@ class AppEngine:
                     str(name): self._sanitize_saved_playlist(value)
                     for name, value in playlists.items()
                 }
+            drums = stored.get("saved_drums")
+            if isinstance(drums, dict):
+                self.saved_drums = self._sanitize_saved_drums(drums)
             playlist = stored.get("playlist")
             if isinstance(playlist, list):
                 self.playlist = [Page.from_dict(item) for item in playlist][:100]
@@ -268,6 +272,7 @@ class AppEngine:
             "playlist": [page.as_dict() for page in self.playlist],
             "playlist_delay": self.playlist_delay,
             "saved_playlists": self.saved_playlists,
+            "saved_drums": self.saved_drums,
             "settings": settings_for_ui(self.settings),
             "settings_groups": SETTINGS_GROUPS,
             "apps": apps,
@@ -358,6 +363,25 @@ class AppEngine:
 
     async def async_delete_playlist(self, name: str) -> None:
         self.saved_playlists.pop(str(name), None)
+        await self._store.async_save(self._state_snapshot())
+        self._notify()
+
+    async def async_save_drum(self, name: str, drum: str) -> None:
+        """Save a named 64-character drum for later writing to a module."""
+        clean_name = str(name or "").strip()[:64]
+        if not clean_name:
+            raise ValueError("Drum name is required")
+        clean_drum = self._sanitize_saved_drum(drum)
+        if clean_drum is None:
+            raise ValueError(
+                "Drum must be exactly 64 characters without line breaks"
+            )
+        self.saved_drums[clean_name] = clean_drum
+        await self._store.async_save(self._state_snapshot())
+        self._notify()
+
+    async def async_delete_drum(self, name: str) -> None:
+        self.saved_drums.pop(str(name), None)
         await self._store.async_save(self._state_snapshot())
         self._notify()
 
@@ -778,6 +802,7 @@ class AppEngine:
             "exported_at": datetime.now(self.tz).isoformat(),
             "settings": settings_for_ui(self.settings),
             "saved_playlists": self.saved_playlists,
+            "saved_drums": self.saved_drums,
             "playlist": [page.as_dict() for page in self.playlist],
             "playlist_delay": self.playlist_delay,
             "modules": self.coordinator.snapshot().get("modules", []),
@@ -806,6 +831,10 @@ class AppEngine:
                 for name, value in playlists.items()
             }
 
+        drums = data.get("saved_drums")
+        if isinstance(drums, dict):
+            self.saved_drums = self._sanitize_saved_drums(drums)
+
         raw_playlist = data.get("playlist")
         if isinstance(raw_playlist, list):
             self.playlist = [Page.from_dict(item) for item in raw_playlist][:100]
@@ -827,6 +856,7 @@ class AppEngine:
             "version": VERSION,
             "settings": settings_for_ui(self.settings),
             "saved_playlists": self.saved_playlists,
+            "saved_drums": self.saved_drums,
             "playlist": [page.as_dict() for page in self.playlist],
             "playlist_delay": self.playlist_delay,
             "mode": self.mode,
@@ -848,6 +878,26 @@ class AppEngine:
             ][:100],
             "delay": delay,
         }
+
+    def _sanitize_saved_drum(self, value: Any) -> str | None:
+        """Return a valid 64-character drum, or None when unusable.
+
+        A drum with a line break would terminate the RS485 command line, and
+        any other length would shift every flap index, so both are rejected
+        rather than repaired.
+        """
+        drum = value if isinstance(value, str) else ""
+        if len(drum) != 64 or "\r" in drum or "\n" in drum:
+            return None
+        return drum
+
+    def _sanitize_saved_drums(self, values: dict[str, Any]) -> dict[str, str]:
+        cleaned: dict[str, str] = {}
+        for name, value in values.items():
+            drum = self._sanitize_saved_drum(value)
+            if drum is not None:
+                cleaned[str(name)[:64]] = drum
+        return cleaned
 
     def _schedule_save(self) -> None:
         self._store.async_delay_save(self._state_snapshot, STORAGE_SAVE_DELAY)

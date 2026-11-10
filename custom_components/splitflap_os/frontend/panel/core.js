@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=0.1.18";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=0.1.18";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=0.1.18";
+import { DOMAIN, STYLES } from "../constants.js?v=0.1.19";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=0.1.19";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=0.1.19";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -18,7 +18,7 @@ export const PanelMixin = (Base) => class extends Base {
     this._retryTimer = null;
 
     this._tab = "control";
-    this._subtabs = { tuning: "modules", settings: "general" };
+    this._subtabs = { tuning: "modules", settings: "display" };
     this._composeText = "";
     this._playDelay = 5;
     this._builder = [];
@@ -38,8 +38,8 @@ export const PanelMixin = (Base) => class extends Base {
       // Only accept known sub-tabs so a stale stored value can never leave
       // a page with no visible subpage.
       const known = {
-        tuning: ["modules", "map", "drum"],
-        settings: ["general", "layout", "drum", "system"],
+        tuning: ["modules", "commands", "map", "drum"],
+        settings: ["display", "apps", "layout", "drum", "system"],
       };
       for (const [group, subs] of Object.entries(known)) {
         const savedSub = window.localStorage.getItem(
