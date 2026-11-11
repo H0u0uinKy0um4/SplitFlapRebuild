@@ -19,7 +19,7 @@ NAME: Final = "Split-Flap OS"
 # so the coordinator can compare it with the master's payload without parsing
 # the string.
 MQTT_COMPAT: Final = 1
-VERSION: Final = "1.0.7"
+VERSION: Final = "1.0.8"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"

@@ -252,10 +252,8 @@ input:focus, select:focus, textarea:focus {
   transition: transform .12s ease, border-color .12s ease;
 }
 .app-card:hover { transform: translateY(-2px); border-color: var(--primary-color, #03a9f4); }
-.app-card.disabled {
-  opacity: .48; cursor: not-allowed; filter: grayscale(.6);
-  background: var(--secondary-background-color, #f1f1f1);
-}
+.app-card.disabled { cursor: not-allowed; background: var(--secondary-background-color, #f1f1f1); }
+.app-card.disabled .app-card-body { opacity: .48; filter: grayscale(.6); }
 .app-card.disabled:hover { transform: none; border-color: var(--divider-color, #ddd); }
 .app-card.running { border-color: #2ea043; background: rgba(46,160,67,.1); }
 .app-live {

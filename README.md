@@ -278,12 +278,12 @@ composed from the numbers that apply to it:
 ```
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
 master   <bus>.<mqtt>.<release>       1.1.0.0    bus 1, mqtt 1, release 0.0
-HA       <mqtt>.<release>             1.0.7      mqtt 1, release 0.7
+HA       <mqtt>.<release>             1.0.8      mqtt 1, release 0.8
 ```
 
 | Where | Version | Compatibility | Read from |
 | --- | --- | --- | --- |
-| Home Assistant integration | `1.0.7` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
+| Home Assistant integration | `1.0.8` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, connection info |
 | Slave application | `1.0.1` | bus `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
 

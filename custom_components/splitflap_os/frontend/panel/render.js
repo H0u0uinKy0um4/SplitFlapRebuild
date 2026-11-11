@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.7";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.7";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.7";
-import { PANEL_STYLES } from "../styles.js?v=1.0.7";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.8";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.8";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.8";
+import { PANEL_STYLES } from "../styles.js?v=1.0.8";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -900,10 +900,12 @@ export const PanelMixin = (Base) => class extends Base {
                title="${escapeAttr(requirement || description)}">
             ${running ? `<span class="app-live">${escapeHtml(this._t("live_badge"))}</span>` : ""}
             <button class="gear" data-action="app-mode" data-app="${escapeAttr(app.key)}" title="${escapeAttr(this._t('app_mode'))}">▦</button>
-            <div class="app-icon">${this._appIcon(app.key)}</div>
-            <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
-            <div class="app-desc">${escapeHtml(description)}</div>
-            ${available ? "" : `<div class="app-req">${escapeHtml(requirement)}</div>`}
+            <div class="app-card-body">
+              <div class="app-icon">${this._appIcon(app.key)}</div>
+              <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
+              <div class="app-desc">${escapeHtml(description)}</div>
+              ${available ? "" : `<div class="app-req">${escapeHtml(requirement)}</div>`}
+            </div>
           </div>`;
       })
       .join("");

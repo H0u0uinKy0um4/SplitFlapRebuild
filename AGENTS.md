@@ -72,7 +72,7 @@ invent a new scheme; follow it.
 - Published strings are composed from the axes that apply:
   - slave: `<bus>.<release>` (for example `1.0.1`)
   - master: `<bus>.<mqtt>.<release>` (for example `1.1.0.0`)
-  - HA: `<mqtt>.<release>` (for example `1.0.7`)
+  - HA: `<mqtt>.<release>` (for example `1.0.8`)
 - The OTA bootloader protocol is a **third, separate** number:
   `OTA_PROTOCOL_VERSION` (master) must equal `BOOTLOADER_VERSION` (slave
   `bootloader/src/protocol.h`). Never fold it into either compat axis.

@@ -496,12 +496,12 @@ která se na něj vztahují:
 ```
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
 master   <bus>.<mqtt>.<vydání>        1.1.0.0    bus 1, mqtt 1, vydání 0.0
-HA       <mqtt>.<vydání>              1.0.7      mqtt 1, vydání 0.7
+HA       <mqtt>.<vydání>              1.0.8      mqtt 1, vydání 0.8
 ```
 
 | Kde | Verze | Kompatibilita | Kde ji uvidíte |
 | --- | --- | --- | --- |
-| Integrace Home Assistant | `1.0.7` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
+| Integrace Home Assistant | `1.0.8` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, informace o připojení |
 | Firmware modulu | `1.0.1` | bus `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
 
