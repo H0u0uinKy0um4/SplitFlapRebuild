@@ -393,6 +393,68 @@ input:focus, select:focus, textarea:focus {
 .modal-card h3 { margin: 0 0 14px; }
 .modal-card .actions { margin-top: 16px; }
 .modal-card label.field { margin-bottom: 12px; }
+.quick-offsets {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+}
+.quick-offsets button {
+  padding: 5px 11px; border-radius: 5px;
+  border: 1px solid var(--divider-color, #ccc);
+  background: var(--secondary-background-color, #f0f0f0);
+  color: inherit; font-family: "Roboto Mono", monospace;
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+}
+.quick-offsets button:hover {
+  background: var(--primary-color, #03a9f4); color: #fff;
+  border-color: var(--primary-color, #03a9f4);
+}
+.at-stage { display: flex; flex-direction: column; gap: 12px; }
+.at-instructions {
+  background: var(--secondary-background-color, #f7f7f7);
+  border-left: 4px solid var(--primary-color, #03a9f4);
+  padding: 10px 14px; border-radius: 4px;
+  font-size: .9rem; line-height: 1.45;
+}
+.at-grid {
+  display: grid; gap: 4px;
+  grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr));
+  margin: 10px 0;
+}
+.at-cell {
+  aspect-ratio: 1; border-radius: 4px;
+  border: 1px solid var(--divider-color, #ccc);
+  background: var(--secondary-background-color, #f0f0f0);
+  color: inherit; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-family: "Roboto Mono", monospace; font-size: .78rem;
+  cursor: pointer; user-select: none; transition: all .15s ease;
+}
+.at-cell.tuned-indicator { box-shadow: inset 0 0 0 1.5px #d4a72c; }
+.at-cell.sel-ahead {
+  background: #f44336 !important; color: #fff !important;
+  border-color: #d32f2f !important;
+}
+.at-cell.sel-behind {
+  background: #4caf50 !important; color: #fff !important;
+  border-color: #388e3c !important;
+}
+.at-char-box {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 52px; height: 68px; background: #111; color: #fff;
+  border-radius: 6px; font-size: 32px; font-family: "Roboto Mono", monospace;
+  font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+.nudge-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.nudge-row button {
+  padding: 8px 14px; font-family: "Roboto Mono", monospace;
+  font-weight: 700; font-size: .9rem; border-radius: 6px;
+  border: 1px solid var(--divider-color, #ccc);
+  background: var(--secondary-background-color, #f0f0f0);
+  color: inherit; cursor: pointer;
+}
+.nudge-row button:hover {
+  background: var(--primary-color, #03a9f4); color: #fff;
+  border-color: var(--primary-color, #03a9f4);
+}
 @media (max-width: 560px) {
   .app { padding: 12px 10px 48px; }
   .flap { font-size: var(--flap-font, clamp(7px, 3vw, 18px)); }

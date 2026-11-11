@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.0";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.0";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.0";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.1";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.1";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.1";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -41,7 +41,7 @@ export const PanelMixin = (Base) => class extends Base {
       // Only accept known sub-tabs so a stale stored value can never leave
       // a page with no visible subpage.
       const known = {
-        tuning: ["commands", "map", "drum"],
+        tuning: ["commands", "map", "autotune", "teach", "drum"],
         settings: ["display", "apps", "layout", "drum", "system"],
       };
       for (const [group, subs] of Object.entries(known)) {

@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.0";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.0";
-import { PANEL_STYLES } from "../styles.js?v=1.2.0";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.1";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.1";
+import { PANEL_STYLES } from "../styles.js?v=1.2.1";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -140,6 +140,8 @@ export const PanelMixin = (Base) => class extends Base {
             <nav class="subtabs">
               <button class="subtab active" data-action="subtab" data-group="tuning" data-sub="commands">${this._t("subtab_commands")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="map">${this._t("subtab_map")}</button>
+              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="autotune">${this._t("subtab_autotune")}</button>
+              <button class="subtab" data-action="subtab" data-group="tuning" data-sub="teach">${this._t("subtab_teach")}</button>
               <button class="subtab" data-action="subtab" data-group="tuning" data-sub="drum">${this._t("subtab_drum")}</button>
             </nav>
 
@@ -175,6 +177,20 @@ export const PanelMixin = (Base) => class extends Base {
                       <button class="btn secondary" data-action="module" data-sub="step">${this._t('step')}</button>
                       <button class="btn danger" data-action="module" data-sub="home">${this._t('home_motor')}</button>
                     </div>
+                    <label class="field"><span>${this._t('home_offset')}</span>
+                      <input id="offsetValue" type="number" min="0" max="65535" placeholder="${escapeAttr(this._t('steps'))}">
+                      <div class="quick-offsets">
+                        <button data-action="quick-offset" data-delta="-16">-16</button>
+                        <button data-action="quick-offset" data-delta="-4">-4</button>
+                        <button data-action="quick-offset" data-delta="-1">-1</button>
+                        <button data-action="quick-offset" data-delta="1">+1</button>
+                        <button data-action="quick-offset" data-delta="4">+4</button>
+                        <button data-action="quick-offset" data-delta="16">+16</button>
+                      </div>
+                    </label>
+                    <div class="row" style="align-items:flex-start;padding-top:24px">
+                      <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -188,6 +204,12 @@ export const PanelMixin = (Base) => class extends Base {
                 </div>
                 <div class="empty hidden" id="mapEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
                 <div class="hidden" id="mapBody">
+                  <div class="row between" style="margin-bottom:8px">
+                    <h3 style="margin:0">${this._t('character_map')}</h3>
+                    <small class="muted">${this._t('char_map_help')}</small>
+                  </div>
+                  <div class="char-map" id="mapFlaps" style="margin-bottom:14px"></div>
+
                   <div class="grid2">
                     <label class="field"><span>${this._t('record_at_index')}</span>
                       <input id="recordIndex" type="number" min="0" max="63" placeholder="0-63">
@@ -195,12 +217,6 @@ export const PanelMixin = (Base) => class extends Base {
                     <div class="row" style="align-items:flex-end">
                       <button class="btn secondary" data-action="module" data-sub="record">${this._t('record')}</button>
                       <button class="btn secondary" data-action="module" data-sub="clear_map">${this._t('clear_map')}</button>
-                    </div>
-                    <label class="field"><span>${this._t('home_offset')}</span>
-                      <input id="offsetValue" type="number" min="0" max="65535" placeholder="${escapeAttr(this._t('steps'))}">
-                    </label>
-                    <div class="row" style="align-items:flex-end">
-                      <button class="btn secondary" data-action="module" data-sub="apply_offset">${this._t('set_offset')}</button>
                     </div>
                   </div>
                   <label class="field" style="margin-top:12px"><span>${this._t('position_map')}</span>
@@ -211,6 +227,27 @@ export const PanelMixin = (Base) => class extends Base {
                     <span class="muted">${this._t('position_map_hint')}</span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="tuning" data-sub="autotune">
+              <div class="card" id="autoTuneCard">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('auto_tune_title')}</h2>
+                  <span class="muted" id="autoTuneMeta"></span>
+                </div>
+                <div id="autoTuneBody" style="margin-top:14px"></div>
+              </div>
+            </div>
+
+            <div class="subpage" data-subpage="tuning" data-sub="teach">
+              <div class="card" id="teachCard">
+                <div class="row between">
+                  <h2 style="margin:0">${this._t('teach_title')}</h2>
+                  <span class="muted" id="teachMeta"></span>
+                </div>
+                <div class="empty hidden" id="teachEmpty">${escapeHtml(this._t('select_module_hint'))}</div>
+                <div id="teachBody" style="margin-top:14px"></div>
               </div>
             </div>
 
@@ -381,6 +418,16 @@ export const PanelMixin = (Base) => class extends Base {
             </div>
           </div>
         </div>
+
+        <div class="modal hidden" id="tuneModal">
+          <div class="modal-card">
+            <h3 id="tuneModalTitle"></h3>
+            <div id="tuneModalBody"></div>
+            <div class="actions">
+              <button class="btn secondary" data-action="close-tune-modal">${this._t('cancel')}</button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -470,9 +517,8 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderSettings();
     this._renderOta();
     this._renderConnectionInfo();
-    this._renderInspectorSections();
-    this._renderAutoFineTune();
-    this._renderTeachMode();
+    this._renderAutoTune();
+    this._renderTeach();
   }
 
   _renderStatus() {
@@ -1006,45 +1052,6 @@ export const PanelMixin = (Base) => class extends Base {
     return modules.find((module) => String(module.id) === String(moduleId));
   }
 
-  _openInspector() {
-    this._setTab("tuning");
-    this._selectedModule = null;
-    this._inspectorModule = null;
-    this._renderTuning();
-  }
-
-  _openInspectorDetail() {
-    if (this._selectedModule == null || !this._moduleFor(this._selectedModule)) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    this._setTab("tuning");
-    this._renderInspectorDetail();
-  }
-
-  _openCharMap() {
-    if (this._selectedModule == null || !this._moduleFor(this._selectedModule)) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    this._setTab("tuning");
-    this._openCharTuningModalFor(this._selectedModule);
-  }
-
-  _openAutoFineTune() {
-    this._setTab("tuning");
-    this._autoTuneSelectedModule = this._selectedModule;
-    this._autoTuneState = null;
-    this._renderAutoFineTune();
-  }
-
-  _openTeachMode() {
-    this._setTab("tuning");
-    this._teachSelectedModule = this._selectedModule;
-    this._teachState = null;
-    this._renderTeachMode();
-  }
-
   _renderTuning() {
     if (!this._state) return;
     const coordinator = this._coordinator();
@@ -1052,16 +1059,6 @@ export const PanelMixin = (Base) => class extends Base {
     const modules = coordinator.modules || [];
     const matrix = this.shadowRoot.getElementById("moduleMatrix");
     const meta = this.shadowRoot.getElementById("matrixMeta");
-
-    // Keep the inspector detail in sync when a new module is selected in the
-    // existing Tuning matrix so the new Hardware Inspector detail panel stays
-    // usable from the core UI.
-    if (
-      this.shadowRoot.getElementById("inspectorDetailBody") &&
-      this._selectedModule != null
-    ) {
-      this._renderInspectorDetail();
-    }
 
     if (matrix) {
       const rows = Math.max(board.rows, Math.ceil(modules.length / board.cols) || 1);
@@ -1147,12 +1144,13 @@ export const PanelMixin = (Base) => class extends Base {
 
     const selected = this._moduleFor(this._selectedModule);
     const hasModule = Boolean(selected);
-    // Three module-scoped cards: Commands, Map and Drum. Each has its own
+    // Module-scoped cards: Commands, Map, Drum, Teach. Each has its own
     // body/empty pair toggled by whether a module is selected.
     const bodyEmptyPairs = [
       ["controlsBody", "controlsEmpty"],
       ["mapBody", "mapEmpty"],
       ["drumBody", "drumEmpty"],
+      ["teachBody", "teachEmpty"],
     ];
     for (const [bodyId, emptyId] of bodyEmptyPairs) {
       const body = this.shadowRoot.getElementById(bodyId);
@@ -1174,6 +1172,7 @@ export const PanelMixin = (Base) => class extends Base {
         if (node) node.textContent = "";
       }
       this._renderCharMap(null);
+      this._renderMapFlaps(null);
       return;
     }
 
@@ -1235,6 +1234,7 @@ export const PanelMixin = (Base) => class extends Base {
     // handler made one click run the action (and its toast) twice.
 
     this._renderCharMap(selected);
+    this._renderMapFlaps(selected);
   }
 
   _renderLayout() {
@@ -1362,60 +1362,13 @@ export const PanelMixin = (Base) => class extends Base {
       .join("");
   }
 
-  _renderInspectorSections() {
-    this._renderHardwareInspector();
-    this._renderInspectorDetail();
-    this._renderCharTuningModal();
-    this._renderAutoFineTune();
-    this._renderTeachMode();
-  }
-
-  _renderHardwareInspector() {
-    const grid = this.shadowRoot.getElementById("inspector-mod-grid");
-    if (!grid) return;
-    const coordinator = this._coordinator();
-    const modules = (coordinator && coordinator.modules) || [];
-    if (!modules.length) {
-      grid.innerHTML = `<div class="empty">${escapeHtml(
-        this._t("inspector_empty")
-      )}</div>`;
+  _renderMapFlaps(module) {
+    const node = this.shadowRoot.getElementById("mapFlaps");
+    if (!node) return;
+    if (!module) {
+      node.innerHTML = "";
       return;
     }
-    grid.innerHTML = modules
-      .map((module) => {
-        const selected =
-          this._selectedModule !== null &&
-          String(this._selectedModule) === String(module.id);
-        const flap =
-          module.displayed_flap != null
-            ? module.displayed_flap
-            : module.flap || " ";
-        const stateText = `${String(
-          module.state || this._t("unknown")
-        ).toUpperCase()} • ${module.online === false ? "offline" : "online"}`;
-        return `
-          <button
-            class="mod-card${selected ? " selected" : ""}${module.online === false ? " offline" : ""}"
-            data-action="select-module" data-id="${escapeAttr(module.id)}"
-            title="${escapeAttr(this._t('inspector_selected_module'))} ${escapeAttr(module.id)}"
-          >
-            <div class="id">${escapeHtml(module.id)}</div>
-            <div class="name">${escapeHtml(this._t('module'))}</div>
-            <div class="status">${escapeHtml(stateText)}</div>
-            <div class="preview">${flap === " " ? "␣" : escapeHtml(flap)}</div>
-          </button>`;
-      })
-      .join("");
-  }
-
-  _renderInspectorDetail() {
-    const body = this.shadowRoot.getElementById("inspector-detail-body");
-    if (!body) return;
-    if (this._selectedModule == null || !this._moduleFor(this._selectedModule)) {
-      body.innerHTML = ``;
-      return;
-    }
-    const module = this._moduleFor(this._selectedModule);
     const drum =
       Array.isArray(module.effective_drum) && module.effective_drum.length
         ? module.effective_drum
@@ -1430,471 +1383,386 @@ export const PanelMixin = (Base) => class extends Base {
           ? Number(module.flap_index)
           : -1;
 
-    body.innerHTML = `
-      <div class="panel">
-        <div class="row between" style="margin-bottom:10px">
-          <h3 style="margin:0">${escapeHtml(this._t('inspector_detail'))}</h3>
-          <span class="muted">${escapeHtml(module.id)}</span>
-        </div>
-
-        <div class="field" style="margin-bottom:10px">
-          <label>${escapeHtml(this._t('inspector_quick_offsets'))}</label>
-          <div class="quick-offsets">
-            <button data-action="inspector" data-sub="offset" data-value="-8">-8</button>
-            <button data-action="inspector" data-sub="offset" data-value="-4">-4</button>
-            <button data-action="inspector" data-sub="offset" data-value="-2">-2</button>
-            <button data-action="inspector" data-sub="offset" data-value="2">+2</button>
-            <button data-action="inspector" data-sub="offset" data-value="4">+4</button>
-            <button data-action="inspector" data-sub="offset" data-value="8">+8</button>
-          </div>
-        </div>
-
-        <div class="field" style="margin-bottom:10px">
-          <label>${escapeHtml(this._t('inspector_direct_offset'))}</label>
-          <div class="control-row">
-            <label>${escapeHtml(this._t('inspector_offset_spinner'))}</label>
-            <input type="number" data-action="inspector-value" data-sub="offset" value="${escapeAttr(
-              module.home_offset != null ? String(module.home_offset) : ""
-            )}" min="0" max="65535">
-            <button class="btn secondary" data-action="inspector" data-sub="set_offset">
-              ${escapeHtml(this._t('inspector_set_offset'))}
-            </button>
-          </div>
-        </div>
-
-        <div class="field" style="margin-bottom:10px">
-          <label>${escapeHtml(this._t('inspector_set_position'))}</label>
-          <div class="control-row">
-            <label>${escapeHtml(this._t('index'))}</label>
-            <input type="number" data-action="inspector-value" data-sub="goto" min="0" max="63" value="${escapeAttr(
-              currentIndex >= 0 ? String(currentIndex) : ""
-            )}">
-            <button class="btn secondary" data-action="inspector" data-sub="goto">
-              ${escapeHtml(this._t('inspector_set_position'))}
-            </button>
-          </div>
-        </div>
-
-        <div class="field" style="margin-bottom:10px">
-          <label>${escapeHtml(this._t('inspector_char_tuning'))}</label>
-          <div class="row" style="margin-top:6px">
-            <button class="btn secondary" data-action="inspector" data-sub="open_char_map">
-              ${escapeHtml(this._t('inspector_open_char_map'))}
-            </button>
-          </div>
-        </div>
-
-        <div class="field" style="margin-bottom:10px">
-          <div class="row" style="margin-top:6px">
-            <button class="btn danger" data-action="inspector" data-sub="clear_eeprom">
-              ${escapeHtml(this._t('inspector_clear_eeprom'))}
-            </button>
-            <button class="btn secondary" data-action="inspector" data-sub="home">
-              ${escapeHtml(this._t('home_motor'))}
-            </button>
-          </div>
-        </div>
-      </div>`;
+    node.innerHTML = drum
+      .map((char, index) => {
+        const color = COLOR_CODES.includes(char) ? ` color-${char}` : "";
+        const tuned = positions[String(index)] !== undefined;
+        const current = index === currentIndex;
+        const step = positions[String(index)];
+        const title = formatMessage(this._t("index_named"), { index }) +
+          (tuned ? ` • ${step}` : "");
+        return `<button class="char${color}${tuned ? " tuned" : ""}${current ? " current" : ""}"
+          data-action="open-tune-flap" data-index="${index}" title="${escapeAttr(title)}">
+          ${char === " " ? "␣" : escapeHtml(char)}<small>${index}</small>
+        </button>`;
+      })
+      .join("");
   }
 
-  _openCharTuningModalFor(moduleId) {
-    const module = this._moduleFor(moduleId);
-    if (!module) return;
+  _openTuneModal(flapIndex) {
+    const module = this._moduleFor(this._selectedModule);
+    if (!module) {
+      this._toast(this._t("select_module_first"), "warn");
+      return;
+    }
     const drum =
       Array.isArray(module.effective_drum) && module.effective_drum.length
         ? module.effective_drum
         : Array.isArray(module.flap_list) && module.flap_list.length
           ? module.flap_list
           : DEFAULT_DRUM.split("");
+    const idx = Number(flapIndex);
+    const char = drum[idx] || " ";
+    const cal = Number(module.total_steps) || 4096;
+    const expected = Math.floor((idx * cal) / 64);
     const positions = module.map_of_positions || {};
-    this._charTuningModule = String(moduleId);
-    this._charTuningDrum = drum;
-    this._charTuningPositions = positions;
-    this._charTuningSelectedIndex = currentIndexForModule(module);
-    this._renderCharTuningModal();
-    this._showModal(
-      formatMessage(this._t("char_map_title"), {
-        id: moduleId,
-        flaps: this._plural("flaps", drum.length),
-      })
-    );
+    const tuned = positions[String(idx)];
+    const active = tuned !== undefined ? Number(tuned) : expected;
+
+    this._tuneFlapState = {
+      moduleId: module.id,
+      index: idx,
+      char,
+      expected,
+      tuned: tuned !== undefined ? Number(tuned) : null,
+      active,
+    };
+
+    this._renderTuneModal();
   }
 
-  _showModal(titleHtml) {
-    const modal = this.shadowRoot.getElementById("modal");
-    const modalTitle = this.shadowRoot.getElementById("modalTitle");
-    const modalFields = this.shadowRoot.getElementById("modalFields");
-    if (!modal || !modalTitle || !modalFields) return;
-    modalTitle.innerHTML = titleHtml;
-    this.shadowRoot.querySelector('[data-action="save-app-settings"]').classList.add("hidden");
-    const closeButton = this.shadowRoot.querySelector('[data-action="close-modal"]');
-    if (closeButton) closeButton.textContent = this._t("cancel");
+  _renderTuneModal() {
+    const modal = this.shadowRoot.getElementById("tuneModal");
+    const title = this.shadowRoot.getElementById("tuneModalTitle");
+    const body = this.shadowRoot.getElementById("tuneModalBody");
+    if (!modal || !title || !body) return;
+    if (!this._tuneFlapState) {
+      modal.classList.add("hidden");
+      return;
+    }
+
+    const { moduleId, index, char, expected, tuned, active } = this._tuneFlapState;
+    title.textContent = formatMessage(this._t("tune_flap_title"), {
+      index,
+      char: char === " " ? "␣" : char,
+      id: moduleId,
+    });
+
+    body.innerHTML = `
+      <div class="row between" style="margin-bottom:12px;font-size:.9rem">
+        <span>${formatMessage(this._t("tune_flap_expected"), { step: expected })}</span>
+        <span>${formatMessage(this._t("tune_flap_tuned"), { step: tuned !== null ? tuned : "—" })}</span>
+        <span><strong>${formatMessage(this._t("tune_flap_active"), { step: active })}</strong></span>
+      </div>
+      <label class="field">
+        <span>${this._t("tune_flap_step_label")}</span>
+        <input id="tuneStepInput" type="number" min="0" max="65535" value="${active}">
+      </label>
+      <div class="field" style="margin-top:10px">
+        <label>${this._t("tune_flap_nudge")}</label>
+        <div class="quick-offsets">
+          <button data-action="tune-nudge" data-delta="-16">-16</button>
+          <button data-action="tune-nudge" data-delta="-4">-4</button>
+          <button data-action="tune-nudge" data-delta="-1">-1</button>
+          <button data-action="tune-nudge" data-delta="1">+1</button>
+          <button data-action="tune-nudge" data-delta="4">+4</button>
+          <button data-action="tune-nudge" data-delta="16">+16</button>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px;flex-wrap:wrap">
+        <button class="btn secondary" data-action="tune-test-goto">${this._t("tune_flap_test_goto")}</button>
+        <button class="btn" data-action="tune-save">${this._t("tune_flap_save")}</button>
+        ${tuned !== null ? `<button class="btn danger" data-action="tune-revert">${this._t("tune_flap_revert")}</button>` : ""}
+      </div>
+    `;
+
     modal.classList.remove("hidden");
   }
 
-  _hideModal() {
-    const modal = this.shadowRoot.getElementById("modal");
-    if (!modal) return;
-    modal.classList.add("hidden");
-    this._charTuningModule = null;
-    this._charTuningDrum = null;
-    this._charTuningPositions = null;
-    this._charTuningSelectedIndex = null;
+  _closeTuneModal() {
+    this._tuneFlapState = null;
+    const modal = this.shadowRoot.getElementById("tuneModal");
+    if (modal) modal.classList.add("hidden");
   }
 
-  _renderCharTuningModalBody() {
-    const body = this.shadowRoot.getElementById("modalFields");
-    if (!body || !this._charTuningDrum) return;
-    const selected = this._charTuningSelectedIndex;
-    body.innerHTML = `
-      <div class="char-list">
-        ${this._charTuningDrum
-          .map((char, index) => {
-            const color =
-              COLOR_CODES.includes(char) ? ` color-${char}` : "";
-            const tuned = this._charTuningPositions[String(index)] !== undefined;
-            const selectedClass =
-              index === selected ? " selected" : "";
-            return `
-              <button
-                class="char-item${color}${tuned ? " tuned" : ""}${selectedClass}"
-                data-action="char-tuning" data-index="${index}"
-                title="${escapeAttr(
-                  formatMessage(this._t("index_named"), { index })
-                )}${tuned ? ` • ${this._charTuningPositions[String(index)]}` : ""}"
-              >
-                <span class="char">${char === " " ? "␣" : escapeHtml(char)}</span>
-                <span class="index">${index}</span>
-              </button>`;
-          })
-          .join("")}
-      </div>
-
-      <div class="new-char">
-        <label>${escapeHtml(this._t('char_tuning_index'))}
-          <input type="number" data-action="char-tuning-value" data-sub="index" min="0" max="63" value="${selected != null ? String(selected) : ""}">
-        </label>
-        <label>${escapeHtml(this._t('char_tuning_step'))}
-          <input type="number" data-action="char-tuning-value" data-sub="step" min="0" max="100000" value="${this._charTuningPositions[String(selected)] != null ? String(this._charTuningPositions[String(selected)]) : ""}">
-        </label>
-        <button class="btn secondary" data-action="char-tuning" data-sub="set">
-          ${escapeHtml(this._t('char_map_set_index_step'))}
-        </button>
-      </div>
-
-      <div class="new-char">
-        <button class="btn danger" data-action="char-tuning" data-sub="clear">
-          ${escapeHtml(this._t('char_map_clear'))}
-        </button>
-      </div>
-      <p class="muted" style="margin-top:10px">
-        ${escapeHtml(this._t('char_map_help_custom'))}
-      </p>`;
-  }
-
-  _renderCharTuningModal() {
-    if (!this.shadowRoot.getElementById("modalFields")) return;
-    if (
-      this._charTuningModule == null ||
-      this._charTuningDrum == null
-    ) {
-      this._hideModal();
-      return;
-    }
-    this._renderCharTuningModalBody();
-  }
-
-  _charTuningIndexFromAction(data) {
-    if (data && data.index != null) {
-      const parsed = Number(data.index);
-      if (Number.isInteger(parsed) && parsed >= 0 && parsed < this._charTuningDrum.length) {
-        return parsed;
-      }
-    }
-    return this._charTuningSelectedIndex;
-  }
-
-  async _charTuningAction(sub, data) {
-    if (
-      this._charTuningModule == null ||
-      this._charTuningDrum == null
-    ) {
-      return;
-    }
-    const moduleId = this._charTuningModule;
-    if (sub === "set") {
-      const indexValue =
-        data && data.index != null
-          ? Number(data.index)
-          : this._charTuningSelectedIndex;
-      const stepValue =
-        data && data.step != null
-          ? Number(data.step)
-          : null;
-      const targetIndex =
-        Number.isInteger(indexValue) && indexValue >= 0 && indexValue < 64
-          ? indexValue
-          : null;
-      const targetStep =
-        stepValue != null &&
-        Number.isFinite(stepValue) &&
-        stepValue >= 0
-          ? Math.floor(stepValue)
-          : null;
-      if (targetIndex == null || targetStep == null) {
-        this._toast(this._t("enter_index_step_pair"), "warn");
-        return;
-      }
-      const positions = { [String(targetIndex)]: targetStep };
-      await this._send("calibrate", {
-        module: moduleId,
-        action: "apply",
-        positions,
-      });
-      this._charTuningPositions = {
-        ...this._charTuningPositions,
-        [String(targetIndex)]: targetStep,
-      };
-      this._charTuningSelectedIndex = targetIndex;
-      this._toast(
-        formatMessage(this._t("applied_map"), {
-          entries: this._plural("entries", 1),
-        })
-      );
-      return;
-    }
-    if (sub === "clear") {
-      const index = this._charTuningSelectedIndex;
-      if (index == null) {
-        this._toast(this._t("select_module_first"), "warn");
-        return;
-      }
-      await this._send("calibrate", {
-        module: moduleId,
-        action: "apply",
-        positions: { [String(index)]: 0xFFFF },
-      });
-      delete this._charTuningPositions[String(index)];
-      this._toast(
-        formatMessage(this._t("cleared_eeprom"), { module: moduleId })
-      );
-      return;
-    }
-    if (sub === "select") {
-      const index =
-        data && data.index != null
-          ? Number(data.index)
-          : null;
-      if (index != null && Number.isInteger(index) && index >= 0 && index < this._charTuningDrum.length) {
-        this._charTuningSelectedIndex = index;
-      }
-    }
-  }
-
-  _renderAutoFineTune() {
-    const body = this.shadowRoot.getElementById("auto-tune-body");
+  _renderAutoTune() {
+    const body = this.shadowRoot.getElementById("autoTuneBody");
+    const meta = this.shadowRoot.getElementById("autoTuneMeta");
     if (!body) return;
-    if (this._selectedModule == null || !this._moduleFor(this._selectedModule)) {
-      body.innerHTML = `<div class="empty">${escapeHtml(
-        this._t("auto_tune_no_module")
-      )}</div>`;
-      return;
-    }
-    if (this._autoTuneState == null) {
-      body.innerHTML = `
-        <div class="stage">
-          <h3>${escapeHtml(this._t('auto_tune_title'))}</h3>
-          <p class="muted" style="margin-top:0">
-            ${escapeHtml(this._t('auto_tune_intro'))}
-          </p>
-          <div class="row" style="margin-top:8px">
-            <button class="btn" data-action="auto-tune" data-sub="start">
-              ${escapeHtml(this._t('auto_tune_run'))}
-            </button>
-            <button class="btn secondary" data-action="auto-tune" data-sub="abort">
-              ${escapeHtml(this._t('auto_tune_abort'))}
-            </button>
-          </div>
-        </div>`;
-      return;
-    }
-    const state = this._autoTuneState;
-    const total = Math.max(1, state.total || 0);
-    const done = Math.max(0, state.done || 0);
-    const phase = state.phase || this._t('auto_tune_phase_mapping');
-    const chars = state.chars || [];
-    const selectedIndex = state.selectedIndex;
-    const currentChar =
-      selectedIndex != null && chars[selectedIndex] != null
-        ? chars[selectedIndex]
-        : " ";
-    const progress = Math.round((done / total) * 100);
 
-    const progressHtml = chars
-      .map((char, index) => {
-        let cls = "pending";
-        if (index < done) cls = "done";
-        else if (index === done) cls = "current";
-        return `<span class="pill ${cls}">${char === " " ? "␣" : escapeHtml(char)}</span>`;
-      })
-      .join("");
+    if (!this._atState || !this._atState.running) {
+      if (meta) meta.textContent = "";
+      body.innerHTML = `
+        <div class="at-stage">
+          <h3 style="margin:0">${escapeHtml(this._t("at_start_title"))}</h3>
+          <p class="muted" style="margin:0">${escapeHtml(this._t("at_start_intro"))}</p>
+          <div class="grid2" style="max-width:360px;margin-top:8px">
+            <label class="field">
+              <span>${this._t("at_start_idx")}</span>
+              <input id="atStartIdx" type="number" min="1" max="63" value="${this._atState && this._atState.charIndex ? this._atState.charIndex : 63}">
+            </label>
+            <label class="field">
+              <span>${this._t("at_step_size")}</span>
+              <input id="atStepSize" type="number" min="1" max="100" value="${this._atState && this._atState.stepSize ? this._atState.stepSize : 25}">
+            </label>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button class="btn" data-action="at-begin">${this._t("at_begin_btn")}</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const at = this._atState;
+    if (at.phase === "homing") {
+      if (meta) meta.textContent = "";
+      body.innerHTML = `
+        <div class="at-stage" style="text-align:center;padding:30px 10px">
+          <h3 style="margin:0">${escapeHtml(this._t("at_homing_title"))}</h3>
+          <div style="font-size:1.4rem;font-weight:700;margin:16px 0;font-family:monospace">
+            ${formatMessage(this._t("at_homing_wait"), { seconds: at.countdown != null ? at.countdown : 12 })}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (at.phase === "done") {
+      if (meta) meta.textContent = "";
+      body.innerHTML = `
+        <div class="at-stage" style="text-align:center;padding:30px 10px">
+          <h3 style="margin:0">${escapeHtml(this._t("at_done_title"))}</h3>
+          <p class="muted" style="margin:12px 0">${escapeHtml(this._t("at_done_msg"))}</p>
+          <div class="actions" style="justify-content:center;margin-top:16px">
+            <button class="btn" data-action="at-restart">${this._t("refresh")}</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const coordinator = this._coordinator();
+    const modules = coordinator.modules || [];
+    const board = this._board();
+    const drum = DEFAULT_DRUM.split("");
+    const curIdx = at.charIndex;
+    const curChar = drum[curIdx] || " ";
+    const prevChar = curIdx > 0 ? (drum[curIdx - 1] === " " ? "␣" : drum[curIdx - 1]) : "?";
+    const nextChar = curIdx < 63 ? (drum[curIdx + 1] === " " ? "␣" : drum[curIdx + 1]) : "?";
+    const curCharDisp = curChar === " " ? "␣" : curChar;
+
+    if (meta) {
+      meta.textContent = formatMessage(this._t("at_char_title"), {
+        idx: curIdx,
+        char: curCharDisp,
+      });
+    }
+
+    let instrHtml = "";
+    let btnHtml = "";
+    const selectedCount = at.selected ? at.selected.size : 0;
+    const stepSize = at.stepSize || 25;
+
+    if (at.phase === "ahead") {
+      instrHtml = formatMessage(this._t("at_ahead_prompt"), {
+        char: curCharDisp,
+        nextChar,
+      });
+      btnHtml = `
+        <button class="btn" style="background:#b71c1c;color:#fff" data-action="at-apply-ahead">
+          ${formatMessage(this._t("at_ahead_apply"), { step: stepSize, count: selectedCount })}
+        </button>
+        <button class="btn secondary" data-action="at-skip-ahead">${this._t("at_ahead_skip")}</button>
+      `;
+    } else if (at.phase === "behind") {
+      instrHtml = formatMessage(this._t("at_behind_prompt"), {
+        char: curCharDisp,
+        prevChar,
+      });
+      btnHtml = `
+        <button class="btn" style="background:#2e7d32;color:#fff" data-action="at-apply-behind">
+          ${formatMessage(this._t("at_behind_apply"), { step: stepSize, count: selectedCount })}
+        </button>
+        <button class="btn" data-action="at-next-char">${this._t("at_all_good")}</button>
+        <button class="btn secondary mini" data-action="at-recheck-ahead">${this._t("at_recheck_ahead")}</button>
+      `;
+    } else { // verify
+      instrHtml = formatMessage(this._t("at_verify_prompt"), {
+        char: curCharDisp,
+      });
+      btnHtml = `
+        <button class="btn" data-action="at-next-char">${this._t("at_all_good")}</button>
+        <button class="btn secondary" data-action="at-recheck-ahead">${this._t("at_still_wrong")}</button>
+      `;
+    }
+
+    let gridHtml = "";
+    let slotBase = 0;
+    for (let row = 0; row < board.rows; row += 1) {
+      const count = Math.max(0, Math.min(board.cols, Number(board.rowCounts[row]) || 0));
+      const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
+      for (let col = 0; col < board.cols; col += 1) {
+        if (col < offset || col >= offset + count) {
+          gridHtml += '<div class="mod void"></div>';
+          continue;
+        }
+        const module = modules[slotBase + col - offset];
+        if (!module) {
+          gridHtml += '<div class="mod empty"></div>';
+          continue;
+        }
+        const modId = module.id;
+        const isSelected = at.selected && at.selected.has(modId);
+        const positions = module.map_of_positions || {};
+        const isTuned = positions[String(curIdx)] !== undefined;
+        let selClass = "";
+        if (isSelected) {
+          selClass = at.phase === "ahead" ? " sel-ahead" : " sel-behind";
+        }
+        gridHtml += `
+          <div class="at-cell${isTuned ? " tuned-indicator" : ""}${selClass}"
+               data-action="at-cell" data-id="${escapeAttr(modId)}"
+               title="${escapeAttr(this._t("module"))} ${escapeAttr(modId)}${isTuned ? " (tuned)" : ""}">
+            <span>${escapeHtml(modId)}</span>
+          </div>`;
+      }
+      slotBase += count;
+    }
 
     body.innerHTML = `
-      <div class="stage">
-        <h3>${escapeHtml(this._t('auto_tune_title'))}</h3>
-        <p class="phase-label">${escapeHtml(phase)}</p>
-        <div class="progress">${progressHtml}</div>
-        <div class="muted">${done}/${total} • ${progress}%</div>
-
-        ${state.waiting_for_char
-          ? `
-          <label class="field" style="margin-top:10px">
-            <span>${escapeHtml(this._t('auto_tune_target_char'))}</span>
-            <input
-              type="text"
-              data-action="auto-tune-value"
-              data-sub="char"
-              maxlength="1"
-              value="${escapeAttr(currentChar)}"
-            >
+      <div class="at-stage">
+        <div class="row between" style="align-items:center">
+          <div class="row" style="align-items:center;gap:12px">
+            <div class="at-char-box">${curCharDisp}</div>
+            <div>
+              <div style="font-weight:700;font-size:1.1rem">${formatMessage(this._t("at_char_title"), { idx: curIdx, char: curCharDisp })}</div>
+              <div class="muted" style="font-size:.82rem">${at.phase.toUpperCase()}</div>
+            </div>
+          </div>
+          <label class="field" style="margin:0;max-width:120px">
+            <span>${this._t("at_step_size")}</span>
+            <input id="atStepSizeActive" type="number" min="1" max="100" value="${stepSize}">
           </label>
-          <p class="muted" style="font-size:.74rem;margin-top:4px">
-            ${escapeHtml(this._t('auto_tune_submit_prompt'))}
-          </p>
-          <div class="next-char">
-            <button class="btn" data-action="auto-tune" data-sub="submit_char">
-              ${escapeHtml(this._t('auto_tune_run'))}
-            </button>
-          </div>
-          `
-          : ""}
+        </div>
 
-        ${state.repeat_offenders && state.repeat_offenders.length
-          ? `
-          <div class="repeat-offenders">
-            <div class="title">${escapeHtml(this._t('auto_tune_repeat_offenders'))}</div>
-            <p class="muted" style="font-size:.74rem;margin-top:4px">
-              ${escapeHtml(this._t('auto_tune_repeat_offenders_intro'))}
-            </p>
-            <ul>
-              ${state.repeat_offenders
-                .map((id) => `<li>${escapeHtml(id)}</li>`)
-                .join("")}
-            </ul>
-          </div>
-          `
-          : ""}
+        <div class="at-instructions">${instrHtml}</div>
 
-        ${state.done
-          ? `
-          <div class="done">
-            ${escapeHtml(this._t('auto_tune_done'))}
-            <ul>
-              <li>${escapeHtml(this._t('home_all'))}</li>
-            </ul>
+        <div class="at-grid" style="--cols:${board.cols}">${gridHtml}</div>
+
+        <div class="row between" style="align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px">
+          <div class="actions" style="margin:0;flex-wrap:wrap">
+            ${btnHtml}
           </div>
-          <div class="actions">
-            <button class="btn" data-action="auto-tune" data-sub="reset">
-              ${escapeHtml(this._t('refresh'))}
-            </button>
+          <div class="row" style="align-items:center;gap:6px">
+            <span class="muted" style="font-size:.82rem">${this._t("at_jump_to")}</span>
+            <input id="atJumpIdx" type="number" min="1" max="63" value="${curIdx}" style="width:65px">
+            <button class="btn secondary mini" data-action="at-jump">${this._t("at_jump_btn")}</button>
+            <button class="btn danger mini" data-action="at-abort">${this._t("at_abort_btn")}</button>
           </div>
-          `
-          : ""}
-      </div>`;
+        </div>
+      </div>
+    `;
   }
 
-  _renderTeachMode() {
-    const body = this.shadowRoot.getElementById("teach-body");
+  _renderTeach() {
+    const body = this.shadowRoot.getElementById("teachBody");
+    const meta = this.shadowRoot.getElementById("teachMeta");
+    const empty = this.shadowRoot.getElementById("teachEmpty");
     if (!body) return;
-    if (this._selectedModule == null || !this._moduleFor(this._selectedModule)) {
-      body.innerHTML = `<div class="empty">${escapeHtml(
-        this._t("teach_no_module")
-      )}</div>`;
+
+    const module = this._moduleFor(this._selectedModule);
+    if (!module) {
+      if (empty) empty.classList.remove("hidden");
+      if (meta) meta.textContent = "";
+      body.innerHTML = "";
       return;
     }
-    if (this._teachState == null) {
+    if (empty) empty.classList.add("hidden");
+
+    if (meta) {
+      meta.textContent = formatMessage(this._t("module_named"), { id: module.id });
+    }
+
+    if (!this._teachState || !this._teachState.running) {
       body.innerHTML = `
-        <div class="stage">
-          <h3>${escapeHtml(this._t('teach_title'))}</h3>
-          <p class="muted" style="margin-top:0">
-            ${escapeHtml(this._t('teach_select_module'))}
-          </p>
-          <div class="row" style="margin-top:8px">
-            <button class="btn" data-action="teach" data-sub="start">
-              ${escapeHtml(this._t('teach_apply'))}
-            </button>
+        <div class="at-stage">
+          <h3 style="margin:0">${escapeHtml(this._t("teach_title"))}</h3>
+          <p class="muted" style="margin:0">${escapeHtml(this._t("teach_intro"))}</p>
+          <div class="actions" style="margin-top:12px">
+            <button class="btn" data-action="teach-start">${this._t("teach_apply")}</button>
           </div>
-        </div>`;
+        </div>
+      `;
       return;
     }
+
     const state = this._teachState;
-    const currentIndex = state.currentIndex;
-    const module = this._moduleFor(this._teachSelectedModule);
+    if (state.done) {
+      body.innerHTML = `
+        <div class="at-stage" style="text-align:center;padding:30px 10px">
+          <h3 style="margin:0">${escapeHtml(this._t("teach_done"))}</h3>
+          <div class="actions" style="justify-content:center;margin-top:16px">
+            <button class="btn" data-action="teach-restart">${this._t("refresh")}</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     const drum =
-      Array.isArray(module && module.effective_drum) && module.effective_drum.length
+      Array.isArray(module.effective_drum) && module.effective_drum.length
         ? module.effective_drum
-        : Array.isArray(module && module.flap_list) && module.flap_list.length
+        : Array.isArray(module.flap_list) && module.flap_list.length
           ? module.flap_list
           : DEFAULT_DRUM.split("");
-    const currentChar =
-      currentIndex != null && drum[currentIndex] != null ? drum[currentIndex] : " ";
+    const curIdx = state.flapIndex;
+    const curChar = drum[curIdx] || " ";
+    const curCharDisp = curChar === " " ? "␣" : curChar;
+    const cal = Number(module.total_steps) || 4096;
+    const expected = Math.floor((curIdx * cal) / 64);
+    const activeStep = state.currentStep != null ? state.currentStep : expected;
 
     body.innerHTML = `
-      <div class="stage">
-        <h3>${escapeHtml(this._t('teach_title'))}</h3>
-        <div class="row between" style="margin-bottom:8px">
-          <span class="muted">${escapeHtml(this._t('teach_current_char'))}</span>
-          <span class="preview" style="width:40px;height:52px;display:flex;align-items:center;justify-content:center;background:#0e0f11;border:1px solid #2a2e34;border-radius:4px;font-size:20px">
-            ${currentChar === " " ? "␣" : escapeHtml(currentChar)}
-          </span>
-          <span class="muted">${currentIndex != null ? String(currentIndex) : "–"}</span>
+      <div class="at-stage">
+        <div class="row between" style="align-items:center">
+          <div class="row" style="align-items:center;gap:14px">
+            <div class="at-char-box">${curCharDisp}</div>
+            <div>
+              <div style="font-weight:700;font-size:1.1rem">
+                ${formatMessage(this._t("teach_phase_label"), { current: curIdx + 1, total: 64 })} — "${curCharDisp}"
+              </div>
+              <div class="muted" style="font-size:.82rem">
+                ${formatMessage(this._t("teach_expected_step"), { step: expected })} • 
+                ${formatMessage(this._t("teach_active_step"), { step: activeStep })}
+              </div>
+            </div>
+          </div>
+          <label class="field" style="margin:0;max-width:140px">
+            <span>${this._t("tune_flap_step_label")}</span>
+            <input id="teachStepInput" type="number" min="0" max="65535" value="${activeStep}">
+          </label>
         </div>
-        <p class="phase-label" style="margin:6px 0">${escapeHtml(state.phase)}</p>
+
         <div class="nudge-row">
-          <button data-action="teach" data-sub="nudge" data-dir="-1">-1</button>
-          <button data-action="teach" data-sub="nudge" data-dir="-8">-8</button>
-          <button data-action="teach" data-sub="nudge" data-dir="-32">-32</button>
-          <button data-action="teach" data-sub="nudge" data-dir="32">+32</button>
-          <button data-action="teach" data-sub="nudge" data-dir="8">+8</button>
-          <button data-action="teach" data-sub="nudge" data-dir="1">+1</button>
+          <button data-action="teach-nudge" data-delta="-32">-32</button>
+          <button data-action="teach-nudge" data-delta="-8">-8</button>
+          <button data-action="teach-nudge" data-delta="-1">-1</button>
+          <button data-action="teach-nudge" data-delta="1">+1</button>
+          <button data-action="teach-nudge" data-delta="8">+8</button>
+          <button data-action="teach-nudge" data-delta="32">+32</button>
         </div>
 
-        <div class="row" style="margin-top:8px">
-          <button class="btn secondary" data-action="teach" data-sub="apply">
-            ${escapeHtml(this._t('teach_apply'))}
-          </button>
-          <button class="btn secondary" data-action="teach" data-sub="skip">
-            ${escapeHtml(this._t('teach_skip'))}
-          </button>
-          <button class="btn secondary" data-action="teach" data-sub="abort">
-            ${escapeHtml(this._t('teach_abort'))}
-          </button>
+        <div class="row between" style="margin-top:14px;flex-wrap:wrap;gap:8px">
+          <div class="actions" style="margin:0;flex-wrap:wrap">
+            <button class="btn" data-action="teach-record-next">${this._t("teach_record_next")}</button>
+            <button class="btn secondary" data-action="teach-skip">${this._t("teach_skip")}</button>
+            ${curIdx > 0 ? `<button class="btn secondary" data-action="teach-prev">${this._t("teach_prev")}</button>` : ""}
+          </div>
+          <button class="btn danger mini" data-action="teach-abort">${this._t("teach_abort")}</button>
         </div>
-
-        ${state.done
-          ? `
-          <div class="done">
-            ${escapeHtml(this._t('teach_done'))}
-          </div>
-          <div class="actions">
-            <button class="btn" data-action="teach" data-sub="reset">
-              ${escapeHtml(this._t('refresh'))}
-            </button>
-          </div>
-          `
-          : ""}
-      </div>`;
-  }
-
-  currentIndexForModule(module) {
-    if (!module) return null;
-    return (
-      module.display_flap_index != null
-        ? Number(module.display_flap_index)
-        : module.flap_index != null
-          ? Number(module.flap_index)
-          : null
-    );
+      </div>
+    `;
   }
 
   _fieldHtml(field, value) {
