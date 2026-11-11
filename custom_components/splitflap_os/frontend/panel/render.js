@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.4";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.4";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.4";
-import { PANEL_STYLES } from "../styles.js?v=1.0.4";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.5";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.5";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.5";
+import { PANEL_STYLES } from "../styles.js?v=1.0.5";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -323,18 +323,6 @@ export const PanelMixin = (Base) => class extends Base {
             </div>
 
             <div class="subpage" data-subpage="settings" data-sub="system">
-              <div class="card">
-                <div class="row between">
-                  <h2 style="margin:0">${this._t('hardware_actions')}</h2>
-                  <div class="actions" style="margin:0">
-                    <button class="btn mini secondary" data-action="hardware" data-sub="scan">${this._t('scan')}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="sync">${this._t('sync')}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="update">${this._t('refresh')}</button>
-                    <button class="btn mini secondary" data-action="hardware" data-sub="home_all">${this._t("home_all")}</button>
-                  </div>
-                </div>
-              </div>
-
               <div class="card">
                 <h2>${this._t('firmware_update')}</h2>
                 <p class="muted" style="margin-top:0">

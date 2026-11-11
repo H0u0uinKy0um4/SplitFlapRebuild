@@ -50,7 +50,6 @@ export const PANEL = {
   saved_playlists: "ULOŽENÉ PLAYLISTY",
   available_apps: "DOSTUPNÉ APLIKACE",
   hardware: "HARDWARE",
-  hardware_actions: "AKCE HARDWARU",
   character_map: "MAPA ZNAKŮ",
   physical_layout: "FYZICKÉ ROZLOŽENÍ",
   settings: "NASTAVENÍ",

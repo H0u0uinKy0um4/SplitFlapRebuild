@@ -50,7 +50,6 @@ export const PANEL = {
   saved_playlists: "SAVED PLAYLISTS",
   available_apps: "AVAILABLE APPS",
   hardware: "HARDWARE",
-  hardware_actions: "HARDWARE ACTIONS",
   character_map: "CHARACTER MAP",
   physical_layout: "PHYSICAL LAYOUT",
   settings: "SETTINGS",

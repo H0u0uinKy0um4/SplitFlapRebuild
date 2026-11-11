@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.4";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.4";
+import { formatMessage } from "../utils.js?v=1.0.5";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.5";
 
 
 export const PanelMixin = (Base) => class extends Base {
