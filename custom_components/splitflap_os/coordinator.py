@@ -26,6 +26,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     COMMAND_TOPICS,
+    COMPAT_VERSION,
     CONF_TOPIC_PREFIX,
     COORDINATOR_STORAGE_VERSION,
     DEFAULT_DEVICE_NAME,
@@ -206,6 +207,14 @@ MODULE_STAT_ALIASES: dict[str, tuple[str, ...]] = {
     ),
     "online": ("online", "is_online", "isOnline", "connected"),
     "last_seen": ("last_seen", "lastSeen", "last_seen_ms", "lastSeenMs"),
+    "fw_version": (
+        "fw_version",
+        "fwVersion",
+        "firmware_version",
+        "firmwareVersion",
+        "app_version",
+        "appVersion",
+    ),
 }
 
 _MODULE_STAT_CONTAINERS = ("stats", "config", "details", "module_stats")
@@ -270,6 +279,12 @@ def module_stats(module: dict[str, Any]) -> dict[str, Any]:
     last_seen = _first_value(sources, MODULE_STAT_ALIASES["last_seen"])
     if last_seen is not None:
         stats["last_seen"] = last_seen
+
+    fw_version = _first_value(sources, MODULE_STAT_ALIASES["fw_version"])
+    if isinstance(fw_version, str):
+        fw_version = fw_version.strip()
+        if fw_version:
+            stats["fw_version"] = fw_version
 
     positions = normalize_position_map(
         _first_value(sources, MODULE_STAT_ALIASES["map_of_positions"])
@@ -405,6 +420,9 @@ class SplitFlapCoordinator:
             "text": "",
             "last_status": None,
             "restored": False,
+            # Master's cross-repo version contract; absent on older firmware.
+            "master_version": None,
+            "master_compat": None,
         }
         #: Characters the integration has asked the display to show.
         self.desired_chars: dict[str, str] = {}
@@ -425,7 +443,7 @@ class SplitFlapCoordinator:
             name=self.entry.title or DEFAULT_DEVICE_NAME,
             manufacturer="DIY",
             model="ESP32-C3 RS485 Split-Flap Master",
-            sw_version="MQTT",
+            sw_version=self.master_version or "MQTT",
             configuration_url=f"homeassistant://{PANEL_URL_PATH}",
         )
 
@@ -446,6 +464,32 @@ class SplitFlapCoordinator:
     def modules_count(self) -> int:
         count = _coerce_count(self.data.get("modules_count"), 0)
         return count or len(self.modules)
+
+    @property
+    def master_version(self) -> str | None:
+        """Version the master reports, or ``None`` for older firmware."""
+
+        version = self.data.get("master_version")
+        return version if isinstance(version, str) and version else None
+
+    @property
+    def master_compat(self) -> int | None:
+        """Compatibility generation the master reports, or ``None``."""
+
+        return _coerce_optional_int(self.data.get("master_compat"))
+
+    @property
+    def compat_ok(self) -> bool | None:
+        """Whether the master shares this integration's compatibility generation.
+
+        ``None`` means the master has not reported a generation (firmware
+        predating the version protocol); that is "unknown", not "compatible".
+        """
+
+        compat = self.master_compat
+        if compat is None:
+            return None
+        return compat == COMPAT_VERSION
 
     def flap_list_for(self, module_id: Any) -> list[str] | None:
         """Return the module's reported drum, or ``None`` when unknown."""
@@ -525,6 +569,13 @@ class SplitFlapCoordinator:
             "desired_chars": dict(self.desired_chars),
             "last_status": self.data.get("last_status"),
             "restored": bool(self.data.get("restored", False)),
+            # Cross-repo version contract. compat is this integration's
+            # generation; compat_ok is None when the master predates the
+            # protocol instead of pretending it is compatible.
+            "compat": COMPAT_VERSION,
+            "master_version": self.master_version,
+            "master_compat": self.master_compat,
+            "compat_ok": self.compat_ok,
             # Slave-module OTA state; "idle" until the master reports a
             # collection or a flash session.
             "ota": self.data.get("ota") or {"state": "idle"},
@@ -632,6 +683,16 @@ class SplitFlapCoordinator:
 
         if online and isinstance(payload.get("text"), str):
             data["text"] = payload["text"]
+
+        # Master version contract. Kept across an offline last-will payload
+        # (which never carries it); an older master simply leaves it None.
+        if online:
+            version = payload.get("version")
+            if isinstance(version, str) and version.strip():
+                data["master_version"] = version.strip()
+            compat = _coerce_optional_int(payload.get("compat"))
+            if compat is not None:
+                data["master_compat"] = compat
 
         raw_modules = payload.get("modules")
         if isinstance(raw_modules, (list, dict)):

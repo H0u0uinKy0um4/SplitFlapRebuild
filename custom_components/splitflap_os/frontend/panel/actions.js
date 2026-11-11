@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=0.1.23";
-import { DEFAULT_DRUM } from "../constants.js?v=0.1.23";
+import { formatMessage } from "../utils.js?v=1.0.0";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -29,6 +29,10 @@ export const PanelMixin = (Base) => class extends Base {
     }
     if (target.id === "builderDelay") {
       this._playDelay = Number(target.value) || 5;
+      return;
+    }
+    if (target.id === "otaModule") {
+      this._renderOtaInstalled();
       return;
     }
     if (target.dataset && target.dataset.setting && target.closest(".settings-groups")) {

@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.23";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.23";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.23";
-import { PANEL_STYLES } from "../styles.js?v=0.1.23";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.0";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.0";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.0";
+import { PANEL_STYLES } from "../styles.js?v=1.0.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -32,6 +32,11 @@ export const PanelMixin = (Base) => class extends Base {
           <span class="dot"></span>
           <span id="bannerText"></span>
           <button class="btn mini danger stop" data-action="stop">${this._t("stop")}</button>
+        </div>
+
+        <div class="banner warn hidden" id="compatBanner">
+          <span class="dot"></span>
+          <span id="compatBannerText"></span>
         </div>
 
         <nav class="tabs">
@@ -154,6 +159,7 @@ export const PanelMixin = (Base) => class extends Base {
                     <div class="stat"><b id="statIndex">–</b><span>${this._t('index')}</span></div>
                     <div class="stat"><b id="statOffset">–</b><span>${this._t('offset')}</span></div>
                     <div class="stat"><b id="statTotal">–</b><span>${this._t('total_steps')}</span></div>
+                    <div class="stat"><b id="statFirmware">–</b><span>${this._t('firmware')}</span></div>
                   </div>
                   <div class="grid2">
                     <label class="field"><span>${this._t('goto_drum_index')}</span>
@@ -345,6 +351,7 @@ export const PanelMixin = (Base) => class extends Base {
                     <input id="otaFile" type="file" accept=".hex,text/plain">
                   </label>
                 </div>
+                <div class="muted" id="otaInstalled" style="margin-top:8px"></div>
                 <div class="actions">
                   <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
                   <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
@@ -461,6 +468,7 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderDrumLibrary();
     this._renderApps();
     this._renderBanner();
+    this._renderCompat();
     this._renderTuning();
     this._renderLayout();
     this._renderSettings();
@@ -926,6 +934,33 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  _renderCompat() {
+    const banner = this.shadowRoot.getElementById("compatBanner");
+    const text = this.shadowRoot.getElementById("compatBannerText");
+    if (!banner || !text) return;
+    const coordinator = this._coordinator();
+    if (!coordinator || !coordinator.online) {
+      banner.classList.add("hidden");
+      return;
+    }
+    // compat_ok is false for a reported mismatch, null when the master
+    // predates the version protocol. Never treat "unknown" as compatible.
+    if (coordinator.compat_ok === false) {
+      banner.classList.remove("hidden");
+      text.textContent = formatMessage(this._t("compat_mismatch"), {
+        master: coordinator.master_compat,
+        local: coordinator.compat,
+      });
+      return;
+    }
+    if (coordinator.compat_ok === null) {
+      banner.classList.remove("hidden");
+      text.textContent = this._t("compat_missing");
+      return;
+    }
+    banner.classList.add("hidden");
+  }
+
   _moduleFor(moduleId) {
     const coordinator = this._coordinator();
     const modules = (coordinator && coordinator.modules) || [];
@@ -1078,6 +1113,7 @@ export const PanelMixin = (Base) => class extends Base {
       statIndex: selected.display_flap_index != null ? selected.display_flap_index : selected.flap_index,
       statOffset: selected.home_offset,
       statTotal: selected.total_steps,
+      statFirmware: selected.fw_version,
     };
     for (const [id, value] of Object.entries(values)) {
       const node = this.shadowRoot.getElementById(id);
@@ -1340,6 +1376,33 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  _renderOtaInstalled() {
+    const node = this.shadowRoot.getElementById("otaInstalled");
+    if (!node) return;
+    const input = this.shadowRoot.getElementById("otaModule");
+    const moduleId = input ? String(input.value || "").trim() : "";
+    const module = moduleId ? this._moduleFor(moduleId) : null;
+    const version = module && module.fw_version ? String(module.fw_version) : "";
+    const compat = module && module.fw_compat != null ? module.fw_compat : null;
+    const coordinator = this._coordinator() || {};
+    if (!version) {
+      node.textContent = this._t("firmware_installed_unknown");
+    } else if (module.fw_compatible === false) {
+      node.textContent = formatMessage(this._t("firmware_incompatible"), {
+        version,
+        compat,
+        expected: coordinator.compat,
+      });
+    } else if (compat != null) {
+      node.textContent = formatMessage(this._t("firmware_installed_compat"), {
+        version,
+        compat,
+      });
+    } else {
+      node.textContent = formatMessage(this._t("firmware_installed"), { version });
+    }
+  }
+
   _renderOta() {
     const coordinator = this._coordinator() || {};
     const modules = coordinator.modules || [];
@@ -1359,6 +1422,7 @@ export const PanelMixin = (Base) => class extends Base {
     // reset back into its application.
     const input = this.shadowRoot.getElementById("otaModule");
     if (input && !input.value && ids.length) input.value = ids[0];
+    this._renderOtaInstalled();
 
     const ota = coordinator.ota || { state: "idle" };
     const state = String(ota.state || "idle");
@@ -1407,6 +1471,12 @@ export const PanelMixin = (Base) => class extends Base {
       `${this._t("master")}: ${this._t(
         coordinator.online ? "master_online" : "master_offline"
       )}`,
+      `${this._t("master_version")}: ${
+        coordinator.master_version || this._t("unknown")
+      }`,
+      `${this._t("compatibility")}: ${
+        coordinator.master_compat == null ? this._t("unknown") : coordinator.master_compat
+      } (${this._t("integration")}: ${VERSION})`,
       `${this._t("last_status")}: ${coordinator.last_status || this._t("never")}`,
       `${this._t("modules_label")}: ${coordinator.modules_count || 0}`,
       `${this._t("board")}: ${board.rows} × ${board.cols}`,

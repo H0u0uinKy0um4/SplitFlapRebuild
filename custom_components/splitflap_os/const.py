@@ -11,7 +11,12 @@ from .settings import DEFAULT_SETTINGS, SETTINGS_GROUPS, SETTINGS_KEYS
 
 DOMAIN: Final = "splitflap_os"
 NAME: Final = "Split-Flap OS"
-VERSION: Final = "0.1.23"
+# Version model: the major number is the cross-repo compatibility generation
+# (see the slave repository's docs/VERSIONING.md). COMPAT_VERSION repeats it
+# explicitly so the coordinator can compare it with the master's payload
+# without parsing VERSION.
+COMPAT_VERSION: Final = 1
+VERSION: Final = "1.0.0"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
@@ -77,6 +82,7 @@ __all__ = [
     "COLOR_MAP",
     "PHYSICAL_COLOR_CODES",
     "COMMAND_TOPICS",
+    "COMPAT_VERSION",
     "CONF_NAME",
     "CONF_TOPIC_PREFIX",
     "COORDINATOR_STORAGE_VERSION",

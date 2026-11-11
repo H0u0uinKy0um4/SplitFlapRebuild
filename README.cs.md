@@ -478,7 +478,38 @@ Finance, kryptoměny CoinGecko a MBTA funguje i bez klíče při malém provozu.
 
 ---
 
-## 11. Řešení potíží
+## 11. Verze a firmware modulů
+
+Všechny tři části systému (firmware modulů, ESP32 master a tato integrace) sdílí
+jedno **číslo kompatibility** a každá má vlastní vydání. Zobrazovaná verze má
+tvar `<kompatibilita>.<vydání>`, takže první číslo je generace (`1.4.2` =
+generace 1, vydání 4.2). Úplný protokol je v repozitáři firmwaru modulů v
+`docs/VERSIONING.md`.
+
+| Kde | Verze | Kompatibilita | Kde ji uvidíte |
+| --- | --- | --- | --- |
+| Integrace Home Assistant | `1.0.0` | `1` | hlavička panelu, informace o připojení |
+| ESP32 master | `1.0.0` | `1` | status `version`/`compat`, informace o připojení |
+| Firmware modulu | `1.0.0` | `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
+
+Integrace porovnává `compat` masteru s `COMPAT_VERSION` v `const.py`. Při
+neshodě se zobrazí žluté upozornění, ale normální zobrazení, zrušení OTA ani
+reset modulu to nikdy nezablokuje. Pokud master verzi vůbec nehlásí (starší
+firmware), panel ji označí jako neznámou a nebude předpokládat kompatibilitu.
+
+Karta **MODULE FIRMWARE** ukazuje verzi, kterou každý modul skutečně hlásí.
+Použijte ji jako důkaz, že OTA proběhla: zvyšte `FW_RELEASE` ve firmwaru modulu,
+nahrajte nový `.hex` a po restartu a homogenizaci se na kartě musí objevit nová
+verze. OTA sama odmítne neznámý protokol bootloaderu ještě před zápisem první
+stránky.
+
+Při změně frontendu zvyšte `VERSION` v `const.py`, `manifest.json` i
+`frontend/constants.js` a všechny parametry `?v=` v importech současně.
+`tests/test_versions.py` tuto shodu a vztah major/kompatibilita hlídá.
+
+---
+
+## 12. Řešení potíží
 
 **Panel hlásí OFFLINE**
 
@@ -518,9 +549,16 @@ Některý modul nemá daný znak ve svém bubnu. Otevřete **Tuning**, vyberte m
 a zkontrolujte jeho seznam lístků. Použijte znak, který v bubnu je, nebo znak
 odstraňte. Text se v takovém případě na tabuli vůbec neodešle.
 
+**Panel hlásí neshodu kompatibility**
+
+Master a integrace nemají stejnou generaci kompatibility. Aktualizujte master
+(nebo integraci) na stejnou generaci. Zobrazení může dál fungovat, ale OTA je
+bezpečnější řešit až po sjednocení. Pokud panel píše, že master verzi nehlásí,
+jde o firmware starší než protokol verzí.
+
 ---
 
-## 12. Poznámky pro zvídavé
+## 13. Poznámky pro zvídavé
 
 - Integrace má vlastní engine aplikací, playlisty, ukládání nastavení a
   zálohu/obnovu.

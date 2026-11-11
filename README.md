@@ -211,6 +211,8 @@ The integration expects the master's retained status payload to look like this
 {
   "state": "online",
   "text": "HELLO",
+  "version": "1.0.0",
+  "compat": 1,
   "modules_count": 45,
   "modules": [
     {
@@ -222,11 +224,18 @@ The integration expects the master's retained status payload to look like this
       "home_offset": 2832,
       "current_step": 3616,
       "flap_list": " ABC...",
-      "map_of_positions": {"0": 2832, "1": 2896}
+      "map_of_positions": {"0": 2832, "1": 2896},
+      "fw_version": "1.0.0",
+      "fw_compat": 1,
+      "fw_compatible": true
     }
   ]
 }
 ```
+
+`version`/`compat` are the master's own version contract. The per-module
+`fw_version`/`fw_compat` come from the slave's `m<id>s` reply;
+`fw_compatible` is omitted when the module does not report a version.
 
 Display commands are sent as an ordered array so the array order doubles as the
 animation order:
@@ -244,6 +253,37 @@ and the integration falls back to the estimated flap position. Negative and
 out-of-range entries are ignored in the same way. An explicit `positions`
 object sent to the `calibrate` service may still contain `65535` to clear a
 single entry on the slave.
+
+## Versions and module firmware
+
+All three parts of the system (slave firmware, ESP32 master, this integration)
+share one **compatibility generation** and each carries its own release. The
+published version is `<compat>.<release>`, so the first number is the
+generation (`1.4.2` = generation 1, release 4.2). The full protocol is in the
+slave repository's `docs/VERSIONING.md`.
+
+| Where | Version | Compatibility | Read from |
+| --- | --- | --- | --- |
+| Home Assistant integration | `1.0.0` | `1` | panel header, connection info, WebSocket `version`/`compat` |
+| ESP32 master | `1.0.0` | `1` | status `version`/`compat`, connection info |
+| Slave application | `1.0.0` | `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
+
+The integration compares the master's `compat` with `COMPAT_VERSION` in
+`const.py`. A mismatch shows a warning banner, but it never blocks display
+traffic, OTA cancellation or a module reset. If the master predates the version
+protocol, the panel says the version is unknown rather than assuming it is
+compatible.
+
+The module firmware card shows the application version each slave reports. Use
+it to prove an OTA actually took: bump the slave's `FW_RELEASE`, upload the new
+`.hex`, and the card should show the new version after the module reboots and
+re-homes. OTA itself refuses an unknown bootloader protocol before writing any
+page.
+
+When changing the frontend, bump `VERSION` in `const.py`, `manifest.json` and
+`frontend/constants.js`, and every `?v=` import parameter, together.
+`tests/test_versions.py` enforces that lockstep and the major/compat
+relationship.
 
 ## Coordinate system and recording index 0
 
@@ -316,6 +356,9 @@ python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null
 python3 tests/test_layout.py
 python3 tests/test_positions.py
+python3 tests/test_translations.py
+python3 tests/test_ota.py
+python3 tests/test_versions.py
 ```
 
 ## Troubleshooting

@@ -94,6 +94,8 @@ export const PANEL = {
   app_settings_title: "Nastavení aplikace",
   master_online: "master online",
   master_offline: "master offline",
+  master_version: "Verze masteru",
+  compatibility: "Kompatibilita",
   blank_cell: "Prázdná buňka rámu",
   select_module_hint: "Vyberte modul v matici výše.",
   char_map_title: "Modul {id} • {flaps}",
@@ -120,6 +122,18 @@ export const PANEL = {
     "Exportuje nastavení, playlisty a poslední snímek modulů. Obnovení sloučí nastavení a nahradí playlisty.",
   firmware_update: "FIRMWARE MODULŮ",
   firmware_file: "FIRMWARE (.HEX)",
+  firmware: "FIRMWARE",
+  firmware_installed: "Nainstalovaný firmware: {version}",
+  firmware_installed_compat:
+    "Nainstalovaný firmware: {version} (kompatibilita {compat})",
+  firmware_incompatible:
+    "Nainstalovaný firmware: {version} — kompatibilita {compat} neodpovídá {expected}",
+  firmware_installed_unknown:
+    "Nainstalovaný firmware: neznámý (modul je offline nebo firmware bez sledování verze)",
+  compat_mismatch:
+    "Master hlásí kompatibilitu {master}, ale tato integrace vyžaduje {local}. Před použitím OTA aktualizujte master nebo integraci.",
+  compat_missing:
+    "Master nehlásí generaci kompatibility (firmware je starší než protokol verzí). Aktualizujte master, aby byla kompatibilita kontrolovatelná.",
   flash_firmware: "NAHRÁT DO MODULU",
   firmware_help:
     "Nahraje firmware jednoho modulu po RS485 ze souboru firmware.hex ze sestavení ATtiny1616_OTA. Obrázek se nejprve odešle do masteru a poté se zapíše v jedné relaci trvající přibližně 25 sekund, během níž je displej pozastaven. Kalibrace modulu a buben zůstávají v EEPROM.",

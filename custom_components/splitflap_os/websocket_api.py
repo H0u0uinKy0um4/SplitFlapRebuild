@@ -11,7 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DOMAIN, VERSION
+from .const import COMPAT_VERSION, DOMAIN, VERSION
 from .firmware import MAX_HEX_CHARS, FirmwareImageError, image_from_hex
 from .positions import normalize_position_map
 from .runtime import get_runtime
@@ -30,6 +30,7 @@ def _state(hass: HomeAssistant) -> dict[str, Any] | None:
     coordinator = runtime["coordinator"]
     return {
         "version": VERSION,
+        "compat": COMPAT_VERSION,
         "entry_id": runtime["entry"].entry_id,
         "entry_title": runtime["entry"].title,
         "engine": engine.snapshot(),
