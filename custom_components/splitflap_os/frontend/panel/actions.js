@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.1.2";
-import { DEFAULT_DRUM } from "../constants.js?v=1.1.2";
+import { formatMessage } from "../utils.js?v=1.2.0";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -180,6 +180,27 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "reset-default-drum":
         this._resetDefaultDrum();
+        break;
+      case "inspector":
+        await this._inspectorAction(target.dataset.sub, target.dataset);
+        break;
+      case "inspector-value":
+        this._inspectorValueChanged(target.dataset.sub, target.dataset);
+        break;
+      case "char-tuning":
+        await this._charTuningAction(target.dataset.sub, target.dataset);
+        break;
+      case "char-tuning-value":
+        this._charTuningValueChanged(target.dataset.sub, target.dataset);
+        break;
+      case "auto-tune":
+        await this._autoTuneAction(target.dataset.sub, target.dataset);
+        break;
+      case "auto-tune-value":
+        this._autoTuneValueChanged(target.dataset.sub, target.dataset);
+        break;
+      case "teach":
+        await this._teachAction(target.dataset.sub, target.dataset);
         break;
       default:
         break;
@@ -660,6 +681,428 @@ export const PanelMixin = (Base) => class extends Base {
     if (sub === "home_all") {
       await this._send("home_all");
       this._toast(this._t("homing_every_module"));
+    }
+  }
+
+  async _inspectorAction(sub, data) {
+    const module = this._selectedModule;
+    if (module == null || !this._moduleFor(module)) {
+      this._toast(this._t("select_module_first"), "warn");
+      return;
+    }
+
+    if (sub === "offset") {
+      const value =
+        data && data.value != null
+          ? Number(data.value)
+          : null;
+      if (value == null || !Number.isFinite(value)) {
+        this._toast("Enter an offset value", "warn");
+        return;
+      }
+      const current = this._moduleValue("inspector-offset");
+      const currentNumber = Number(current);
+      const base =
+        Number.isFinite(currentNumber) && currentNumber >= 0
+          ? currentNumber
+          : 0;
+      const next = Math.max(0, base + value);
+      this._setInspectorValue("inspector-offset", next);
+      return;
+    }
+
+    if (sub === "set_offset") {
+      const input = this.shadowRoot.getElementById("inspector-offset");
+      const offset =
+        input && input.value != null
+          ? Number(input.value)
+          : NaN;
+      if (!Number.isFinite(offset) || offset < 0 || offset > 65535) {
+        this._toast("Enter a valid home offset (0-65535)", "warn");
+        return;
+      }
+      await this._send("calibrate", {
+        module,
+        action: "apply",
+        home_offset: offset,
+      });
+      this._toast(
+        formatMessage(this._t("applied_offset"), { offset })
+      );
+      this._renderTuning();
+      return;
+    }
+
+    if (sub === "goto") {
+      const input = this.shadowRoot.getElementById("inspector-goto");
+      const index =
+        input && input.value != null
+          ? Number(input.value)
+          : NaN;
+      if (!Number.isFinite(index) || index < 0 || index > 63) {
+        this._toast("Enter a drum index (0-63)", "warn");
+        return;
+      }
+      await this._send("calibrate", {
+        module,
+        action: "goto",
+        index,
+      });
+      this._toast(
+        formatMessage(this._t("module_homing"), { module })
+      );
+      this._renderTuning();
+      return;
+    }
+
+    if (sub === "home") {
+      await this._send("calibrate", { module, action: "home" });
+      this._toast(
+        formatMessage(this._t("module_homing"), { module })
+      );
+      this._renderTuning();
+      return;
+    }
+
+    if (sub === "clear_eeprom") {
+      await this._send("calibrate", {
+        module,
+        action: "clear_map",
+      });
+      this._toast(
+        formatMessage(this._t("cleared_eeprom"), { module })
+      );
+      this._renderTuning();
+      return;
+    }
+
+    if (sub === "open_char_map") {
+      await this._openCharMapFor(module);
+      return;
+    }
+  }
+
+  _inspectorValueChanged(sub, data) {
+    const input = this.shadowRoot.getElementById(
+      sub === "offset" ? "inspector-offset" : "inspector-goto"
+    );
+    if (!input) return;
+    const value =
+      data && data.value != null ? String(data.value) : input.value;
+    if (input.value !== value) input.value = value;
+  }
+
+  _setInspectorValue(id, value) {
+    const node = this.shadowRoot.getElementById(id);
+    if (node) node.value = value;
+  }
+
+  async _openCharMapFor(moduleId) {
+    if (this._selectedModule == null || !this._moduleFor(moduleId)) {
+      this._toast(this._t("select_module_first"), "warn");
+      return;
+    }
+    this._openCharTuningModalFor(moduleId);
+  }
+
+  async _charTuningAction(sub, data) {
+    if (
+      this._charTuningModule == null ||
+      this._charTuningDrum == null
+    ) {
+      return;
+    }
+
+    const moduleId = this._charTuningModule;
+
+    if (sub === "set") {
+      const indexNode = this.shadowRoot.querySelector(
+        "input[data-action=\"char-tuning-value\"][data-sub=\"index\"]"
+      );
+      const stepNode = this.shadowRoot.querySelector(
+        "input[data-action=\"char-tuning-value\"][data-sub=\"step\"]"
+      );
+      const index =
+        indexNode && indexNode.value != null ? Number(indexNode.value) : NaN;
+      const step =
+        stepNode && stepNode.value != null ? Number(stepNode.value) : NaN;
+      if (!
+        (Number.isFinite(index) &&
+          index >= 0 &&
+          index < 64 &&
+          Number.isFinite(step) &&
+          step >= 0)
+      ) {
+        this._toast("Enter a valid index and step", "warn");
+        return;
+      }
+      const positions = { [String(index)]: step };
+      await this._send("calibrate", {
+        module: moduleId,
+        action: "apply",
+        positions,
+      });
+      this._charTuningPositions = {
+        ...this._charTuningPositions,
+        [String(index)]: step,
+      };
+      this._toast(
+        formatMessage(this._t("char_tuning_saved"), {
+          entries: this._plural("entries", 1),
+        })
+      );
+      this._renderCharTuningModal();
+      return;
+    }
+
+    if (sub === "clear") {
+      const selectedIndex =
+        this._charTuningSelectedIndex != null
+          ? this._charTuningSelectedIndex
+          : -1;
+      if (selectedIndex < 0) {
+        this._toast("Select a character first", "warn");
+        return;
+      }
+      await this._send("calibrate", {
+        module: moduleId,
+        positions: { [String(selectedIndex)]: "0xFFFF" },
+      });
+      delete this._charTuningPositions[String(selectedIndex)];
+      this._toast(
+        formatMessage(this._t("cleared_eeprom"), { module: moduleId })
+      );
+      this._renderCharTuningModal();
+      return;
+    }
+
+    if (sub === "select") {
+      const index =
+        data && data.index != null ? Number(data.index) : NaN;
+      if (Number.isFinite(index)) {
+        this._charTuningSelectedIndex = index;
+        this._renderCharTuningModal();
+      }
+    }
+  }
+
+  _charTuningValueChanged(sub, data) {
+    const indexNode = this.shadowRoot.querySelector(
+      "input[data-action=\"char-tuning-value\"][data-sub=\"index\"]"
+    );
+    const stepNode = this.shadowRoot.querySelector(
+      "input[data-action=\"char-tuning-value\"][data-sub=\"step\"]"
+    );
+    if (sub === "index") {
+      const value =
+        data && data.value != null ? String(data.value) : indexNode.value;
+      if (indexNode.value !== value) indexNode.value = value;
+      return;
+    }
+    if (sub === "step") {
+      const value =
+        data && data.value != null ? String(data.value) : stepNode.value;
+      if (stepNode.value !== value) stepNode.value = value;
+    }
+  }
+
+  async _autoTuneAction(sub, data) {
+    const module = this._selectedModule;
+    if (module == null || !this._moduleFor(module)) {
+      this._toast(this._t("auto_tune_no_module"), "warn");
+      return;
+    }
+
+    if (sub === "start") {
+      await this._send("calibrate", {
+        module,
+        action: "auto",
+      });
+      this._autoTuneState = {
+        module,
+        total: 64,
+        done: 0,
+        phase: this._t("auto_tune_progress"),
+        chars: DEFAULT_DRUM.split(""),
+        selectedIndex: 0,
+        waiting_for_char: true,
+        repeat_offenders: [],
+        done: false,
+      };
+      this._renderAutoFineTune();
+      return;
+    }
+
+    if (sub === "abort") {
+      this._autoTuneState = null;
+      this._toast(this._t("auto_tune_abort"));
+      this._renderAutoFineTune();
+      return;
+    }
+
+    if (sub === "reset") {
+      this._autoTuneState = null;
+      this._renderAutoFineTune();
+      return;
+    }
+
+    if (sub === "submit_char") {
+      const input = this.shadowRoot.getElementById("auto-tune-char");
+      const char =
+        input && input.value != null
+          ? String(input.value).slice(0, 1)
+          : "";
+      if (!char) {
+        this._toast("Pick a character", "warn");
+        return;
+      }
+      const state = this._autoTuneState;
+      if (state == null) return;
+      const index = state.done;
+      const submittedChar =
+        index < state.chars.length ? state.chars[index] : char;
+      await this._send("calibrate", {
+        module,
+        action: "record",
+        index,
+        flap: submittedChar,
+      });
+      state.done += 1;
+      state.selectedIndex = index + 1;
+      state.waiting_for_char = state.done < state.total;
+      state.chars[index] = submittedChar;
+      if (state.done >= state.total) {
+        state.done = true;
+        state.phase = this._t("auto_tune_done");
+        state.waiting_for_char = false;
+      }
+      this._renderAutoFineTune();
+      return;
+    }
+  }
+
+  _autoTuneValueChanged(sub, data) {
+    const input = this.shadowRoot.getElementById("auto-tune-char");
+    if (!input) return;
+    const value =
+      data && data.value != null ? String(data.value).slice(0, 1) : input.value;
+    if (input.value !== value) input.value = value;
+  }
+
+  async _teachAction(sub, data) {
+    const module = this._selectedModule;
+    if (module == null || !this._moduleFor(module)) {
+      this._toast(this._t("teach_no_module"), "warn");
+      return;
+    }
+
+    if (sub === "start") {
+      await this._send("calibrate", {
+        module,
+        action: "teach",
+      });
+      this._teachState = {
+        module,
+        currentIndex: 0,
+        done: false,
+        phase: this._t("teach_phase_label"),
+      };
+      this._renderTeachMode();
+      return;
+    }
+
+    if (sub === "abort") {
+      this._teachState = null;
+      this._toast(this._t("teach_abort"));
+      this._renderTeachMode();
+      return;
+    }
+
+    if (sub === "reset") {
+      this._teachState = null;
+      this._renderTeachMode();
+      return;
+    }
+
+    if (sub === "nudge") {
+      const dir =
+        data && data.dir != null ? Number(data.dir) : NaN;
+      if (!Number.isFinite(dir)) {
+        this._toast("Invalid nudge", "warn");
+        return;
+      }
+      const state = this._teachState;
+      if (state == null) return;
+      const index =
+        state.currentIndex != null
+          ? state.currentIndex + dir
+          : 0;
+      if (index < 0 || index > 63) {
+        this._toast("Out of range", "warn");
+        return;
+      }
+      state.currentIndex = index;
+      this._renderTeachMode();
+      return;
+    }
+
+    if (sub === "apply") {
+      const state = this._teachState;
+      if (state == null) return;
+      const index = state.currentIndex;
+      if (index == null || index < 0 || index > 63) {
+        this._toast("Invalid index", "warn");
+        return;
+      }
+      const moduleData =
+        (this._coordinator && this._coordinator().modules) || [];
+      const moduleRecord = moduleData.find((m) =>
+        String(m.id) === String(module)
+      );
+      const drum =
+        moduleRecord &&
+        Array.isArray(moduleRecord.effective_drum) &&
+        moduleRecord.effective_drum.length
+          ? moduleRecord.effective_drum
+          : DEFAULT_DRUM.split("");
+      const char =
+        index < drum.length ? drum[index] : " ";
+      await this._send("calibrate", {
+        module,
+        action: "record",
+        index,
+        flap: char,
+      });        state.currentIndex = index + 1;
+      if (state.currentIndex > 63) {
+        state.done = true;
+        state.phase = this._t("teach_done");
+        this._toast(this._t("teach_done"));
+      } else {
+        state.phase = formatMessage(
+          this._t("teach_phase_label"),
+          { current: state.currentIndex, total: 64 }
+        );
+      }
+      this._renderTeachMode();
+      return;
+    }
+
+    if (sub === "skip") {
+      const state = this._teachState;
+      if (state == null) return;
+      state.currentIndex = (state.currentIndex ?? 0) + 1;
+      if (state.currentIndex > 63) {
+        state.done = true;
+        state.phase = this._t("teach_done");
+        this._toast(this._t("teach_done"));
+      } else {
+        state.phase = formatMessage(
+          this._t("teach_phase_label"),
+          { current: state.currentIndex, total: 64 }
+        );
+      }
+      this._renderTeachMode();
+      return;
     }
   }
 
