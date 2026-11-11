@@ -298,9 +298,7 @@ export const PANEL = {
   drum_deleted: 'Deleted drum "{name}"',
   delete_drum_confirm: 'Delete drum "{name}"?',
   drum_loaded: 'Drum "{name}" loaded into the editor',
-  module_drum_loaded: "Module drum loaded into the editor",
   no_saved_drums: "No saved drums yet.",
-  load_from_module: "Load from module",
   edit: "Edit",
 };
 

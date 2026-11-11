@@ -299,9 +299,7 @@ export const PANEL = {
   drum_deleted: "Smazána bubna „{name}“",
   delete_drum_confirm: "Smazat bubnu „{name}“?",
   drum_loaded: "Bubna „{name}“ načtena do editoru",
-  module_drum_loaded: "Bubna modulu načtena do editoru",
   no_saved_drums: "Zatím žádné uložené bubny.",
-  load_from_module: "Načíst z modulu",
   edit: "Upravit",
 };
 

@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.2";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.2";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.2";
-import { PANEL_STYLES } from "../styles.js?v=1.0.2";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.3";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.3";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.3";
+import { PANEL_STYLES } from "../styles.js?v=1.0.3";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -315,7 +315,6 @@ export const PanelMixin = (Base) => class extends Base {
                 <div class="row" style="margin-top:8px;align-items:center">
                   <input id="drumName" type="text" placeholder="${escapeAttr(this._t('drum_name'))}" style="max-width:190px">
                   <button class="btn secondary" data-action="save-drum">${this._t('save')}</button>
-                  <button class="btn secondary" data-action="load-module-drum">${this._t('load_from_module')}</button>
                   <span class="muted" id="drumEditorCharCount"></span>
                 </div>
                 <div class="list" id="savedDrums" style="margin-top:14px"></div>
@@ -444,6 +443,10 @@ export const PanelMixin = (Base) => class extends Base {
       /* ignore */
     }
     this._applySubtabs();
+    // Opening Tuning -> Drum must show the current library, even if no
+    // module has been selected yet (the selector is otherwise only rebuilt
+    // by _renderTuning).
+    if (group === "tuning" && sub === "drum") this._renderModuleDrumSelect();
   }
 
   _setTab(tab) {
@@ -466,6 +469,11 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderBuilder();
     this._renderSaved();
     this._renderDrumLibrary();
+    // Populate the module drum selector from the library on every state
+    // update, even when no module is selected yet. _renderTuning() returns
+    // early without a selection, so relying on it alone left the selector
+    // stale until the module was re-selected.
+    this._renderModuleDrumSelect();
     this._renderApps();
     this._renderBanner();
     this._renderCompat();

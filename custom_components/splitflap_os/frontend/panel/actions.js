@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.2";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.2";
+import { formatMessage } from "../utils.js?v=1.0.3";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.3";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -103,9 +103,6 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "edit-drum":
         this._loadDrumToEditor(target.dataset.name);
-        break;
-      case "load-module-drum":
-        this._loadModuleDrumToEditor();
         break;
       case "stop":
         await this._send("stop_app");
@@ -336,25 +333,6 @@ export const PanelMixin = (Base) => class extends Base {
     if (nameNode) nameNode.value = name;
     this._updateDrumEditorCharCount();
     this._toast(formatMessage(this._t("drum_loaded"), { name }));
-  }
-
-  _loadModuleDrumToEditor() {
-    const selected = this._moduleFor(this._selectedModule);
-    if (!selected) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    const drum = Array.isArray(selected.effective_drum)
-      ? selected.effective_drum.join("")
-      : "";
-    if (!this._validDrum(drum)) {
-      this._toast(this._t("drum_length_error"), "warn");
-      return;
-    }
-    const editor = this.shadowRoot.getElementById("drumEditor");
-    if (editor) editor.value = drum;
-    this._updateDrumEditorCharCount();
-    this._toast(this._t("module_drum_loaded"));
   }
 
   _openAppSettings(key) {
