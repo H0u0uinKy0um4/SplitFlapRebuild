@@ -26,13 +26,13 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     COMMAND_TOPICS,
-    COMPAT_VERSION,
     CONF_TOPIC_PREFIX,
     COORDINATOR_STORAGE_VERSION,
     DEFAULT_DEVICE_NAME,
     DEFAULT_DRUM,
     DEFAULT_TOPIC_PREFIX,
     DOMAIN,
+    MQTT_COMPAT,
     OFFLINE_TIMEOUT_SECONDS,
     PANEL_URL_PATH,
     STORAGE_SAVE_DELAY,
@@ -421,8 +421,12 @@ class SplitFlapCoordinator:
             "last_status": None,
             "restored": False,
             # Master's cross-repo version contract; absent on older firmware.
+            # The bus generation belongs to the slave <-> master side and is
+            # shown for diagnostics; the MQTT generation is the one Home
+            # Assistant checks.
             "master_version": None,
-            "master_compat": None,
+            "master_bus_compat": None,
+            "master_mqtt_compat": None,
         }
         #: Characters the integration has asked the display to show.
         self.desired_chars: dict[str, str] = {}
@@ -473,23 +477,41 @@ class SplitFlapCoordinator:
         return version if isinstance(version, str) and version else None
 
     @property
-    def master_compat(self) -> int | None:
-        """Compatibility generation the master reports, or ``None``."""
+    def master_bus_compat(self) -> int | None:
+        """Bus compatibility generation the master reports, or ``None``."""
 
-        return _coerce_optional_int(self.data.get("master_compat"))
+        return _coerce_optional_int(self.data.get("master_bus_compat"))
 
     @property
-    def compat_ok(self) -> bool | None:
-        """Whether the master shares this integration's compatibility generation.
+    def master_mqtt_compat(self) -> int | None:
+        """MQTT compatibility generation the master reports, or ``None``."""
+
+        return _coerce_optional_int(self.data.get("master_mqtt_compat"))
+
+    @property
+    def master_compat(self) -> int | None:
+        """Alias for :attr:`master_mqtt_compat` (older panel code)."""
+
+        return self.master_mqtt_compat
+
+    @property
+    def mqtt_compat_ok(self) -> bool | None:
+        """Whether the master speaks this integration's MQTT JSON generation.
 
         ``None`` means the master has not reported a generation (firmware
         predating the version protocol); that is "unknown", not "compatible".
         """
 
-        compat = self.master_compat
+        compat = self.master_mqtt_compat
         if compat is None:
             return None
-        return compat == COMPAT_VERSION
+        return compat == MQTT_COMPAT
+
+    @property
+    def compat_ok(self) -> bool | None:
+        """Alias for :attr:`mqtt_compat_ok`."""
+
+        return self.mqtt_compat_ok
 
     def flap_list_for(self, module_id: Any) -> list[str] | None:
         """Return the module's reported drum, or ``None`` when unknown."""
@@ -569,13 +591,18 @@ class SplitFlapCoordinator:
             "desired_chars": dict(self.desired_chars),
             "last_status": self.data.get("last_status"),
             "restored": bool(self.data.get("restored", False)),
-            # Cross-repo version contract. compat is this integration's
-            # generation; compat_ok is None when the master predates the
-            # protocol instead of pretending it is compatible.
-            "compat": COMPAT_VERSION,
+            # Cross-repo version contract. mqtt_compat is this integration's
+            # generation; mqtt_compat_ok is None when the master predates the
+            # protocol instead of pretending it is compatible. "compat" and
+            # "compat_ok" remain aliases for older panel builds.
+            "mqtt_compat": MQTT_COMPAT,
             "master_version": self.master_version,
-            "master_compat": self.master_compat,
-            "compat_ok": self.compat_ok,
+            "master_bus_compat": self.master_bus_compat,
+            "master_mqtt_compat": self.master_mqtt_compat,
+            "mqtt_compat_ok": self.mqtt_compat_ok,
+            "compat": MQTT_COMPAT,
+            "master_compat": self.master_mqtt_compat,
+            "compat_ok": self.mqtt_compat_ok,
             # Slave-module OTA state; "idle" until the master reports a
             # collection or a flash session.
             "ota": self.data.get("ota") or {"state": "idle"},
@@ -690,9 +717,17 @@ class SplitFlapCoordinator:
             version = payload.get("version")
             if isinstance(version, str) and version.strip():
                 data["master_version"] = version.strip()
-            compat = _coerce_optional_int(payload.get("compat"))
-            if compat is not None:
-                data["master_compat"] = compat
+            bus_compat = _coerce_optional_int(payload.get("bus_compat"))
+            if bus_compat is not None:
+                data["master_bus_compat"] = bus_compat
+            # mqtt_compat is the explicit field; older masters only sent
+            # "compat" as the single shared generation, so accept it as a
+            # fallback.
+            mqtt_compat = _coerce_optional_int(payload.get("mqtt_compat"))
+            if mqtt_compat is None:
+                mqtt_compat = _coerce_optional_int(payload.get("compat"))
+            if mqtt_compat is not None:
+                data["master_mqtt_compat"] = mqtt_compat
 
         raw_modules = payload.get("modules")
         if isinstance(raw_modules, (list, dict)):

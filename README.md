@@ -211,7 +211,9 @@ The integration expects the master's retained status payload to look like this
 {
   "state": "online",
   "text": "HELLO",
-  "version": "1.0.0",
+  "version": "1.1.0.0",
+  "bus_compat": 1,
+  "mqtt_compat": 1,
   "compat": 1,
   "modules_count": 45,
   "modules": [
@@ -225,7 +227,9 @@ The integration expects the master's retained status payload to look like this
       "current_step": 3616,
       "flap_list": " ABC...",
       "map_of_positions": {"0": 2832, "1": 2896},
-      "fw_version": "1.0.0",
+      "fw_version": "1.0.1",
+      "fw_bus_compat": 1,
+      "fw_bus_compatible": true,
       "fw_compat": 1,
       "fw_compatible": true
     }
@@ -233,9 +237,11 @@ The integration expects the master's retained status payload to look like this
 }
 ```
 
-`version`/`compat` are the master's own version contract. The per-module
-`fw_version`/`fw_compat` come from the slave's `m<id>s` reply;
-`fw_compatible` is omitted when the module does not report a version.
+`version`/`bus_compat`/`mqtt_compat` are the master's own version contract;
+`compat` remains an alias for `mqtt_compat` for older integration builds. The
+per-module `fw_version`/`fw_bus_compat` come from the slave's `m<id>s` reply;
+`fw_bus_compatible` is omitted when the module does not report a version, and
+`fw_compat`/`fw_compatible` remain aliases for the bus values.
 
 Display commands are sent as an ordered array so the array order doubles as the
 animation order:
@@ -257,32 +263,46 @@ single entry on the slave.
 ## Versions and module firmware
 
 All three parts of the system (slave firmware, ESP32 master, this integration)
-share one **compatibility generation** and each carries its own release. The
-published version is `<compat>.<release>`, so the first number is the
-generation (`1.4.2` = generation 1, release 4.2). The full protocol is in the
-slave repository's `docs/VERSIONING.md`.
+use two independent **compatibility axes** because two different peers talk to
+each other:
+
+| Axis | Peer contract | Carried by |
+| --- | --- | --- |
+| **BUS_COMPAT** | RS485 application protocol and the OTA/bootloader entry contract | slave + master |
+| **MQTT_COMPAT** | MQTT status/command JSON schema | master + Home Assistant |
+
+The master bridges the two, so it carries both numbers. Each repository also
+has its own release inside those generations, and the published version is
+composed from the numbers that apply to it:
+
+```
+slave    <bus>.<release>              1.0.1      bus 1, release 0.1
+master   <bus>.<mqtt>.<release>       1.1.0.0    bus 1, mqtt 1, release 0.0
+HA       <mqtt>.<release>             1.0.1      mqtt 1, release 0.1
+```
 
 | Where | Version | Compatibility | Read from |
 | --- | --- | --- | --- |
-| Home Assistant integration | `1.0.0` | `1` | panel header, connection info, WebSocket `version`/`compat` |
-| ESP32 master | `1.0.0` | `1` | status `version`/`compat`, connection info |
-| Slave application | `1.0.0` | `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
+| Home Assistant integration | `1.0.1` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
+| ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, connection info |
+| Slave application | `1.0.1` | bus `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
 
-The integration compares the master's `compat` with `COMPAT_VERSION` in
+The integration compares the master's `mqtt_compat` with `MQTT_COMPAT` in
 `const.py`. A mismatch shows a warning banner, but it never blocks display
 traffic, OTA cancellation or a module reset. If the master predates the version
 protocol, the panel says the version is unknown rather than assuming it is
-compatible.
+compatible. The bus generation is shown for diagnostics; the slave <-> master
+side is not something Home Assistant speaks directly.
 
-The module firmware card shows the application version each slave reports. Use
-it to prove an OTA actually took: bump the slave's `FW_RELEASE`, upload the new
-`.hex`, and the card should show the new version after the module reboots and
-re-homes. OTA itself refuses an unknown bootloader protocol before writing any
-page.
+The module firmware card shows the application version and bus generation each
+slave reports. Use it to prove an OTA actually took: bump the slave's
+`FW_RELEASE`, upload the new `.hex`, and the card should show the new version
+after the module reboots and re-homes. OTA itself refuses an unknown bootloader
+protocol before writing any page.
 
 When changing the frontend, bump `VERSION` in `const.py`, `manifest.json` and
 `frontend/constants.js`, and every `?v=` import parameter, together.
-`tests/test_versions.py` enforces that lockstep and the major/compat
+`tests/test_versions.py` enforces that lockstep and the major/MQTT_COMPAT
 relationship.
 
 ## Coordinate system and recording index 0

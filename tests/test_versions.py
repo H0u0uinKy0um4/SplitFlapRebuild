@@ -3,10 +3,10 @@
 Run with ``python3 tests/test_versions.py``.  Home Assistant is not needed: the
 files are read as text and parsed with regular expressions.
 
-The cross-repo version model (shared compatibility generation plus per-repo
-release) is specified in the slave repository's ``docs/VERSIONING.md``.  This
-test only enforces the local half of it: every Home Assistant file must carry
-the same ``VERSION``, and its major number must equal ``COMPAT_VERSION``.
+The cross-repo version model (two compatibility axes plus per-repo release)
+is specified in the slave repository's ``docs/VERSIONING.md``.  This test only
+enforces the local half of it: every Home Assistant file must carry the same
+``VERSION``, and its major number must equal ``MQTT_COMPAT``.
 """
 
 from __future__ import annotations
@@ -42,10 +42,10 @@ def const_version(text: str) -> str:
     return match.group(1)
 
 
-def const_compat(text: str) -> int:
-    match = re.search(r"^COMPAT_VERSION:\s*Final\s*=\s*(\d+)", text, re.MULTILINE)
+def const_mqtt_compat(text: str) -> int:
+    match = re.search(r"^MQTT_COMPAT:\s*Final\s*=\s*(\d+)", text, re.MULTILINE)
     if not match:
-        raise AssertionError("const.py: COMPAT_VERSION: Final = <int> not found")
+        raise AssertionError("const.py: MQTT_COMPAT: Final = <int> not found")
     return int(match.group(1))
 
 
@@ -64,9 +64,9 @@ class VersionLockstepTests(unittest.TestCase):
     def setUp(self) -> None:
         self.const_text = read(CONST_FILE)
         self.version = const_version(self.const_text)
-        self.compat = const_compat(self.const_text)
+        self.compat = const_mqtt_compat(self.const_text)
 
-    def test_version_is_compatible_with_compat(self) -> None:
+    def test_version_is_compatible_with_mqtt_compat(self) -> None:
         match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", self.version)
         self.assertIsNotNone(
             match,
@@ -76,7 +76,7 @@ class VersionLockstepTests(unittest.TestCase):
         self.assertEqual(
             major,
             self.compat,
-            f"VERSION major {major} != COMPAT_VERSION {self.compat}",
+            f"VERSION major {major} != MQTT_COMPAT {self.compat}",
         )
 
     def test_manifest_matches_const(self) -> None:
@@ -94,10 +94,10 @@ class VersionLockstepTests(unittest.TestCase):
                         stale.append(f"{path.relative_to(HERE.parent)}:{line_number}: ?v={found}")
         self.assertEqual(stale, [], "stale ES module versions:\n" + "\n".join(stale))
 
-    def test_compat_is_one_digit(self) -> None:
+    def test_mqtt_compat_is_one_digit(self) -> None:
         # The slave EEPROM slot composes "<compat>.<release>" and is 8 bytes,
         # so a two-digit generation would no longer fit.
-        self.assertTrue(1 <= self.compat <= 9, "COMPAT_VERSION must be 1..9")
+        self.assertTrue(1 <= self.compat <= 9, "MQTT_COMPAT must be 1..9")
 
 
 if __name__ == "__main__":
