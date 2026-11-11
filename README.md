@@ -381,6 +381,23 @@ python3 tests/test_ota.py
 python3 tests/test_versions.py
 ```
 
+## Credits
+
+This project builds on the original **Split-Flap Display** design by
+**Adam G Makes** ([@adamgmakes](https://github.com/adamgmakes)):
+
+- Repository: https://github.com/adamgmakes/SplitFlapDisplay
+- The 3D-printed module hardware, drum/character set, RS485 bus protocol,
+  and the reference Python frontend in this repository's root (`app.py`,
+  `index.html`) are derived from that work.
+
+The original project is licensed under
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+This derivative is shared on the same terms: non-commercial use, attribution to
+Adam G Makes, and any further derivatives distributed under the same license.
+Commercial use requires permission from the original author.
+
 ## Troubleshooting
 
 - **Panel says OFFLINE** — check the MQTT integration, the topic prefix, and the

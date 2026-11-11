@@ -573,6 +573,23 @@ jde o firmware starší než protokol verzí.
 
 ---
 
+## Poděkování
+
+Tento projekt vychází z původního návrhu **Split-Flap Display** od
+**Adam G Makes** ([@adamgmakes](https://github.com/adamgmakes)):
+
+- Repozitář: https://github.com/adamgmakes/SplitFlapDisplay
+- 3D tištěný modulový hardware, bubnový znakový set, protokol sběrnice RS485
+  a referenční Python frontend v kořeni tohoto repozitáře (`app.py`,
+  `index.html`) jsou odvozeny z jeho práce.
+
+Původní projekt je licencován pod
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+(CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Tento derivát je sdílen za stejných podmínek: nekomerční použití, uvedení
+autora (Adam G Makes) a šíření dalších derivátů pod stejnou licencí.
+Komerční použití vyžaduje souhlas původního autora.
+
 ## 13. Poznámky pro zvídavé
 
 - Integrace má vlastní engine aplikací, playlisty, ukládání nastavení a
