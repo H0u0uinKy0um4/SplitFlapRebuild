@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.1";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.1";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.1";
-import { PANEL_STYLES } from "../styles.js?v=1.0.1";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.2";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.2";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.2";
+import { PANEL_STYLES } from "../styles.js?v=1.0.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -216,24 +216,6 @@ export const PanelMixin = (Base) => class extends Base {
             </div>
 
             <div class="subpage" data-subpage="tuning" data-sub="drum">
-              <div class="card" id="drumLibraryCard">
-                <h2 style="margin:0">${this._t('drum_library')}</h2>
-                <p class="muted" style="margin:6px 0 0">
-                  ${this._t('drum_library_help')}
-                </p>
-                <label class="field" style="margin-top:12px">
-                  <span>${this._t('drum_editor_help')}</span>
-                  <textarea id="drumEditor" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
-                </label>
-                <div class="row" style="margin-top:8px;align-items:center">
-                  <input id="drumName" type="text" placeholder="${escapeAttr(this._t('drum_name'))}" style="max-width:190px">
-                  <button class="btn secondary" data-action="save-drum">${this._t('save')}</button>
-                  <button class="btn secondary" data-action="load-module-drum">${this._t('load_from_module')}</button>
-                  <span class="muted" id="drumEditorCharCount"></span>
-                </div>
-                <div class="list" id="savedDrums" style="margin-top:14px"></div>
-              </div>
-
               <div class="card inspector" id="drumCard">
                 <div class="row between">
                   <h2 style="margin:0" id="drumTitle">${this._t('module')}</h2>
@@ -268,7 +250,7 @@ export const PanelMixin = (Base) => class extends Base {
               <button class="subtab active" data-action="subtab" data-group="settings" data-sub="display">${this._t("subtab_display")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="apps">${this._t("subtab_apps")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="layout">${this._t("subtab_layout")}</button>
-              <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drum")}</button>
+              <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drums")}</button>
               <button class="subtab" data-action="subtab" data-group="settings" data-sub="system">${this._t("subtab_system")}</button>
             </nav>
 
@@ -319,6 +301,24 @@ export const PanelMixin = (Base) => class extends Base {
                   <span class="muted" id="drumCharCount"></span>
                 </div>
                 <small class="muted">${this._t('default_drum_fallback_note')}</small>
+              </div>
+
+              <div class="card" id="drumLibraryCard">
+                <h2 style="margin:0">${this._t('drum_library')}</h2>
+                <p class="muted" style="margin:6px 0 0">
+                  ${this._t('drum_library_help')}
+                </p>
+                <label class="field" style="margin-top:12px">
+                  <span>${this._t('drum_editor_help')}</span>
+                  <textarea id="drumEditor" rows="2" maxlength="64" placeholder="${escapeAttr(this._t('default_drum_placeholder'))}"></textarea>
+                </label>
+                <div class="row" style="margin-top:8px;align-items:center">
+                  <input id="drumName" type="text" placeholder="${escapeAttr(this._t('drum_name'))}" style="max-width:190px">
+                  <button class="btn secondary" data-action="save-drum">${this._t('save')}</button>
+                  <button class="btn secondary" data-action="load-module-drum">${this._t('load_from_module')}</button>
+                  <span class="muted" id="drumEditorCharCount"></span>
+                </div>
+                <div class="list" id="savedDrums" style="margin-top:14px"></div>
               </div>
             </div>
 
@@ -815,7 +815,6 @@ export const PanelMixin = (Base) => class extends Base {
             <span class="muted mono" title="${escapeAttr(drum)}">${escapeHtml(
               preview || "␣"
             )}</span>
-            <button class="btn mini" data-action="write-drum" data-name="${escapeAttr(name)}">${this._t('write_drum_to_module')}</button>
             <button class="icon-btn" data-action="edit-drum" data-name="${escapeAttr(name)}" title="${escapeAttr(this._t('edit'))}">✎</button>
             <button class="icon-btn" data-action="delete-drum" data-name="${escapeAttr(name)}" title="${escapeAttr(this._t('delete'))}">✕</button>
           </div>`;
@@ -1469,7 +1468,15 @@ export const PanelMixin = (Base) => class extends Base {
       percent = Math.min(100, Math.round((ota.received / this._otaSize) * 100));
     }
     const bar = this.shadowRoot.getElementById("otaBar");
-    if (bar) bar.style.width = `${percent == null ? 0 : percent}%`;
+    if (bar) {
+      // The progress track only belongs to a running session. A finished
+      // session keeps state "done" and the master reports progress 100, so
+      // hiding only on "idle" would leave a full blue bar on screen.
+      const showProgress = active || (this._otaBusy && !active);
+      const track = bar.parentElement;
+      if (track) track.classList.toggle("hidden", !showProgress);
+      bar.style.width = showProgress && percent != null ? `${percent}%` : "0%";
+    }
 
     const status = this.shadowRoot.getElementById("otaStatus");
     if (!status) return;

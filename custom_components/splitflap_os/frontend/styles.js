@@ -94,6 +94,7 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
   height: 8px; margin-top: 10px; border-radius: 999px; overflow: hidden;
   background: var(--divider-color, #ddd);
 }
+.ota-progress.hidden { display: none; }
 .ota-progress > span {
   display: block; height: 100%; width: 0;
   background: var(--primary-color, #03a9f4);

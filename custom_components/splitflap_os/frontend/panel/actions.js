@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.1";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.1";
+import { formatMessage } from "../utils.js?v=1.0.2";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -103,9 +103,6 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "edit-drum":
         this._loadDrumToEditor(target.dataset.name);
-        break;
-      case "write-drum":
-        await this._writeSavedDrum(target.dataset.name);
         break;
       case "load-module-drum":
         this._loadModuleDrumToEditor();
@@ -358,40 +355,6 @@ export const PanelMixin = (Base) => class extends Base {
     if (editor) editor.value = drum;
     this._updateDrumEditorCharCount();
     this._toast(this._t("module_drum_loaded"));
-  }
-
-  async _writeSavedDrum(name) {
-    if (!name) return;
-    const drum = this._savedDrum(name);
-    if (!this._validDrum(drum)) {
-      this._toast(this._t("drum_length_error"), "warn");
-      return;
-    }
-    const module = this._selectedModule;
-    if (module === null || !this._moduleFor(module)) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    // Same path as the module drum editor: the master writes the EEPROM and
-    // verifies it with a readback, reporting `verified`.
-    const result = await this._send("calibrate", {
-      module,
-      action: "drum_write",
-      drum,
-    });
-    if (result && result.verified === false) {
-      this._toast(
-        formatMessage(this._t("drum_verify_failed"), { module }),
-        "error"
-      );
-    } else {
-      this._toast(
-        formatMessage(this._t("drum_written_named"), { name })
-      );
-    }
-    // Re-sync the module drum editor with what the module now reports.
-    this._inspectorModule = null;
-    this._renderTuning();
   }
 
   _openAppSettings(key) {
