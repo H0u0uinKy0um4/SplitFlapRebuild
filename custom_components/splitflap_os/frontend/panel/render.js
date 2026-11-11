@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.2";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.2";
-import { PANEL_STYLES } from "../styles.js?v=1.2.2";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.4";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.4";
+import { PANEL_STYLES } from "../styles.js?v=1.2.4";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -1492,6 +1492,8 @@ export const PanelMixin = (Base) => class extends Base {
     const meta = this.shadowRoot.getElementById("autoTuneMeta");
     if (!body) return;
 
+    const maxIdx = this._atMaxIndex();
+
     if (!this._atState || !this._atState.running) {
       if (meta) meta.textContent = "";
       body.innerHTML = `
@@ -1501,7 +1503,7 @@ export const PanelMixin = (Base) => class extends Base {
           <div class="grid2" style="max-width:360px;margin-top:8px">
             <label class="field">
               <span>${this._t("at_start_idx")}</span>
-              <input id="atStartIdx" type="number" min="1" max="63" value="${this._atState && this._atState.charIndex ? this._atState.charIndex : 63}">
+              <input id="atStartIdx" type="number" min="1" max="${maxIdx}" value="${this._atState && this._atState.charIndex ? this._atState.charIndex : maxIdx}">
             </label>
             <label class="field">
               <span>${this._t("at_step_size")}</span>
@@ -1525,6 +1527,9 @@ export const PanelMixin = (Base) => class extends Base {
           <div style="font-size:1.4rem;font-weight:700;margin:16px 0;font-family:monospace">
             ${formatMessage(this._t("at_homing_wait"), { seconds: at.countdown != null ? at.countdown : 12 })}
           </div>
+          <div class="actions" style="justify-content:center">
+            <button class="btn danger mini" data-action="at-abort">${this._t("at_abort_btn")}</button>
+          </div>
         </div>
       `;
       return;
@@ -1547,11 +1552,12 @@ export const PanelMixin = (Base) => class extends Base {
     const coordinator = this._coordinator();
     const modules = coordinator.modules || [];
     const board = this._board();
-    const drum = DEFAULT_DRUM.split("");
+    const drum = this._atDrum();
+    const maxCharIdx = Math.max(0, drum.length - 1);
     const curIdx = at.charIndex;
     const curChar = drum[curIdx] || " ";
     const prevChar = curIdx > 0 ? (drum[curIdx - 1] === " " ? "␣" : drum[curIdx - 1]) : "?";
-    const nextChar = curIdx < 63 ? (drum[curIdx + 1] === " " ? "␣" : drum[curIdx + 1]) : "?";
+    const nextChar = curIdx < maxCharIdx ? (drum[curIdx + 1] === " " ? "␣" : drum[curIdx + 1]) : "?";
     const curCharDisp = curChar === " " ? "␣" : curChar;
     const isColor = COLOR_CODES.includes(curChar);
     const colorClass = isColor ? ` color-${curChar}` : "";
@@ -1662,7 +1668,7 @@ export const PanelMixin = (Base) => class extends Base {
           </div>
           <div class="row" style="align-items:center;gap:6px">
             <span class="muted" style="font-size:.82rem">${this._t("at_jump_to")}</span>
-            <input id="atJumpIdx" type="number" min="1" max="63" value="${curIdx}" style="width:65px">
+            <input id="atJumpIdx" type="number" min="1" max="${maxIdx}" value="${curIdx}" style="width:65px">
             <button class="btn secondary mini" data-action="at-jump">${this._t("at_jump_btn")}</button>
             <button class="btn danger mini" data-action="at-abort">${this._t("at_abort_btn")}</button>
           </div>

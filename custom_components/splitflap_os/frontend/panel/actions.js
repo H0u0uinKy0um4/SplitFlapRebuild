@@ -1,7 +1,12 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.2";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.2";
+import { formatMessage } from "../utils.js?v=1.2.4";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.4";
+
+// The master blocks while a module moves and only then writes/refreshes the
+// position map, so the auto-tune verification frame must not be requested in
+// the same breath as the correction wrote it.
+const AT_SETTLE_MS = 1200;
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -828,10 +833,38 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderMapFlaps(module);
   }
 
+  /** Drum used by the auto-tune wizard.
+   *
+   * The wizard walks one character index at a time on the whole board, so it
+   * needs a single drum. Use the first module that reports one; a custom drum
+   * has to agree with what the master maps, otherwise the shown character and
+   * the measured index would disagree. Falls back to the stock drum before the
+   * first scan reported anything.
+   */
+  _atDrum() {
+    const coordinator = this._coordinator();
+    const modules = (coordinator && coordinator.modules) || [];
+    for (const module of modules) {
+      const drum =
+        module && Array.isArray(module.effective_drum) && module.effective_drum.length
+          ? module.effective_drum
+          : module && Array.isArray(module.flap_list) && module.flap_list.length
+            ? module.flap_list
+            : null;
+      if (drum) return drum.slice(0, 64);
+    }
+    return DEFAULT_DRUM.split("");
+  }
+
+  _atMaxIndex() {
+    return Math.max(1, Math.min(63, this._atDrum().length - 1));
+  }
+
   async _atBegin() {
     const startInput = this.shadowRoot.getElementById("atStartIdx");
     const stepInput = this.shadowRoot.getElementById("atStepSize");
-    const startIdx = Math.max(1, Math.min(63, startInput ? Number(startInput.value) || 63 : 63));
+    const maxIdx = this._atMaxIndex();
+    const startIdx = Math.max(1, Math.min(maxIdx, startInput ? Number(startInput.value) || maxIdx : maxIdx));
     const stepSize = Math.max(1, Math.min(100, stepInput ? Number(stepInput.value) || 25 : 25));
 
     this._atState = {
@@ -844,16 +877,23 @@ export const PanelMixin = (Base) => class extends Base {
     };
     this._renderAutoTune();
 
+    // There is no standalone `stop` or `hardware` websocket command. Stop any
+    // running app/playlist first (otherwise it repaints the board while we
+    // home and measure) and then home every module through the real command.
     try {
-      await this._send("stop");
+      await this._send("stop_app");
     } catch (e) {
-      /* ignore */
+      // Nothing was running; the display is already idle.
     }
 
     try {
-      await this._send("hardware", { action: "home_all" });
+      await this._send("home_all");
     } catch (e) {
-      console.error(e);
+      // _send() already reported the failure; do not continue the wizard on a
+      // board that was not homed, every measurement would be meaningless.
+      this._atState = null;
+      this._renderAutoTune();
+      return;
     }
 
     for (let c = 12; c > 0; c--) {
@@ -872,7 +912,7 @@ export const PanelMixin = (Base) => class extends Base {
     this._atState.charIndex = idx;
     this._atState.phase = "ahead";
     this._atState.selected.clear();
-    const drum = DEFAULT_DRUM.split("");
+    const drum = this._atDrum();
     const ch = drum[idx] || " ";
     const board = this._board();
     const coordinator = this._coordinator();
@@ -885,7 +925,7 @@ export const PanelMixin = (Base) => class extends Base {
       await this._send("send_text", {
         text: ch.repeat(count),
         start: 1,
-        style: "immediate",
+        style: "ltr",
         speed: 0,
         stop: true,
         raw: true,
@@ -914,12 +954,13 @@ export const PanelMixin = (Base) => class extends Base {
     const step = stepInput ? Number(stepInput.value) || 25 : this._atState.stepSize || 25;
     this._atState.stepSize = step;
     const charIdx = this._atState.charIndex;
+    const drum = this._atDrum();
 
     for (const modId of this._atState.selected) {
       const module = this._moduleFor(modId);
       if (!module) continue;
       const cal = Number(module.total_steps) || 4096;
-      const expected = Math.floor((charIdx * cal) / 64);
+      const expected = Math.floor((charIdx * cal) / drum.length);
       const positions = module.map_of_positions || {};
       const tuned = positions[String(charIdx)];
       const base = tuned !== undefined ? Number(tuned) : expected;
@@ -933,13 +974,20 @@ export const PanelMixin = (Base) => class extends Base {
       module.map_of_positions[String(charIdx)] = newVal;
     }
 
+    // The user may have pressed Abort while the calibrate round-trips were in
+    // flight; _atState is null then and the rest of the flow must not run.
+    if (!this._atState) return;
     this._toast(formatMessage(this._t("at_ahead_apply"), { step, count: this._atState.selected.size }));
     this._atState.selected.clear();
     this._atState.phase = "verify";
     this._renderAutoTune();
 
+    // Master moves are blocking and the map write has to reach EEPROM, so
+    // give the modules a moment before requesting the verification frame.
+    await new Promise((r) => setTimeout(r, AT_SETTLE_MS));
+    if (!this._atState) return;
+
     // Re-send to verify
-    const drum = DEFAULT_DRUM.split("");
     const ch = drum[charIdx] || " ";
     const board = this._board();
     const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
@@ -947,7 +995,7 @@ export const PanelMixin = (Base) => class extends Base {
       await this._send("send_text", {
         text: ch.repeat(count),
         start: 1,
-        style: "immediate",
+        style: "ltr",
         speed: 0,
         stop: true,
         raw: true,
@@ -966,12 +1014,13 @@ export const PanelMixin = (Base) => class extends Base {
     const step = stepInput ? Number(stepInput.value) || 25 : this._atState.stepSize || 25;
     this._atState.stepSize = step;
     const charIdx = this._atState.charIndex;
+    const drum = this._atDrum();
 
     for (const modId of this._atState.selected) {
       const module = this._moduleFor(modId);
       if (!module) continue;
       const cal = Number(module.total_steps) || 4096;
-      const expected = Math.floor((charIdx * cal) / 64);
+      const expected = Math.floor((charIdx * cal) / drum.length);
       const positions = module.map_of_positions || {};
       const tuned = positions[String(charIdx)];
       const base = tuned !== undefined ? Number(tuned) : expected;
@@ -985,13 +1034,16 @@ export const PanelMixin = (Base) => class extends Base {
       module.map_of_positions[String(charIdx)] = newVal;
     }
 
+    if (!this._atState) return;
     this._toast(formatMessage(this._t("at_behind_apply"), { step, count: this._atState.selected.size }));
     this._atState.selected.clear();
     this._atState.phase = "verify";
     this._renderAutoTune();
 
+    await new Promise((r) => setTimeout(r, AT_SETTLE_MS));
+    if (!this._atState) return;
+
     // Re-send to verify
-    const drum = DEFAULT_DRUM.split("");
     const ch = drum[charIdx] || " ";
     const board = this._board();
     const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
@@ -999,7 +1051,7 @@ export const PanelMixin = (Base) => class extends Base {
       await this._send("send_text", {
         text: ch.repeat(count),
         start: 1,
-        style: "immediate",
+        style: "ltr",
         speed: 0,
         stop: true,
         raw: true,
@@ -1037,7 +1089,8 @@ export const PanelMixin = (Base) => class extends Base {
   async _atJump() {
     const input = this.shadowRoot.getElementById("atJumpIdx");
     const val = input ? Number(input.value) : 1;
-    if (val >= 1 && val <= 63) {
+    const maxIdx = this._atMaxIndex();
+    if (val >= 1 && val <= maxIdx) {
       await this._atGoToChar(val);
     }
   }
