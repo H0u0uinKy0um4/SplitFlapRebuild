@@ -11,7 +11,12 @@ from .settings import DEFAULT_SETTINGS, SETTINGS_GROUPS, SETTINGS_KEYS
 
 DOMAIN: Final = "splitflap_os"
 NAME: Final = "Split-Flap OS"
-VERSION: Final = "0.1.20"
+# Version model: the major number is the cross-repo compatibility generation
+# (see the slave repository's docs/VERSIONING.md). COMPAT_VERSION repeats it
+# explicitly so the coordinator can compare it with the master's payload
+# without parsing VERSION.
+COMPAT_VERSION: Final = 1
+VERSION: Final = "1.0.0"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
@@ -47,6 +52,11 @@ COMMAND_TOPICS: Final = {
     "scan": "command/scan",
     "update": "command/update",
     "calibrate": "command/calibrate",
+    # Slave-module OTA (see the master's include/ota/SlaveFlasher.h for the
+    # message schema): begin/chunk/flash/cancel/reset JSON actions. The
+    # master owns the binary framing to the modules; this side only ships
+    # base64 image chunks.
+    "firmware": "command/firmware",
 }
 
 # After this many seconds without a status payload the master is considered
@@ -72,6 +82,7 @@ __all__ = [
     "COLOR_MAP",
     "PHYSICAL_COLOR_CODES",
     "COMMAND_TOPICS",
+    "COMPAT_VERSION",
     "CONF_NAME",
     "CONF_TOPIC_PREFIX",
     "COORDINATOR_STORAGE_VERSION",

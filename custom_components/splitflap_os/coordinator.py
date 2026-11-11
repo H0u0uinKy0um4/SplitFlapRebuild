@@ -8,9 +8,11 @@ translation from board characters to per-module targets happens here.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import re
+import zlib
 from typing import Any
 
 from homeassistant.components import mqtt
@@ -24,6 +26,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     COMMAND_TOPICS,
+    COMPAT_VERSION,
     CONF_TOPIC_PREFIX,
     COORDINATOR_STORAGE_VERSION,
     DEFAULT_DEVICE_NAME,
@@ -34,6 +37,12 @@ from .const import (
     PANEL_URL_PATH,
     STORAGE_SAVE_DELAY,
     signal_update,
+)
+from .ota import (
+    OTA_APP_MAX_SIZE,
+    OTA_CHUNK_BYTES,
+    OTA_STATES_ACTIVE,
+    normalize_ota,
 )
 from .positions import POSITION_MAP_UNSET, normalize_position_map
 
@@ -198,6 +207,14 @@ MODULE_STAT_ALIASES: dict[str, tuple[str, ...]] = {
     ),
     "online": ("online", "is_online", "isOnline", "connected"),
     "last_seen": ("last_seen", "lastSeen", "last_seen_ms", "lastSeenMs"),
+    "fw_version": (
+        "fw_version",
+        "fwVersion",
+        "firmware_version",
+        "firmwareVersion",
+        "app_version",
+        "appVersion",
+    ),
 }
 
 _MODULE_STAT_CONTAINERS = ("stats", "config", "details", "module_stats")
@@ -262,6 +279,12 @@ def module_stats(module: dict[str, Any]) -> dict[str, Any]:
     last_seen = _first_value(sources, MODULE_STAT_ALIASES["last_seen"])
     if last_seen is not None:
         stats["last_seen"] = last_seen
+
+    fw_version = _first_value(sources, MODULE_STAT_ALIASES["fw_version"])
+    if isinstance(fw_version, str):
+        fw_version = fw_version.strip()
+        if fw_version:
+            stats["fw_version"] = fw_version
 
     positions = normalize_position_map(
         _first_value(sources, MODULE_STAT_ALIASES["map_of_positions"])
@@ -397,6 +420,9 @@ class SplitFlapCoordinator:
             "text": "",
             "last_status": None,
             "restored": False,
+            # Master's cross-repo version contract; absent on older firmware.
+            "master_version": None,
+            "master_compat": None,
         }
         #: Characters the integration has asked the display to show.
         self.desired_chars: dict[str, str] = {}
@@ -417,7 +443,7 @@ class SplitFlapCoordinator:
             name=self.entry.title or DEFAULT_DEVICE_NAME,
             manufacturer="DIY",
             model="ESP32-C3 RS485 Split-Flap Master",
-            sw_version="MQTT",
+            sw_version=self.master_version or "MQTT",
             configuration_url=f"homeassistant://{PANEL_URL_PATH}",
         )
 
@@ -438,6 +464,32 @@ class SplitFlapCoordinator:
     def modules_count(self) -> int:
         count = _coerce_count(self.data.get("modules_count"), 0)
         return count or len(self.modules)
+
+    @property
+    def master_version(self) -> str | None:
+        """Version the master reports, or ``None`` for older firmware."""
+
+        version = self.data.get("master_version")
+        return version if isinstance(version, str) and version else None
+
+    @property
+    def master_compat(self) -> int | None:
+        """Compatibility generation the master reports, or ``None``."""
+
+        return _coerce_optional_int(self.data.get("master_compat"))
+
+    @property
+    def compat_ok(self) -> bool | None:
+        """Whether the master shares this integration's compatibility generation.
+
+        ``None`` means the master has not reported a generation (firmware
+        predating the version protocol); that is "unknown", not "compatible".
+        """
+
+        compat = self.master_compat
+        if compat is None:
+            return None
+        return compat == COMPAT_VERSION
 
     def flap_list_for(self, module_id: Any) -> list[str] | None:
         """Return the module's reported drum, or ``None`` when unknown."""
@@ -517,6 +569,16 @@ class SplitFlapCoordinator:
             "desired_chars": dict(self.desired_chars),
             "last_status": self.data.get("last_status"),
             "restored": bool(self.data.get("restored", False)),
+            # Cross-repo version contract. compat is this integration's
+            # generation; compat_ok is None when the master predates the
+            # protocol instead of pretending it is compatible.
+            "compat": COMPAT_VERSION,
+            "master_version": self.master_version,
+            "master_compat": self.master_compat,
+            "compat_ok": self.compat_ok,
+            # Slave-module OTA state; "idle" until the master reports a
+            # collection or a flash session.
+            "ota": self.data.get("ota") or {"state": "idle"},
         }
 
     # ------------------------------------------------------------------
@@ -622,6 +684,16 @@ class SplitFlapCoordinator:
         if online and isinstance(payload.get("text"), str):
             data["text"] = payload["text"]
 
+        # Master version contract. Kept across an offline last-will payload
+        # (which never carries it); an older master simply leaves it None.
+        if online:
+            version = payload.get("version")
+            if isinstance(version, str) and version.strip():
+                data["master_version"] = version.strip()
+            compat = _coerce_optional_int(payload.get("compat"))
+            if compat is not None:
+                data["master_compat"] = compat
+
         raw_modules = payload.get("modules")
         if isinstance(raw_modules, (list, dict)):
             modules = normalize_modules(raw_modules)
@@ -635,6 +707,11 @@ class SplitFlapCoordinator:
             data["modules_count"] = _coerce_count(
                 payload.get("modules_count"), data.get("modules_count", 0)
             )
+
+        # Slave-module OTA session state (see normalize_ota). Only trusted
+        # while online: the offline last-will payload never carries it.
+        if online and "ota" in payload:
+            data["ota"] = normalize_ota(payload.get("ota"))
 
         data["last_status"] = dt_util.now().isoformat()
         data["restored"] = False if online else bool(data.get("restored", False))
@@ -838,6 +915,90 @@ class SplitFlapCoordinator:
         if action_norm == "drum_write" and isinstance(drum, str):
             return await self._wait_for_drum(module_id, drum)
         return None
+
+    # ------------------------------------------------------------------
+    # Slave-module OTA
+    # ------------------------------------------------------------------
+
+    async def async_firmware_begin(self, module_id: int | str) -> None:
+        """Start collecting a firmware image for one module.
+
+        The master keeps the chunks until ``flash`` or ``cancel``; repeat
+        ``begin`` to restart an aborted collection.
+        """
+        await self._publish("firmware", {"action": "begin", "module": module_payload_id(module_id)})
+
+    async def async_firmware_chunk(self, data: bytes | str) -> None:
+        """Append base64 image bytes to the collection.
+
+        The decoded data must be the raw application image of the slave's
+        ``ATtiny1616_OTA`` build (linked at 0x0800, gaps 0xFF). Chunks may
+        split the image anywhere; keep each message well under the master's
+        2048-byte MQTT buffer (~1 KB of base64 per message is safe).
+        """
+        encoded = data if isinstance(data, str) else base64.b64encode(data).decode("ascii")
+        await self._publish("firmware", {"action": "chunk", "data": encoded})
+
+    async def async_firmware_flash(self) -> None:
+        """Flash the collected image to the module.
+
+        The session blocks the master's display loop for ~20-25 s; the
+        display/scan/update/calibrate commands are refused while it runs
+        and the ``ota`` status object tracks progress.
+        """
+        await self._publish("firmware", {"action": "flash"})
+
+    async def async_firmware_cancel(self) -> None:
+        """Abort a running flash session or discard a collected image."""
+        await self._publish("firmware", {"action": "cancel"})
+
+    async def async_firmware_reset(self, module_id: int | str) -> None:
+        """Boot a module stuck in the bootloader back into its application."""
+        await self._publish("firmware", {"action": "reset", "module": module_payload_id(module_id)})
+
+    async def async_flash_image(
+        self, module_id: int | str, image: bytes
+    ) -> dict[str, Any]:
+        """Ship a complete application image and start the flash session.
+
+        ``image`` must be the raw application region of the slave's
+        ``ATtiny1616_OTA`` build (see ``firmware.image_from_hex``). The
+        whole image is collected by the master first, so a failure before
+        ``flash`` leaves the module untouched. Once the session starts the
+        display loop is paused for roughly 20-25 s; progress is reported
+        through the ``ota`` status object.
+        """
+
+        payload_id = module_payload_id(module_id)
+        if not isinstance(payload_id, int) or not 1 <= payload_id <= 255:
+            raise ValueError("module id must be a number between 1 and 255")
+        if not self.online:
+            raise ValueError("the split-flap master is offline")
+        if not image:
+            raise ValueError("the firmware image is empty")
+        if len(image) > OTA_APP_MAX_SIZE:
+            raise ValueError(
+                f"the firmware image is {len(image)} bytes, larger than the "
+                f"{OTA_APP_MAX_SIZE}-byte application region"
+            )
+        state = (self.data.get("ota") or {}).get("state")
+        if state in OTA_STATES_ACTIVE:
+            raise ValueError(f"an OTA session is already running ({state})")
+        # A module stuck in its bootloader no longer answers the ASCII scan,
+        # so a missing module entry must not block the recovery flash.
+
+        await self.async_firmware_begin(payload_id)
+        for offset in range(0, len(image), OTA_CHUNK_BYTES):
+            await self.async_firmware_chunk(image[offset : offset + OTA_CHUNK_BYTES])
+        await self.async_firmware_flash()
+
+        return {
+            "ok": True,
+            "module": payload_id,
+            "size": len(image),
+            "chunks": (len(image) + OTA_CHUNK_BYTES - 1) // OTA_CHUNK_BYTES,
+            "crc32": f"{zlib.crc32(image) & 0xFFFFFFFF:08X}",
+        }
 
     async def _wait_for_drum(
         self, module_id: Any, drum: str, timeout: float = 10.0

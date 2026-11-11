@@ -13,7 +13,12 @@ and must not be treated as production code or deleted.
   `py_compile`, `node --check`, JSON parsing, and `tests/test_layout.py`.
 - Only one config entry is allowed; the firmware is a single master.
 - MQTT topics are fixed relative to a configurable prefix:
-  `<prefix>/status` and `<prefix>/command/{display,sync,scan,update,calibrate}`.
+  `<prefix>/status` and
+  `<prefix>/command/{display,sync,scan,update,calibrate,firmware}`. The
+  `firmware` topic carries the slave-module OTA control messages (JSON
+  actions `begin`/`chunk`/`flash`/`cancel`/`reset`; see the master repo's
+  `include/ota/SlaveFlasher.h`); the master owns the binary framing to the
+  modules, this side only publishes base64 image chunks.
 - The master's `display` command is an array whose order is the send order.
 - Board characters are one character per module. The stock drum is 64 flaps
   (`layout.DEFAULT_DRUM`); lower-case `roygbpw` are physical colour flaps.

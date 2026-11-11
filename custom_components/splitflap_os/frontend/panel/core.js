@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=0.1.20";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=0.1.20";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=0.1.20";
+import { DOMAIN, STYLES } from "../constants.js?v=1.0.0";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.0.0";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.0.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -25,6 +25,8 @@ export const PanelMixin = (Base) => class extends Base {
     this._playlistTouched = false;
     this._selectedModule = null;
     this._inspectorModule = null;
+    this._otaBusy = false;
+    this._otaSize = 0;
     this._settingsBuilt = false;
     this._settingsDirty = false;
     this._charSignature = "";

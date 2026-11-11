@@ -94,6 +94,8 @@ export const PANEL = {
   app_settings_title: "Nastavení aplikace",
   master_online: "master online",
   master_offline: "master offline",
+  master_version: "Verze masteru",
+  compatibility: "Kompatibilita",
   blank_cell: "Prázdná buňka rámu",
   select_module_hint: "Vyberte modul v matici výše.",
   char_map_title: "Modul {id} • {flaps}",
@@ -118,6 +120,23 @@ export const PANEL = {
     "Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.",
   backup_help:
     "Exportuje nastavení, playlisty a poslední snímek modulů. Obnovení sloučí nastavení a nahradí playlisty.",
+  firmware_update: "FIRMWARE MODULŮ",
+  firmware_file: "FIRMWARE (.HEX)",
+  firmware: "FIRMWARE",
+  firmware_installed: "Nainstalovaný firmware: {version}",
+  firmware_installed_compat:
+    "Nainstalovaný firmware: {version} (kompatibilita {compat})",
+  firmware_incompatible:
+    "Nainstalovaný firmware: {version} — kompatibilita {compat} neodpovídá {expected}",
+  firmware_installed_unknown:
+    "Nainstalovaný firmware: neznámý (modul je offline nebo firmware bez sledování verze)",
+  compat_mismatch:
+    "Master hlásí kompatibilitu {master}, ale tato integrace vyžaduje {local}. Před použitím OTA aktualizujte master nebo integraci.",
+  compat_missing:
+    "Master nehlásí generaci kompatibility (firmware je starší než protokol verzí). Aktualizujte master, aby byla kompatibilita kontrolovatelná.",
+  flash_firmware: "NAHRÁT DO MODULU",
+  firmware_help:
+    "Nahraje firmware jednoho modulu po RS485 ze souboru firmware.hex ze sestavení ATtiny1616_OTA. Obrázek se nejprve odešle do masteru a poté se zapíše v jedné relaci trvající přibližně 25 sekund, během níž je displej pozastaven. Kalibrace modulu a buben zůstávají v EEPROM.",
   position_map_hint:
     "Po aplikaci mapy master najede modulem domů.",
   char_map_help:
@@ -136,6 +155,30 @@ export const PANEL = {
   settings_saved: "Nastavení uloženo",
   backup_downloaded: "Záloha stažena",
   backup_restored: "Záloha obnovena",
+  ota_state_idle: "Žádná OTA relace.",
+  ota_state_collecting: "Přenos obrázku",
+  ota_state_entering: "Vstup do bootloaderu",
+  ota_state_flashing: "Zapisování",
+  ota_state_verifying: "Ověřování",
+  ota_state_done: "Hotovo, modul se restartoval",
+  ota_state_cancelled: "Zrušeno",
+  ota_state_failed: "Selhalo",
+  ota_uploading: "Přenos obrázku do masteru…",
+  ota_module: "modul {module}",
+  ota_confirm:
+    "Nahrát firmware do modulu {module}? Displej bude na přibližně 25 sekund pozastaven.",
+  ota_no_file: "Nejprve vyberte soubor firmware.hex ze sestavení ATtiny1616_OTA.",
+  ota_not_hex:
+    "Toto není Intel HEX soubor. Použijte firmware.hex ze sestavení ATtiny1616_OTA.",
+  ota_no_module: "Není vybrán žádný modul.",
+  ota_read_failed: "Soubor se nepodařilo přečíst: {error}",
+  ota_sent:
+    "Obrázek odeslán ({size} bajtů, CRC-32 {crc}). Relace se spouští.",
+  ota_cancel_requested: "Požadavek na zrušení odeslán.",
+  ota_reset: "SPUSTIT APLIKACI",
+  ota_reset_confirm:
+    "Spustit modul {module} z bootloaderu do stávající aplikace?",
+  ota_reset_requested: "Požadavek na spuštění modulu {module} odeslán.",
   compose_message_first: "Nejprve slož zprávu",
   enter_drum_index: "Zadej index bubnu",
   drum_length_error: "Buben musí mít přesně 64 znaků a nesmí obsahovat zalomení řádku",

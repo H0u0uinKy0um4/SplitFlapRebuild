@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.20";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.20";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.20";
-import { PANEL_STYLES } from "../styles.js?v=0.1.20";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.0";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.0";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.0";
+import { PANEL_STYLES } from "../styles.js?v=1.0.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -32,6 +32,11 @@ export const PanelMixin = (Base) => class extends Base {
           <span class="dot"></span>
           <span id="bannerText"></span>
           <button class="btn mini danger stop" data-action="stop">${this._t("stop")}</button>
+        </div>
+
+        <div class="banner warn hidden" id="compatBanner">
+          <span class="dot"></span>
+          <span id="compatBannerText"></span>
         </div>
 
         <nav class="tabs">
@@ -154,6 +159,7 @@ export const PanelMixin = (Base) => class extends Base {
                     <div class="stat"><b id="statIndex">–</b><span>${this._t('index')}</span></div>
                     <div class="stat"><b id="statOffset">–</b><span>${this._t('offset')}</span></div>
                     <div class="stat"><b id="statTotal">–</b><span>${this._t('total_steps')}</span></div>
+                    <div class="stat"><b id="statFirmware">–</b><span>${this._t('firmware')}</span></div>
                   </div>
                   <div class="grid2">
                     <label class="field"><span>${this._t('goto_drum_index')}</span>
@@ -330,6 +336,32 @@ export const PanelMixin = (Base) => class extends Base {
               </div>
 
               <div class="card">
+                <h2>${this._t('firmware_update')}</h2>
+                <p class="muted" style="margin-top:0">
+                  ${this._t('firmware_help')}
+                </p>
+                <div class="row" style="align-items:flex-end">
+                  <label class="field" style="flex:1 1 120px">
+                    <span>${this._t('module')}</span>
+                    <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
+                    <datalist id="otaModuleList"></datalist>
+                  </label>
+                  <label class="field" style="flex:2 1 240px">
+                    <span>${this._t('firmware_file')}</span>
+                    <input id="otaFile" type="file" accept=".hex,text/plain">
+                  </label>
+                </div>
+                <div class="muted" id="otaInstalled" style="margin-top:8px"></div>
+                <div class="actions">
+                  <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                  <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
+                  <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
+                </div>
+                <div class="ota-progress"><span id="otaBar"></span></div>
+                <div class="muted" id="otaStatus" style="margin-top:8px">${this._t('ota_state_idle')}</div>
+              </div>
+
+              <div class="card">
                 <h2>${escapeHtml(this._t('backup_restore'))}</h2>
                 <p class="muted" style="margin-top:0">
                   ${this._t('backup_help')}
@@ -436,9 +468,11 @@ export const PanelMixin = (Base) => class extends Base {
     this._renderDrumLibrary();
     this._renderApps();
     this._renderBanner();
+    this._renderCompat();
     this._renderTuning();
     this._renderLayout();
     this._renderSettings();
+    this._renderOta();
     this._renderConnectionInfo();
   }
 
@@ -900,6 +934,33 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  _renderCompat() {
+    const banner = this.shadowRoot.getElementById("compatBanner");
+    const text = this.shadowRoot.getElementById("compatBannerText");
+    if (!banner || !text) return;
+    const coordinator = this._coordinator();
+    if (!coordinator || !coordinator.online) {
+      banner.classList.add("hidden");
+      return;
+    }
+    // compat_ok is false for a reported mismatch, null when the master
+    // predates the version protocol. Never treat "unknown" as compatible.
+    if (coordinator.compat_ok === false) {
+      banner.classList.remove("hidden");
+      text.textContent = formatMessage(this._t("compat_mismatch"), {
+        master: coordinator.master_compat,
+        local: coordinator.compat,
+      });
+      return;
+    }
+    if (coordinator.compat_ok === null) {
+      banner.classList.remove("hidden");
+      text.textContent = this._t("compat_missing");
+      return;
+    }
+    banner.classList.add("hidden");
+  }
+
   _moduleFor(moduleId) {
     const coordinator = this._coordinator();
     const modules = (coordinator && coordinator.modules) || [];
@@ -1052,6 +1113,7 @@ export const PanelMixin = (Base) => class extends Base {
       statIndex: selected.display_flap_index != null ? selected.display_flap_index : selected.flap_index,
       statOffset: selected.home_offset,
       statTotal: selected.total_steps,
+      statFirmware: selected.fw_version,
     };
     for (const [id, value] of Object.entries(values)) {
       const node = this.shadowRoot.getElementById(id);
@@ -1314,6 +1376,90 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  _renderOtaInstalled() {
+    const node = this.shadowRoot.getElementById("otaInstalled");
+    if (!node) return;
+    const input = this.shadowRoot.getElementById("otaModule");
+    const moduleId = input ? String(input.value || "").trim() : "";
+    const module = moduleId ? this._moduleFor(moduleId) : null;
+    const version = module && module.fw_version ? String(module.fw_version) : "";
+    const compat = module && module.fw_compat != null ? module.fw_compat : null;
+    const coordinator = this._coordinator() || {};
+    if (!version) {
+      node.textContent = this._t("firmware_installed_unknown");
+    } else if (module.fw_compatible === false) {
+      node.textContent = formatMessage(this._t("firmware_incompatible"), {
+        version,
+        compat,
+        expected: coordinator.compat,
+      });
+    } else if (compat != null) {
+      node.textContent = formatMessage(this._t("firmware_installed_compat"), {
+        version,
+        compat,
+      });
+    } else {
+      node.textContent = formatMessage(this._t("firmware_installed"), { version });
+    }
+  }
+
+  _renderOta() {
+    const coordinator = this._coordinator() || {};
+    const modules = coordinator.modules || [];
+    const ids = modules.map((module) => String(module.id));
+    const list = this.shadowRoot.getElementById("otaModuleList");
+    if (list) {
+      const signature = ids.join(",");
+      if (list.dataset.signature !== signature) {
+        list.innerHTML = ids
+          .map((id) => `<option value="${escapeAttr(id)}"></option>`)
+          .join("");
+        list.dataset.signature = signature;
+      }
+    }
+    // The id is freely editable: a module stuck in the bootloader no longer
+    // answers the scan, so it must still be targetable for a re-flash or a
+    // reset back into its application.
+    const input = this.shadowRoot.getElementById("otaModule");
+    if (input && !input.value && ids.length) input.value = ids[0];
+    this._renderOtaInstalled();
+
+    const ota = coordinator.ota || { state: "idle" };
+    const state = String(ota.state || "idle");
+    const active = ["collecting", "entering", "flashing", "verifying"].includes(state);
+    const cancelBtn = this.shadowRoot.querySelector('[data-action="cancel-firmware"]');
+    // Keep cancel clickable for any non-idle state (including failed /
+    // cancelled) so a stuck session can always be aborted, not just while
+    // an active phase is reported.
+    if (cancelBtn) cancelBtn.disabled = !(this._otaBusy || state !== "idle");
+    const resetBtn = this.shadowRoot.querySelector('[data-action="reset-firmware"]');
+    if (resetBtn) resetBtn.disabled = active || this._otaBusy;
+
+    let percent = null;
+    if (typeof ota.progress === "number") {
+      percent = Math.max(0, Math.min(100, ota.progress));
+    } else if (state === "collecting" && this._otaSize && ota.received) {
+      percent = Math.min(100, Math.round((ota.received / this._otaSize) * 100));
+    }
+    const bar = this.shadowRoot.getElementById("otaBar");
+    if (bar) bar.style.width = `${percent == null ? 0 : percent}%`;
+
+    const status = this.shadowRoot.getElementById("otaStatus");
+    if (!status) return;
+    if (this._otaBusy && !active) {
+      status.textContent = this._t("ota_uploading");
+      return;
+    }
+    const parts = [this._t(`ota_state_${state}`)];
+    if (ota.module != null) {
+      parts.push(formatMessage(this._t("ota_module"), { module: ota.module }));
+    }
+    if (percent != null) parts.push(`${percent}%`);
+    let text = parts.join(" — ");
+    if (ota.error) text += ` — ${ota.error}`;
+    status.textContent = text;
+  }
+
   _renderConnectionInfo() {
     const node = this.shadowRoot.getElementById("connectionInfo");
     if (!node || !this._state) return;
@@ -1325,6 +1471,12 @@ export const PanelMixin = (Base) => class extends Base {
       `${this._t("master")}: ${this._t(
         coordinator.online ? "master_online" : "master_offline"
       )}`,
+      `${this._t("master_version")}: ${
+        coordinator.master_version || this._t("unknown")
+      }`,
+      `${this._t("compatibility")}: ${
+        coordinator.master_compat == null ? this._t("unknown") : coordinator.master_compat
+      } (${this._t("integration")}: ${VERSION})`,
       `${this._t("last_status")}: ${coordinator.last_status || this._t("never")}`,
       `${this._t("modules_label")}: ${coordinator.modules_count || 0}`,
       `${this._t("board")}: ${board.rows} × ${board.cols}`,

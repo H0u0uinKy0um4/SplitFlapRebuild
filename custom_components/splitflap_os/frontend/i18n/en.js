@@ -94,6 +94,8 @@ export const PANEL = {
   app_settings_title: "App settings",
   master_online: "master online",
   master_offline: "master offline",
+  master_version: "Master version",
+  compatibility: "Compatibility",
   blank_cell: "Blank frame cell",
   select_module_hint: "Select a module in the matrix above.",
   char_map_title: "Module {id} • {flaps}",
@@ -118,6 +120,23 @@ export const PANEL = {
     "This app has no options of its own. It uses the display and data settings from the Settings tab.",
   backup_help:
     "Export settings, playlists and the last module snapshot. Restoring merges settings and replaces playlists.",
+  firmware_update: "MODULE FIRMWARE",
+  firmware_file: "FIRMWARE (.HEX)",
+  firmware: "FIRMWARE",
+  firmware_installed: "Installed firmware: {version}",
+  firmware_installed_compat:
+    "Installed firmware: {version} (compat {compat})",
+  firmware_incompatible:
+    "Installed firmware: {version} — compat {compat} does not match {expected}",
+  firmware_installed_unknown:
+    "Installed firmware: unknown (module offline or firmware without version tracking)",
+  compat_mismatch:
+    "The master reports compatibility {master}, but this integration needs {local}. Update the master or the integration before relying on OTA.",
+  compat_missing:
+    "The master does not report a compatibility generation (firmware older than the version protocol). Update the master to make compatibility checkable.",
+  flash_firmware: "FLASH MODULE",
+  firmware_help:
+    "Flash one module over RS485 from the ATtiny1616_OTA build's firmware.hex. The image is sent to the master first, then written in one session of about 25 seconds while the display pauses. Module calibration and the drum stay in EEPROM.",
   position_map_hint:
     "After the map is applied the master homes the module.",
   char_map_help:
@@ -136,6 +155,30 @@ export const PANEL = {
   settings_saved: "Settings saved",
   backup_downloaded: "Backup downloaded",
   backup_restored: "Backup restored",
+  ota_state_idle: "No OTA session.",
+  ota_state_collecting: "Collecting the image",
+  ota_state_entering: "Entering the bootloader",
+  ota_state_flashing: "Flashing",
+  ota_state_verifying: "Verifying",
+  ota_state_done: "Done, the module rebooted",
+  ota_state_cancelled: "Cancelled",
+  ota_state_failed: "Failed",
+  ota_uploading: "Uploading the image to the master…",
+  ota_module: "module {module}",
+  ota_confirm:
+    "Flash module {module}? The display pauses for about 25 seconds.",
+  ota_no_file: "Choose the ATtiny1616_OTA firmware.hex first.",
+  ota_not_hex:
+    "That is not an Intel HEX image. Use the ATtiny1616_OTA firmware.hex.",
+  ota_no_module: "No module selected.",
+  ota_read_failed: "Could not read the file: {error}",
+  ota_sent:
+    "Image sent ({size} bytes, CRC-32 {crc}). The session is starting.",
+  ota_cancel_requested: "Cancel requested.",
+  ota_reset: "BOOT INTO APP",
+  ota_reset_confirm:
+    "Boot module {module} out of the bootloader into its current application?",
+  ota_reset_requested: "Boot request sent for module {module}.",
   compose_message_first: "Compose a message first",
   enter_drum_index: "Enter a drum index",
   drum_length_error: "The drum must be exactly 64 characters and contain no line breaks",
