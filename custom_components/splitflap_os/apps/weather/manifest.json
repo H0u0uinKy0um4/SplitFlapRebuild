@@ -21,14 +21,39 @@
       "label": "ZIP code (OpenWeather fallback)",
       "type": "text",
       "placeholder": "02118",
-      "visible_when": {"key": "weather_entity", "equals": ""}
+      "visible_when": {
+        "key": "weather_entity",
+        "equals": ""
+      }
     },
     {
       "key": "weather_api_key",
       "label": "OpenWeather API key (fallback)",
       "type": "password",
       "placeholder": "optional",
-      "visible_when": {"key": "weather_entity", "equals": ""}
+      "visible_when": {
+        "key": "weather_entity",
+        "equals": ""
+      }
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Počasí",
+      "description": "Aktuální stav",
+      "fields": {
+        "weather_entity": {
+          "label": "Entita počasí",
+          "help": "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu."
+        },
+        "zip_code": {
+          "label": "PSČ (záloha OpenWeather)"
+        },
+        "weather_api_key": {
+          "label": "API klíč OpenWeather (záloha)",
+          "placeholder": "volitelné"
+        }
+      }
+    }
+  }
 }

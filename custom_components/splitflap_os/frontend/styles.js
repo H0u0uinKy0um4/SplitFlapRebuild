@@ -275,6 +275,17 @@ input:focus, select:focus, textarea:focus {
   height: 100%;
   display: block;
 }
+.app-icon ha-icon {
+  --mdc-icon-size: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.app-icon-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+  display: inline-block;
+}
 .app-name { margin-top: 8px; font-weight: 700; font-size: .84rem; }
 .app-desc { margin-top: 4px; font-size: .7rem; opacity: .6; }
 .app-req {

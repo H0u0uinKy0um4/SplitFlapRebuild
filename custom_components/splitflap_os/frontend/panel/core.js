@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.1.0";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.1.0";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.1.0";
+import { DOMAIN, STYLES } from "../constants.js?v=1.1.2";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.1.2";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.1.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -296,7 +296,40 @@ export const PanelMixin = (Base) => class extends Base {
     return dot >= 0 ? value.slice(dot + 1) : value;
   }
 
+  _appForSetting(key) {
+    const value = String(key || "");
+    const dot = value.indexOf(".");
+    if (dot < 0) return null;
+    const appKey = value.slice(0, dot);
+    const apps = (this._engine() && this._engine().apps) || [];
+    return apps.find((item) => item.key === appKey) || null;
+  }
+
+  _appFieldTranslation(key) {
+    const app = this._appForSetting(key);
+    if (!app || !app.translations) return null;
+    const lang = this._lang();
+    const table = app.translations[lang] || app.translations.en || null;
+    if (!table || !table.fields) return null;
+    const local = this._settingKey(key);
+    return table.fields[local] || null;
+  }
+
+  _appTranslation(key) {
+    const apps = (this._engine() && this._engine().apps) || [];
+    const app = apps.find((item) => item.key === key);
+    if (!app || !app.translations) return null;
+    const lang = this._lang();
+    return app.translations[lang] || app.translations.en || null;
+  }
+
   _optionLabel(fieldKey, option) {
+    const app = this._appForSetting(fieldKey);
+    if (app) {
+      const ft = this._appFieldTranslation(fieldKey);
+      if (ft && ft.options && ft.options[option]) return ft.options[option];
+      return String(option);
+    }
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
     const table = (dict.options && dict.options[fieldKey]) ||
       (dict.options && dict.options[this._settingKey(fieldKey)]);
@@ -304,23 +337,57 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   _settingLabel(key, fallback) {
+    const app = this._appForSetting(key);
+    if (app) {
+      const ft = this._appFieldTranslation(key);
+      if (ft && ft.label) return ft.label;
+      const field = (app.fields || []).find(
+        (item) => item.key === this._settingKey(key)
+      );
+      return (field && field.label) || fallback || key;
+    }
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
     const labels = dict.labels || {};
     return labels[key] || labels[this._settingKey(key)] || fallback || key;
   }
 
   _settingHelp(key, fallback) {
+    const app = this._appForSetting(key);
+    if (app) {
+      const ft = this._appFieldTranslation(key);
+      if (ft && ft.help) return ft.help;
+      const field = (app.fields || []).find(
+        (item) => item.key === this._settingKey(key)
+      );
+      return (field && field.help) || fallback || "";
+    }
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
     const helps = dict.helps || {};
     return helps[key] || helps[this._settingKey(key)] || fallback || "";
   }
 
   _settingGroup(key, fallback) {
+    const apps = (this._engine() && this._engine().apps) || [];
+    const app = apps.find((item) => item.key === key);
+    if (app) {
+      const tr = this._appTranslation(key);
+      if (tr && tr.name) return tr.name;
+      return app.name || fallback || key;
+    }
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
     return (dict.groups && dict.groups[key]) || fallback || key;
   }
 
   _settingPlaceholder(key, fallback) {
+    const app = this._appForSetting(key);
+    if (app) {
+      const ft = this._appFieldTranslation(key);
+      if (ft && ft.placeholder) return ft.placeholder;
+      const field = (app.fields || []).find(
+        (item) => item.key === this._settingKey(key)
+      );
+      return (field && field.placeholder) || fallback || "";
+    }
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
     const placeholders = dict.placeholders || {};
     return (

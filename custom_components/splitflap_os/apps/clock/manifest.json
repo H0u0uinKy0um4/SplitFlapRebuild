@@ -7,14 +7,56 @@
   "default_delay": 1.0,
   "min_rows": 3,
   "min_cols": 9,
-  "modes": ["full", "time", "date"],
+  "modes": [
+    "full",
+    "time",
+    "date"
+  ],
   "fields": [
     {
       "key": "clock_format",
       "label": "Clock format",
       "type": "select",
-      "options": ["12h", "24h"],
+      "options": [
+        "12h",
+        "24h"
+      ],
       "default": "12h"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Hodiny",
+      "description": "Místní čas",
+      "fields": {
+        "clock_format": {
+          "label": "Formát hodin",
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      },
+      "modes": {
+        "full": "Celé",
+        "time": "Jen čas",
+        "date": "Jen datum"
+      }
+    },
+    "en": {
+      "fields": {
+        "clock_format": {
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      },
+      "modes": {
+        "full": "Full",
+        "time": "Time only",
+        "date": "Date only"
+      }
+    }
+  }
 }

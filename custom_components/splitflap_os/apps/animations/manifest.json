@@ -12,7 +12,12 @@
       "key": "anim_effect",
       "label": "Effect",
       "type": "select",
-      "options": ["rainbow", "sweep", "checker", "twinkle"],
+      "options": [
+        "rainbow",
+        "sweep",
+        "checker",
+        "twinkle"
+      ],
       "default": "rainbow"
     },
     {
@@ -41,5 +46,64 @@
       "max": 5,
       "step": 0.1
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Animace",
+      "description": "Barevné efekty",
+      "fields": {
+        "anim_effect": {
+          "label": "Efekt",
+          "options": {
+            "rainbow": "Duha",
+            "sweep": "Přechod",
+            "checker": "Šachovnice",
+            "twinkle": "Blikání"
+          }
+        },
+        "anim_style": {
+          "label": "Styl odesílání",
+          "options": {
+            "ltr": "Zleva doprava",
+            "rtl": "Zprava doleva",
+            "columns": "Sloupce",
+            "center_out": "Od středu",
+            "outside_in": "Zvenku dovnitř",
+            "diagonal": "Diagonálně",
+            "random": "Náhodně",
+            "rain": "Déšť",
+            "spiral": "Spirála"
+          }
+        },
+        "anim_speed": {
+          "label": "Prodleva snímku (s)"
+        }
+      }
+    },
+    "en": {
+      "fields": {
+        "anim_effect": {
+          "options": {
+            "rainbow": "Rainbow",
+            "sweep": "Sweep",
+            "checker": "Checkerboard",
+            "twinkle": "Twinkle"
+          }
+        },
+        "anim_style": {
+          "options": {
+            "ltr": "Left to right",
+            "rtl": "Right to left",
+            "columns": "Columns",
+            "center_out": "Center out",
+            "outside_in": "Outside in",
+            "diagonal": "Diagonal",
+            "random": "Random",
+            "rain": "Rain",
+            "spiral": "Spiral"
+          }
+        }
+      }
+    }
+  }
 }

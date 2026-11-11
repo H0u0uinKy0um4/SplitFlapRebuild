@@ -1,9 +1,8 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.1.0";
-import { APPS_I18N } from "../i18n/index.js?v=1.1.0";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.1.0";
-import { PANEL_STYLES } from "../styles.js?v=1.1.0";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.1.2";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.1.2";
+import { PANEL_STYLES } from "../styles.js?v=1.1.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -819,34 +818,55 @@ export const PanelMixin = (Base) => class extends Base {
       .join("");
   }
 
-  _appI18n(key) {
-    const dict = APPS_I18N[this._lang()] || APPS_I18N.en;
-    return (dict && dict[key]) || null;
+  _appManifestTranslation(key) {
+    return this._appTranslation(key);
   }
 
   _appName(key) {
     const apps = (this._engine() && this._engine().apps) || [];
     const app = apps.find((item) => item.key === key);
     const fallback = app ? app.name : key || this._t("app_idle");
-    const t = this._appI18n(key);
-    return (t && t.name) || fallback;
+    const manifestTranslation = this._appManifestTranslation(key);
+    if (manifestTranslation && manifestTranslation.name) return manifestTranslation.name;
+    return fallback;
   }
 
   _appModeLabel(appKey, mode) {
-    const dict = APPS_I18N[this._lang()] || APPS_I18N.en;
-    const modes = (dict && dict.modes) || {};
-    const appModes = modes[appKey] || {};
-    return appModes[mode] || String(mode || "").toUpperCase();
+    const manifestTranslation = this._appManifestTranslation(appKey);
+    const manifestModes =
+      manifestTranslation && manifestTranslation.modes
+        ? manifestTranslation.modes
+        : null;
+    if (manifestModes && manifestModes[mode]) return manifestModes[mode];
+    return String(mode || "").toUpperCase();
   }
 
   _appDescription(app) {
     if (!app) return "";
-    const t = this._appI18n(app.key);
-    return (t && t.description) || app.description || "";
+    const manifestTranslation = this._appManifestTranslation(app.key);
+    if (manifestTranslation && manifestTranslation.description)
+      return manifestTranslation.description;
+    return app.description || "";
   }
 
-  _appIcon(key) {
-    return APP_ICONS[key] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>`;
+  _appIcon(key, app = null) {
+    if (APP_ICONS[key]) return APP_ICONS[key];
+    const target =
+      app ||
+      ((this._engine() && this._engine().apps) || []).find(
+        (item) => item.key === key
+      );
+    if (target && target.icon) {
+      const icon = String(target.icon).trim();
+      if (icon.startsWith("<svg")) {
+        return icon;
+      }
+      if (icon.startsWith("mdi:")) {
+        return `<ha-icon icon="${escapeAttr(icon)}"></ha-icon>`;
+      }
+      return `<span class="app-icon-emoji">${escapeHtml(icon)}</span>`;
+    }
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>`;
   }
 
   _appRequirement(app, board) {
@@ -901,7 +921,7 @@ export const PanelMixin = (Base) => class extends Base {
             ${running ? `<span class="app-live">${escapeHtml(this._t("live_badge"))}</span>` : ""}
             <button class="gear" data-action="app-mode" data-app="${escapeAttr(app.key)}" title="${escapeAttr(this._t('app_mode'))}">▦</button>
             <div class="app-card-body">
-              <div class="app-icon">${this._appIcon(app.key)}</div>
+              <div class="app-icon">${this._appIcon(app.key, app)}</div>
               <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
               <div class="app-desc">${escapeHtml(description)}</div>
               ${available ? "" : `<div class="app-req">${escapeHtml(requirement)}</div>`}

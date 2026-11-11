@@ -15,5 +15,17 @@
       "placeholder": "bitcoin,ethereum,solana",
       "default": "bitcoin,ethereum,solana"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Krypto",
+      "description": "Ceny kryptoměn",
+      "fields": {
+        "crypto_list": {
+          "label": "ID coinů CoinGecko",
+          "help": "ID coinů CoinGecko oddělené čárkou."
+        }
+      }
+    }
+  }
 }

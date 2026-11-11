@@ -141,6 +141,10 @@ def _app_from_manifest(manifest: dict[str, Any]) -> AppDef:
     if not isinstance(modes, (list, tuple)):
         raise ValueError("modes must be a list")
 
+    translations = manifest.get("translations") or {}
+    if not isinstance(translations, dict):
+        raise ValueError("translations must be an object")
+
     return AppDef(
         key=key,
         name=str(manifest.get("name") or key),
@@ -152,6 +156,7 @@ def _app_from_manifest(manifest: dict[str, Any]) -> AppDef:
         min_rows=max(1, int(manifest.get("min_rows", 1))),
         min_cols=max(1, int(manifest.get("min_cols", 1))),
         modes=tuple(str(mode) for mode in modes),
+        translations=translations,
     )
 
 

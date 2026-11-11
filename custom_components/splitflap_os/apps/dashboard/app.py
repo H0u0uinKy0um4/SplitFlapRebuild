@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from ...models import Page
-from ..weather.app import fetch as weather
 
 
 def _time_text(dt: datetime, ctx) -> str:
@@ -28,7 +27,7 @@ async def fetch(ctx, now: datetime) -> list[Page]:
         Page(_date_lines(now.astimezone(ctx.tz), ctx), delay=4.0)
     ]
     try:
-        pages.extend(await weather(ctx, now))
-    except Exception:  # noqa: BLE001 - dashboard must survive a weather error
+        pages.extend(await ctx.fetch_app("weather", now))
+    except Exception:  # noqa: BLE001 - dashboard must survive a weather error or missing app
         pages.append(Page(ctx.lines("WEATHER", "UNAVAILABLE", ""), delay=4.0))
     return pages

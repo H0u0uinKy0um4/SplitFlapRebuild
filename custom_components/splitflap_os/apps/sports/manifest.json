@@ -16,5 +16,17 @@
       "default": "BOS,DAL",
       "help": "Comma-separated abbreviations. Empty shows every game."
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Sport",
+      "description": "Výsledky NHL",
+      "fields": {
+        "sports_teams": {
+          "label": "Týmy NHL",
+          "help": "Zkratky oddělené čárkou. Prázdné zobrazí všechny zápasy."
+        }
+      }
+    }
+  }
 }

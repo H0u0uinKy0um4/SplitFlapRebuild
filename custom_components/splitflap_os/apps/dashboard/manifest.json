@@ -12,30 +12,36 @@
       "key": "clock_format",
       "label": "Clock format",
       "type": "select",
-      "options": ["12h", "24h"],
+      "options": [
+        "12h",
+        "24h"
+      ],
       "default": "12h"
-    },
-    {
-      "key": "weather_entity",
-      "label": "Weather entity",
-      "type": "entity",
-      "domain": "weather",
-      "placeholder": "weather.home",
-      "help": "Preferred source. Uses Home Assistant's own weather data."
-    },
-    {
-      "key": "zip_code",
-      "label": "ZIP code (OpenWeather fallback)",
-      "type": "text",
-      "placeholder": "02118",
-      "visible_when": {"key": "weather_entity", "equals": ""}
-    },
-    {
-      "key": "weather_api_key",
-      "label": "OpenWeather API key (fallback)",
-      "type": "password",
-      "placeholder": "optional",
-      "visible_when": {"key": "weather_entity", "equals": ""}
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Přehled",
+      "description": "Datum a pak počasí",
+      "fields": {
+        "clock_format": {
+          "label": "Formát hodin",
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    },
+    "en": {
+      "fields": {
+        "clock_format": {
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    }
+  }
 }

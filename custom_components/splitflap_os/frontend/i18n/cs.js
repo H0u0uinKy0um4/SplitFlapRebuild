@@ -303,39 +303,11 @@ export const PANEL = {
   edit: "Upravit",
 };
 
-export const APPS = {
-  clock: { name: "Hodiny", description: "Místní čas" },
-  date: { name: "Datum", description: "Den, datum a čas" },
-  dashboard: { name: "Přehled", description: "Datum a pak počasí" },
-  weather: { name: "Počasí", description: "Aktuální stav" },
-  stocks: { name: "Akcie", description: "Živé ceny" },
-  crypto: { name: "Krypto", description: "Ceny kryptoměn" },
-  sports: { name: "Sport", description: "Výsledky NHL" },
-  metro: { name: "Metro", description: "Příjezdy MHD" },
-  countdown: { name: "Odpočítávání", description: "Časovač do události" },
-  world_clock: { name: "Světové hodiny", description: "Více časových pásem" },
-  iss: { name: "ISS", description: "Poloha vesmírné stanice" },
-  animations: { name: "Animace", description: "Barevné efekty" },
-  modes: {
-    clock: { full: "Celé", time: "Jen čas", date: "Jen datum" },
-  },
-};
+export const APPS = {};
 
 export const SETTINGS = {
   groups: {
     display: "Displej",
-    clock: "Hodiny",
-    date: "Datum",
-    dashboard: "Přehled",
-    weather: "Počasí",
-    stocks: "Akcie",
-    crypto: "Kryptoměny",
-    sports: "Sport",
-    metro: "MHD",
-    countdown: "Odpočet",
-    world_clock: "Světové hodiny",
-    iss: "ISS",
-    animations: "Animace",
   },
   labels: {
     row_counts: "Fyzické rozložení řad (prázdné = auto)",
@@ -345,22 +317,6 @@ export const SETTINGS = {
     timezone: "Časové pásmo",
     units: "Jednotky",
     page_delay: "Výchozí prodleva stránky (s)",
-    weather_entity: "Entita počasí",
-    zip_code: "PSČ (záloha OpenWeather)",
-    weather_api_key: "API klíč OpenWeather (záloha)",
-    stocks_list: "Symboly akcií",
-    crypto_list: "ID coinů CoinGecko",
-    sports_teams: "Týmy NHL",
-    metro_stop: "ID zastávky MBTA",
-    metro_route: "Trasa MBTA",
-    mbta_api_key: "API klíč MBTA",
-    countdown_event: "Název události",
-    countdown_target: "Cílové datum/čas",
-    clock_format: "Formát hodin",
-    world_clock_zones: "Časová pásma",
-    anim_effect: "Efekt",
-    anim_style: "Styl odesílání",
-    anim_speed: "Prodleva snímku (s)",
   },
   helps: {
     row_counts:
@@ -371,39 +327,11 @@ export const SETTINGS = {
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     timezone:
       "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
-    weather_entity:
-      "Preferovaný zdroj. Používá vlastní data počasí Home Assistantu.",
-    stocks_list: "Symboly Yahoo Finance oddělené čárkou.",
-    crypto_list: "ID coinů CoinGecko oddělené čárkou.",
-    sports_teams:
-      "Zkratky oddělené čárkou. Prázdné zobrazí všechny zápasy.",
-    countdown_target: "Místní čas v nakonfigurovaném časovém pásmu.",
-    world_clock_zones: "Názvy IANA zón oddělené čárkou.",
   },
   placeholders: {
     timezone: "Výchozí v Home Assistantu",
-    weather_api_key: "volitelné",
-    mbta_api_key: "volitelné",
   },
   options: {
     units: { auto: "Automaticky", imperial: "Imperiální", metric: "Metrické" },
-    clock_format: { "12h": "12 h", "24h": "24 h" },
-    anim_effect: {
-      rainbow: "Duha",
-      sweep: "Přechod",
-      checker: "Šachovnice",
-      twinkle: "Blikání",
-    },
-    anim_style: {
-      ltr: "Zleva doprava",
-      rtl: "Zprava doleva",
-      columns: "Sloupce",
-      center_out: "Od středu",
-      outside_in: "Zvenku dovnitř",
-      diagonal: "Diagonálně",
-      random: "Náhodně",
-      rain: "Déšť",
-      spiral: "Spirála",
-    },
   },
 };

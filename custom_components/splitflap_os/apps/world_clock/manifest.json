@@ -20,8 +20,40 @@
       "key": "clock_format",
       "label": "Clock format",
       "type": "select",
-      "options": ["12h", "24h"],
+      "options": [
+        "12h",
+        "24h"
+      ],
       "default": "12h"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Světové hodiny",
+      "description": "Více časových pásem",
+      "fields": {
+        "world_clock_zones": {
+          "label": "Časová pásma",
+          "help": "Názvy IANA zón oddělené čárkou."
+        },
+        "clock_format": {
+          "label": "Formát hodin",
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    },
+    "en": {
+      "fields": {
+        "clock_format": {
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    }
+  }
 }

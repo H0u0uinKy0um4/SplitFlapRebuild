@@ -21,11 +21,12 @@ def _install_fake_package() -> None:
 
 _install_fake_package()
 
+from splitflap_os.apps.common import AppContext  # noqa: E402
 from splitflap_os.apps.loader import load_apps  # noqa: E402
 from splitflap_os.settings import display_group, global_defaults  # noqa: E402
 
 
-class AppRegistryTests(unittest.TestCase):
+class AppRegistryTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.registry = load_apps(
             COMPONENT_DIR / "apps",
@@ -85,6 +86,63 @@ class AppRegistryTests(unittest.TestCase):
 
     def test_display_group_present(self) -> None:
         self.assertEqual(self.registry.groups[0]["key"], "display")
+
+    def test_translations_are_present_in_manifests(self) -> None:
+        for app in self.registry.apps:
+            self.assertIn("cs", app.translations)
+            cs = app.translations["cs"]
+            self.assertTrue(cs.get("name"))
+            self.assertTrue(cs.get("description"))
+
+    def test_select_field_options_have_translations(self) -> None:
+        for app in self.registry.apps:
+            cs = app.translations.get("cs", {})
+            cs_fields = cs.get("fields", {})
+            for field in app.fields:
+                if field.options:
+                    local_key = field.key.removeprefix(f"{app.key}.")
+                    cs_field = cs_fields.get(local_key, {})
+                    cs_options = cs_field.get("options", {})
+                    for opt in field.options:
+                        self.assertIn(
+                            opt,
+                            cs_options,
+                            f"{app.key}.{local_key} option {opt!r} missing in cs translation",
+                        )
+
+    def test_as_dict_includes_translations(self) -> None:
+        app_dicts = self.registry.app_defs()
+        for app_dict in app_dicts:
+            self.assertIn("translations", app_dict)
+            self.assertIn("cs", app_dict["translations"])
+
+    async def test_app_context_fetch_app(self) -> None:
+        class DummyEngine:
+            def __init__(self, registry: Any) -> None:
+                self.registry = registry
+                self.tz = None
+                self.board = (3, 9)
+                self.rows = 3
+                self.cols = 9
+                self.layout = None
+                self.unit_system = "metric"
+                self.active_app_mode = None
+                self.session = None
+                self.http_timeout = 10
+                self.hass = None
+
+            def get_setting(self, key: str, default: Any = None, app: str = "") -> Any:
+                return default
+
+            def lines(self, *values: object) -> str:
+                return "\n".join(str(v) for v in values)
+
+        engine = DummyEngine(self.registry)
+        ctx = AppContext(engine, "dashboard")
+        pages = await ctx.fetch_app("clock")
+        self.assertTrue(len(pages) > 0)
+        with self.assertRaises(KeyError):
+            await ctx.fetch_app("nonexistent_app")
 
 
 if __name__ == "__main__":

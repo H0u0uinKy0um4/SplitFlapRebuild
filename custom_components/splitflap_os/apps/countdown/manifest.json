@@ -26,8 +26,43 @@
       "key": "clock_format",
       "label": "Clock format",
       "type": "select",
-      "options": ["12h", "24h"],
+      "options": [
+        "12h",
+        "24h"
+      ],
       "default": "12h"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Odpočítávání",
+      "description": "Časovač do události",
+      "fields": {
+        "countdown_event": {
+          "label": "Název události"
+        },
+        "countdown_target": {
+          "label": "Cílové datum/čas",
+          "help": "Místní čas v nakonfigurovaném časovém pásmu."
+        },
+        "clock_format": {
+          "label": "Formát hodin",
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    },
+    "en": {
+      "fields": {
+        "clock_format": {
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    }
+  }
 }

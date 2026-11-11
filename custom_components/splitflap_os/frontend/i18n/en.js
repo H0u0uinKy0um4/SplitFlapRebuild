@@ -302,39 +302,11 @@ export const PANEL = {
   edit: "Edit",
 };
 
-export const APPS = {
-  clock: { name: "Clock", description: "Local time" },
-  date: { name: "Date", description: "Day, date and time" },
-  dashboard: { name: "Dashboard", description: "Date then weather" },
-  weather: { name: "Weather", description: "Current conditions" },
-  stocks: { name: "Stocks", description: "Live prices" },
-  crypto: { name: "Crypto", description: "Coin prices" },
-  sports: { name: "Sports", description: "NHL scores" },
-  metro: { name: "Metro", description: "Transit arrivals" },
-  countdown: { name: "Countdown", description: "Timer to an event" },
-  world_clock: { name: "World Clock", description: "Multiple time zones" },
-  iss: { name: "ISS", description: "Space station position" },
-  animations: { name: "Animations", description: "Colour effects" },
-  modes: {
-    clock: { full: "Full", time: "Time only", date: "Date only" },
-  },
-};
+export const APPS = {};
 
 export const SETTINGS = {
   groups: {
     display: "Display",
-    clock: "Clock",
-    date: "Date",
-    dashboard: "Dashboard",
-    weather: "Weather",
-    stocks: "Stocks",
-    crypto: "Crypto",
-    sports: "Sports",
-    metro: "Metro",
-    countdown: "Countdown",
-    world_clock: "World Clock",
-    iss: "ISS",
-    animations: "Animations",
   },
   labels: {
     row_counts: "Physical row layout (blank = auto)",
@@ -344,22 +316,6 @@ export const SETTINGS = {
     timezone: "Timezone",
     units: "Units",
     page_delay: "Default page delay (s)",
-    weather_entity: "Weather entity",
-    zip_code: "ZIP code (OpenWeather fallback)",
-    weather_api_key: "OpenWeather API key (fallback)",
-    stocks_list: "Stock symbols",
-    crypto_list: "CoinGecko coin ids",
-    sports_teams: "NHL teams",
-    metro_stop: "MBTA stop id",
-    metro_route: "MBTA route",
-    mbta_api_key: "MBTA API key",
-    countdown_event: "Event name",
-    countdown_target: "Target date/time",
-    clock_format: "Clock format",
-    world_clock_zones: "Time zones",
-    anim_effect: "Effect",
-    anim_style: "Send order",
-    anim_speed: "Frame delay (s)",
   },
   helps: {
     row_counts:
@@ -370,39 +326,11 @@ export const SETTINGS = {
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     timezone:
       "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
-    weather_entity:
-      "Preferred source. Uses Home Assistant's own weather data.",
-    stocks_list: "Comma-separated Yahoo Finance symbols.",
-    crypto_list: "Comma-separated CoinGecko coin ids.",
-    sports_teams:
-      "Comma-separated abbreviations. Empty shows every game.",
-    countdown_target: "Local time in the configured timezone.",
-    world_clock_zones: "Comma-separated IANA zone names.",
   },
   placeholders: {
     timezone: "Home Assistant default",
-    weather_api_key: "optional",
-    mbta_api_key: "optional",
   },
   options: {
     units: { auto: "Auto", imperial: "Imperial", metric: "Metric" },
-    clock_format: { "12h": "12 h", "24h": "24 h" },
-    anim_effect: {
-      rainbow: "Rainbow",
-      sweep: "Sweep",
-      checker: "Checker",
-      twinkle: "Twinkle",
-    },
-    anim_style: {
-      ltr: "Left to right",
-      rtl: "Right to left",
-      columns: "Columns",
-      center_out: "Centre out",
-      outside_in: "Outside in",
-      diagonal: "Diagonal",
-      random: "Random",
-      rain: "Rain",
-      spiral: "Spiral",
-    },
   },
 };

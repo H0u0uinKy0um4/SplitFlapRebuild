@@ -28,5 +28,23 @@
       "type": "password",
       "placeholder": "optional"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Metro",
+      "description": "Příjezdy MHD",
+      "fields": {
+        "metro_stop": {
+          "label": "ID zastávky MBTA"
+        },
+        "metro_route": {
+          "label": "Trasa MBTA"
+        },
+        "mbta_api_key": {
+          "label": "API klíč MBTA",
+          "placeholder": "volitelné"
+        }
+      }
+    }
+  }
 }

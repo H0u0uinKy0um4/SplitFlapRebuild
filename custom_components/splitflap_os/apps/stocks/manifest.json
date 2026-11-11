@@ -16,5 +16,17 @@
       "default": "MSFT,GOOG,NVDA",
       "help": "Comma-separated Yahoo Finance symbols."
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Akcie",
+      "description": "Živé ceny",
+      "fields": {
+        "stocks_list": {
+          "label": "Symboly akcií",
+          "help": "Symboly Yahoo Finance oddělené čárkou."
+        }
+      }
+    }
+  }
 }

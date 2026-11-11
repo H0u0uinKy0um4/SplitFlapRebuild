@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Awaitable, Callable
+
+from ..models import Page
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,7 @@ class AppDef:
     min_rows: int = 1
     min_cols: int = 1
     modes: tuple[str, ...] = ()
+    translations: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -72,6 +76,7 @@ class AppDef:
             "min_rows": self.min_rows,
             "min_cols": self.min_cols,
             "modes": list(self.modes),
+            "translations": self.translations,
         }
 
 
@@ -158,6 +163,27 @@ class AppContext:
         headers: dict[str, str] | None = None,
     ) -> Any:
         return await self._engine.http_json(url, params=params, headers=headers)
+
+    async def fetch_app(
+        self, app_key: str, now: datetime | None = None
+    ) -> list[Page]:
+        """Fetch pages from another registered app using that app's own context."""
+
+        registry = getattr(self._engine, "registry", None)
+        if registry is None:
+            raise RuntimeError("App registry is not initialized")
+        provider = registry.provider(app_key)
+        if provider is None:
+            raise KeyError(f"App not found: {app_key}")
+        app_ctx = AppContext(self._engine, app_key)
+        if now is None:
+            now = datetime.now(self.tz) if self.tz else datetime.now()
+        result = await provider(app_ctx, now)
+        if result is None:
+            return []
+        if isinstance(result, Page):
+            return [result]
+        return list(result)
 
 
 def split_csv(value: object) -> list[str]:

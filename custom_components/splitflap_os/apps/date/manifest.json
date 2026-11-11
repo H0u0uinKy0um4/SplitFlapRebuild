@@ -12,8 +12,36 @@
       "key": "clock_format",
       "label": "Clock format",
       "type": "select",
-      "options": ["12h", "24h"],
+      "options": [
+        "12h",
+        "24h"
+      ],
       "default": "12h"
     }
-  ]
+  ],
+  "translations": {
+    "cs": {
+      "name": "Datum",
+      "description": "Den, datum a čas",
+      "fields": {
+        "clock_format": {
+          "label": "Formát hodin",
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    },
+    "en": {
+      "fields": {
+        "clock_format": {
+          "options": {
+            "12h": "12 h",
+            "24h": "24 h"
+          }
+        }
+      }
+    }
+  }
 }
