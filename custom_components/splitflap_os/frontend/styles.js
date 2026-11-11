@@ -77,6 +77,13 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
   background: var(--primary-color, #03a9f4);
   color: var(--text-primary-color, #fff);
 }
+.subtabs.nested {
+  margin-top: 14px; margin-bottom: 12px; padding: 3px 4px;
+  border-style: dashed;
+}
+.subtabs.nested .subtab { padding: 6px 11px; font-size: .66rem; }
+.settings-group.app-settings-pane { display: none; }
+.settings-group.app-settings-pane.active { display: block; }
 .subpage { display: none; }
 .subpage.active { display: block; animation: pageIn .18s ease-out; }
 @keyframes pageIn { from { opacity: 0; transform: translateY(4px); } }

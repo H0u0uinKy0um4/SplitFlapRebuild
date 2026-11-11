@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.3";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.3";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.3";
-import { PANEL_STYLES } from "../styles.js?v=1.0.3";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.4";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.4";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.4";
+import { PANEL_STYLES } from "../styles.js?v=1.0.4";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -270,7 +270,8 @@ export const PanelMixin = (Base) => class extends Base {
                   <h2 style="margin:0">${this._t('app_settings')}</h2>
                   <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
                 </div>
-                <div id="appsSettingsGroups" class="settings-groups" style="margin-top:14px"></div>
+                <nav class="subtabs nested" id="appsSettingsSubtabs"></nav>
+                <div id="appsSettingsGroups" class="settings-groups"></div>
               </div>
             </div>
 
@@ -1340,50 +1341,83 @@ export const PanelMixin = (Base) => class extends Base {
       </label>`;
   }
 
+  _settingsGroupHtml(group, settings, showHeading = true, paneKey = null) {
+    const pane =
+      paneKey == null ? "" : ` data-app-pane="${escapeAttr(paneKey)}"`;
+    const classes =
+      paneKey == null ? "settings-group" : "settings-group app-settings-pane";
+    return `
+      <div class="${classes}"${pane}>
+        ${
+          showHeading
+            ? `<h3>${escapeHtml(group.icon || "")} ${escapeHtml(
+                this._settingGroup(group.key, group.name || group.key)
+              )}</h3>`
+            : ""
+        }
+        <div class="settings-grid">
+          ${(group.fields || [])
+            .map((field) => this._fieldHtml(field, settings[field.key]))
+            .join("")}
+        </div>
+      </div>`;
+  }
+
   _renderSettings() {
     if (!this._state) return;
     const engine = this._engine();
     const groups = engine.settings_groups || [];
     const settings = engine.settings || {};
 
-    // Two containers: Display sub-tab and Apps sub-tab. The group's
-    // "category" field routes it; anything unrecognized falls to Display so
-    // a new backend group can never end up invisible.
-    const nodes = [
-      { id: "displaySettingsGroups", match: (group) => group.category !== "apps" },
-      { id: "appsSettingsGroups", match: (group) => group.category === "apps" },
-    ]
-      .map(({ id, match }) => ({
-        node: this.shadowRoot.getElementById(id),
-        match,
-      }))
-      .filter(({ node }) => node);
+    const displayNode = this.shadowRoot.getElementById("displaySettingsGroups");
+    const appsNode = this.shadowRoot.getElementById("appsSettingsGroups");
+    const appsNav = this.shadowRoot.getElementById("appsSettingsSubtabs");
+    if (!displayNode && !appsNode) return;
 
-    if (!nodes.length) return;
+    // The group's "category" field routes it; anything unrecognized falls to
+    // Display so a new backend group can never end up invisible.
+    const displayGroups = groups.filter((group) => group.category !== "apps");
+    const appGroups = groups.filter((group) => group.category === "apps");
 
     if (!this._settingsBuilt) {
-      for (const { node, match } of nodes) {
-        node.innerHTML = groups
-          .filter(match)
+      if (displayNode) {
+        displayNode.innerHTML = displayGroups
+          .map((group) => this._settingsGroupHtml(group, settings))
+          .join("");
+      }
+      if (appsNav) {
+        appsNav.innerHTML = appGroups
           .map(
-            (group) => `
-            <div class="settings-group">
-              <h3>${escapeHtml(group.icon || "")} ${escapeHtml(this._settingGroup(group.key, group.name || group.key))}</h3>
-              <div class="settings-grid">
-                ${(group.fields || [])
-                  .map((field) => this._fieldHtml(field, settings[field.key]))
-                  .join("")}
-              </div>
-            </div>`
+            (group) =>
+              `<button class="subtab" data-action="settings-app" data-key="${escapeAttr(
+                group.key
+              )}">${escapeHtml(
+                `${group.icon ? `${group.icon} ` : ""}${this._settingGroup(
+                  group.key,
+                  group.name || group.key
+                )}`
+              )}</button>`
+          )
+          .join("");
+      }
+      if (appsNode) {
+        // Render every app group but show only the active one. Switching the
+        // third-level tab then only toggles CSS, so unsaved inputs survive.
+        appsNode.innerHTML = appGroups
+          .map((group) =>
+            this._settingsGroupHtml(group, settings, false, group.key)
           )
           .join("");
       }
       this._settingsBuilt = true;
     }
 
+    this._applyAppSettingsTab();
+
     if (this._settingsDirty) return;
     const active = this.shadowRoot.activeElement;
-    for (const { node } of nodes) {
+    for (const node of [displayNode, appsNode]) {
+      if (!node) continue;
       node.querySelectorAll("[data-setting]").forEach((input) => {
         if (input === active) return;
         const key = input.dataset.setting;
@@ -1392,6 +1426,40 @@ export const PanelMixin = (Base) => class extends Base {
         if (input.value !== next) input.value = next;
       });
     }
+  }
+
+  _applyAppSettingsTab() {
+    const buttons = Array.from(
+      this.shadowRoot.querySelectorAll(
+        '#appsSettingsSubtabs [data-action="settings-app"]'
+      )
+    );
+    if (!buttons.length) return;
+    const keys = buttons.map((button) => button.dataset.key);
+    if (!keys.includes(this._appSettingsKey)) this._appSettingsKey = keys[0];
+    for (const button of buttons) {
+      button.classList.toggle(
+        "active",
+        button.dataset.key === this._appSettingsKey
+      );
+    }
+    this.shadowRoot.querySelectorAll("[data-app-pane]").forEach((pane) => {
+      pane.classList.toggle(
+        "active",
+        pane.dataset.appPane === this._appSettingsKey
+      );
+    });
+  }
+
+  _setAppSettingsTab(key) {
+    if (!key) return;
+    this._appSettingsKey = key;
+    try {
+      window.localStorage.setItem(`${DOMAIN}_app_settings`, key);
+    } catch (err) {
+      /* ignore */
+    }
+    this._applyAppSettingsTab();
   }
 
   _renderOtaInstalled() {

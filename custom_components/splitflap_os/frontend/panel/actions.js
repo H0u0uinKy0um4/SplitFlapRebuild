@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.3";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.3";
+import { formatMessage } from "../utils.js?v=1.0.4";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.4";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -122,6 +122,9 @@ export const PanelMixin = (Base) => class extends Base {
       }
       case "app-settings":
         this._openAppSettings(target.dataset.app);
+        break;
+      case "settings-app":
+        this._setAppSettingsTab(target.dataset.key);
         break;
       case "save-app-settings":
         await this._saveAppSettings();

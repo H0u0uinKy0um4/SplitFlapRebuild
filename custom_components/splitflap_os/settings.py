@@ -140,7 +140,7 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
         "key": "animations",
         "name": "Animations",
         "icon": "🎨",
-        "category": "display",
+        "category": "apps",
         "fields": [field.as_dict() for field in ANIMATION_FIELDS],
     },
 ]
