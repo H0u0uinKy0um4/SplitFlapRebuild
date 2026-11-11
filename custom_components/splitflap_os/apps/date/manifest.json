@@ -1,0 +1,19 @@
+{
+  "key": "date",
+  "name": "Date",
+  "icon": "📅",
+  "description": "Day, date and time",
+  "category": "time",
+  "default_delay": 1.0,
+  "min_rows": 3,
+  "min_cols": 11,
+  "fields": [
+    {
+      "key": "clock_format",
+      "label": "Clock format",
+      "type": "select",
+      "options": ["12h", "24h"],
+      "default": "12h"
+    }
+  ]
+}

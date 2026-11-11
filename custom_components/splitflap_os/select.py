@@ -9,7 +9,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .apps import app_defs
 from .const import DOMAIN
 from .entity import SplitFlapEntity
 
@@ -31,7 +30,7 @@ class SplitFlapAppSelect(SplitFlapEntity, SelectEntity):
 
     def __init__(self, runtime: dict[str, Any]) -> None:
         super().__init__(runtime, "app_select")
-        self._apps = app_defs()
+        self._apps = self.engine.registry.app_defs() if self.engine.registry else []
         self._by_key = {app["key"]: app["name"] for app in self._apps}
         self._by_name = {app["name"]: app["key"] for app in self._apps}
         self._attr_options = [*self._by_key.values(), "Off"]

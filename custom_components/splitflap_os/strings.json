@@ -67,6 +67,28 @@
         }
       }
     },
+    "notify": {
+      "name": "Notify",
+      "description": "Queue an interrupting message; the app or playlist resumes where it stopped, and an idle display restores its previous board.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "Message to display. It is wrapped to the board like send_text."
+        },
+        "seconds": {
+          "name": "Display time",
+          "description": "Seconds the message stays on the display."
+        },
+        "style": {
+          "name": "Send order",
+          "description": "Animation order used when the message is sent to the modules."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Higher priority messages are shown first. Equal priorities keep arrival order."
+        }
+      }
+    },
     "play_playlist": {
       "name": "Play playlist",
       "description": "Play a list of pages, optionally looping. All pages are checked against the modules' flap lists before playback.",

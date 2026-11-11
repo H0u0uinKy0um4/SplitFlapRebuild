@@ -324,11 +324,17 @@ export const APPS = {
 export const SETTINGS = {
   groups: {
     display: "Displej",
+    clock: "Hodiny",
+    date: "Datum",
+    dashboard: "Přehled",
     weather: "Počasí",
-    markets: "Trhy",
+    stocks: "Akcie",
+    crypto: "Kryptoměny",
     sports: "Sport",
-    transit: "Doprava",
-    time: "Čas",
+    metro: "MHD",
+    countdown: "Odpočet",
+    world_clock: "Světové hodiny",
+    iss: "ISS",
     animations: "Animace",
   },
   labels: {

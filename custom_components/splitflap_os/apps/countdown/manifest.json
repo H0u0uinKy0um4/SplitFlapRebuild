@@ -1,0 +1,33 @@
+{
+  "key": "countdown",
+  "name": "Countdown",
+  "icon": "⏳",
+  "description": "Timer to an event",
+  "category": "time",
+  "default_delay": 1.0,
+  "min_rows": 3,
+  "min_cols": 12,
+  "fields": [
+    {
+      "key": "countdown_event",
+      "label": "Event name",
+      "type": "text",
+      "placeholder": "NEW YEAR",
+      "default": "NEW YEAR"
+    },
+    {
+      "key": "countdown_target",
+      "label": "Target date/time",
+      "type": "datetime-local",
+      "default": "2027-01-01T00:00:00",
+      "help": "Local time in the configured timezone."
+    },
+    {
+      "key": "clock_format",
+      "label": "Clock format",
+      "type": "select",
+      "options": ["12h", "24h"],
+      "default": "12h"
+    }
+  ]
+}

@@ -188,6 +188,7 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
   font-size: 1rem;
 }
 label.field { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; opacity: .9; }
+label.field.hidden { display: none; }
 label.field > span { font-weight: 700; letter-spacing: .04em; }
 label.field small { opacity: .6; line-height: 1.35; }
 input, select, textarea {

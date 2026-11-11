@@ -9,9 +9,11 @@ functions, which keeps them easy to test and easy to add.
 from __future__ import annotations
 
 import asyncio
+import functools
 import logging
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -22,13 +24,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 
-from .apps import APP_DEFS_BY_KEY, APP_PROVIDERS, app_defs
+from .apps import AppContext, AppRegistry, load_apps
 from .const import (
-    DEFAULT_SETTINGS,
+    ANIMATION_ORDERS,
     DOMAIN,
     ENGINE_STORAGE_VERSION,
-    SETTINGS_GROUPS,
-    SETTINGS_KEYS,
     STORAGE_SAVE_DELAY,
     VERSION,
     signal_update,
@@ -46,11 +46,14 @@ from .layout import (
     unknown_characters,
 )
 from .models import Page
-from .settings import settings_for_ui
+from .settings import display_group, global_defaults
 
 _LOGGER = logging.getLogger(__name__)
 
-PageProvider = Callable[["AppEngine", datetime], Awaitable[list[Page] | Page | None]]
+# A notification that is still queued after this long is stale (for example a
+# burst of automations while the display was offline) and is dropped.
+NOTIFICATION_MAX_AGE = 300.0
+NOTIFICATION_MAX_QUEUE = 50
 
 
 class AppEngine:
@@ -67,7 +70,8 @@ class AppEngine:
         self.coordinator = coordinator
         self.signal = signal_update(entry.entry_id)
 
-        self.settings: dict[str, Any] = dict(DEFAULT_SETTINGS)
+        self.settings: dict[str, Any] = {}
+        self.registry: AppRegistry | None = None
         self.saved_playlists: dict[str, dict[str, Any]] = {}
         self.saved_drums: dict[str, str] = {}
         self.playlist: list[Page] = []
@@ -79,6 +83,11 @@ class AppEngine:
         self._loop_playlist = True
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
+        # Second wake signal: a notification interrupts a long page delay
+        # without cancelling the runner or losing the playlist position.
+        self._wake_event = asyncio.Event()
+        self._notifications: list[dict[str, Any]] = []
+        self._idle_notify_task: asyncio.Task | None = None
 
         self._cache: dict[str, tuple[float, Any]] = {}
         self._cache_locks: dict[str, asyncio.Lock] = {}
@@ -102,6 +111,19 @@ class AppEngine:
     # Lifecycle
     # ------------------------------------------------------------------
     async def async_setup(self) -> None:
+        # Importing app modules is filesystem work, so keep it off the event
+        # loop.  Reloading the integration rebuilds the registry, which is how
+        # a newly added app folder becomes visible.
+        self.registry = await self.hass.async_add_executor_job(
+            functools.partial(
+                load_apps,
+                Path(__file__).parent / "apps",
+                global_defaults=global_defaults(),
+                display_group=display_group(),
+            )
+        )
+        self.settings = dict(self.registry.defaults)
+
         try:
             stored = await self._store.async_load()
         except Exception:  # noqa: BLE001 - restore must never block setup
@@ -115,11 +137,16 @@ class AppEngine:
                 # They were shadowed by the module's reported drum for every
                 # online module, so they are dropped; the drum lives in the
                 # slave's EEPROM and is written from the Tuning tab.
+                #
+                # Settings used to be one flat global namespace.  The
+                # registry migration copies those values into each app that
+                # declared the same local key; namespaced values win.
+                migrated = self.registry.migrate_settings(raw_settings)
                 self.settings.update(
                     {
                         key: value
-                        for key, value in raw_settings.items()
-                        if key in SETTINGS_KEYS
+                        for key, value in migrated.items()
+                        if key in self.registry.keys
                     }
                 )
             playlists = stored.get("saved_playlists")
@@ -141,6 +168,7 @@ class AppEngine:
 
     async def async_unload(self) -> None:
         await self.async_stop(notify=False)
+        await self._cancel_idle_notifications()
         try:
             await self._store.async_save(self._state_snapshot())
         except Exception:  # noqa: BLE001
@@ -202,14 +230,34 @@ class AppEngine:
     def http_timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(total=15)
 
-    def get_setting(self, key: str, default: Any = None) -> Any:
-        return self.settings.get(key, DEFAULT_SETTINGS.get(key, default))
+    def get_setting(
+        self, key: str, default: Any = None, *, app: str | None = None
+    ) -> Any:
+        """Return a setting, resolving app-local keys in the app namespace.
+
+        Providers call this without specifying the app; the active app is used,
+        which is why two apps can both declare ``clock_format`` and keep their
+        own values.
+        """
+
+        app_key = app or self.active_app
+        if app_key:
+            namespaced = f"{app_key}.{key}"
+            if namespaced in self.settings:
+                return self.settings[namespaced]
+            if self.registry and namespaced in self.registry.defaults:
+                return self.registry.defaults[namespaced]
+        if key in self.settings:
+            return self.settings[key]
+        if self.registry and key in self.registry.defaults:
+            return self.registry.defaults[key]
+        return default
 
     def lines(self, *values: object) -> str:
         return "\n".join(format_lines(values, self.rows, self.cols))
 
     def app_status(self, app_key: str) -> dict[str, Any]:
-        app = APP_DEFS_BY_KEY.get(str(app_key))
+        app = self.registry.app(str(app_key)) if self.registry else None
         if app is None:
             return {
                 "key": str(app_key),
@@ -249,7 +297,7 @@ class AppEngine:
             lines = [" " * cols for _ in range(rows)]
         apps = [
             {**app, **self._app_status_dict(app)}
-            for app in app_defs()
+            for app in (self.registry.app_defs() if self.registry else [])
         ]
         return {
             "mode": self.mode,
@@ -275,13 +323,18 @@ class AppEngine:
             "playlist_delay": self.playlist_delay,
             "saved_playlists": self.saved_playlists,
             "saved_drums": self.saved_drums,
-            "settings": settings_for_ui(self.settings),
-            "settings_groups": SETTINGS_GROUPS,
+            "settings": self._settings_for_ui(),
+            "settings_groups": self.registry.groups if self.registry else [],
             "apps": apps,
             "current_page": self._current_page,
             "current_page_index": self._current_page_index,
             "current_page_count": self._current_page_count,
         }
+
+    def _settings_for_ui(self) -> dict[str, Any]:
+        if self.registry is None:
+            return {}
+        return self.registry.settings_for_ui(self.settings)
 
     def _app_status_dict(self, app: Any) -> dict[str, Any]:
         available, reason = self._app_available(app)
@@ -295,11 +348,12 @@ class AppEngine:
     # ------------------------------------------------------------------
     async def async_set_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
         cleaned: dict[str, Any] = {}
+        known = self.registry.keys if self.registry else frozenset()
         for key, value in (updates or {}).items():
             # Per-module "drum_<id>" overrides are gone: they were shadowed
             # by the module's reported drum for every online module. The
             # drum is written to the slave's EEPROM from the Tuning tab.
-            if key not in SETTINGS_KEYS:
+            if key not in known:
                 continue
             if key in {"rows", "cols"}:
                 try:
@@ -342,13 +396,13 @@ class AppEngine:
         self._cache.clear()
 
         if self.mode == "app" and self.active_app:
-            app = APP_DEFS_BY_KEY.get(self.active_app)
+            app = self.registry.app(self.active_app) if self.registry else None
             if app is not None and not self._app_available(app)[0]:
                 await self.async_stop(notify=False)
 
         await self._store.async_save(self._state_snapshot())
         self._notify()
-        return settings_for_ui(self.settings)
+        return self._settings_for_ui()
 
     async def async_save_playlist(
         self, name: str, pages: list[Any], delay: float = 5.0
@@ -397,6 +451,66 @@ class AppEngine:
     # ------------------------------------------------------------------
     # Display control
     # ------------------------------------------------------------------
+    async def async_notify(
+        self,
+        text: str,
+        *,
+        seconds: float = 10.0,
+        style: str = "ltr",
+        priority: int = 0,
+    ) -> None:
+        """Queue an interrupting message and resume what was on screen.
+
+        While an app or playlist runs, the runner drains the queue between
+        pages and during its page delay, so the playlist position is kept.
+        While idle, a small task shows the queue and restores the previous
+        board afterwards.
+        """
+
+        value = str(text or "")
+        if not value.strip():
+            raise ValueError("Notification text must not be empty")
+
+        rows, cols = self.board
+        lines, board = compose_board(value, rows, cols)
+        page_style = style if style in ANIMATION_ORDERS else "ltr"
+        # Reject characters no module can show before queueing, so a bad
+        # notification never breaks the display loop later.
+        self._validate_board(board, page_style)
+
+        try:
+            duration = max(0.5, min(300.0, float(seconds)))
+        except (TypeError, ValueError):
+            duration = 10.0
+        try:
+            rank = int(priority)
+        except (TypeError, ValueError):
+            rank = 0
+
+        now = time.time()
+        self._notifications[:] = [
+            item
+            for item in self._notifications
+            if now - item["created"] < NOTIFICATION_MAX_AGE
+        ]
+        # ``sort`` is stable, so equal priorities stay in arrival order.
+        self._notifications.append(
+            {
+                "text": value,
+                "seconds": duration,
+                "style": page_style,
+                "priority": rank,
+                "created": now,
+            }
+        )
+        self._notifications.sort(key=lambda item: -item["priority"])
+        del self._notifications[NOTIFICATION_MAX_QUEUE:]
+
+        self._wake_event.set()
+        if self.mode == "idle" and not self.running:
+            self._start_idle_notifications()
+        self._notify()
+
     async def async_send_text(
         self,
         text: str,
@@ -437,6 +551,7 @@ class AppEngine:
         # leaves whatever is already on the board untouched.
         self._validate_board(board, page_style)
 
+        await self._cancel_idle_notifications()
         if stop:
             await self.async_stop(notify=False)
 
@@ -482,7 +597,7 @@ class AppEngine:
 
     async def async_start_app(self, app_key: str, mode: str | None = None) -> None:
         key = str(app_key or "").strip()
-        app = APP_DEFS_BY_KEY.get(key)
+        app = self.registry.app(key) if self.registry else None
         if app is None:
             raise ValueError(f"Unknown app: {app_key}")
         available, reason = self._app_available(app)
@@ -507,6 +622,11 @@ class AppEngine:
         self.active_app_mode = None
         self._loop_playlist = False
         self._stop_event.set()
+        # An explicit stop discards pending interruptions; starting or
+        # replacing the display does too.  Notifications only survive while
+        # an app or playlist keeps running, where the runner drains them.
+        self._notifications.clear()
+        await self._cancel_idle_notifications()
 
         task = self._task
         self._task = None
@@ -537,6 +657,7 @@ class AppEngine:
         if self.running:
             return
         self._stop_event = asyncio.Event()
+        self._wake_event = asyncio.Event()
         self._task = self.hass.async_create_task(self._runner())
 
     async def _runner(self) -> None:
@@ -553,12 +674,19 @@ class AppEngine:
                 for index, page in enumerate(pages):
                     if self._stop_event.is_set() or self.mode == "idle":
                         break
+                    # A notification queued before this page must not be
+                    # starved by a short-delay app.
+                    await self._drain_notifications()
+                    if self._stop_event.is_set() or self.mode == "idle":
+                        break
                     self._current_page_index = index
                     rotation = await self._display_page(page)
                     delay = page.delay
                     if delay is None:
                         delay = self._default_delay()
-                    await self._sleep(max(0.05, rotation) + max(0.0, float(delay or 0)))
+                    await self._sleep(
+                        max(0.05, rotation) + max(0.0, float(delay or 0))
+                    )
 
                 if self.mode == "playlist" and not self._loop_playlist:
                     self.mode = "idle"
@@ -580,11 +708,11 @@ class AppEngine:
         if self.mode != "app" or not self.active_app:
             return []
 
-        provider = APP_PROVIDERS.get(self.active_app)
+        provider = self.registry.provider(self.active_app) if self.registry else None
         if provider is None:
             return [Page(self.lines("APP NOT FOUND", self.active_app, ""))]
 
-        app = APP_DEFS_BY_KEY.get(self.active_app)
+        app = self.registry.app(self.active_app) if self.registry else None
         if app is not None and not self._app_available(app)[0]:
             _LOGGER.warning(
                 "Stopping %s: it no longer fits the display layout",
@@ -594,8 +722,9 @@ class AppEngine:
             self.active_app = None
             return []
 
+        context = AppContext(self, self.active_app)
         try:
-            result = await provider(self, datetime.now(self.tz))
+            result = await provider(context, datetime.now(self.tz))
         except Exception as err:  # noqa: BLE001 - show an error page
             _LOGGER.exception("App %s failed", self.active_app)
             return [
@@ -742,23 +871,157 @@ class AppEngine:
     def _default_delay(self) -> float:
         if self.mode == "playlist":
             return float(self.playlist_delay or 5.0)
-        if self.mode == "app" and self.active_app:
-            for app in app_defs():
-                if app["key"] == self.active_app:
-                    return float(app.get("default_delay", 5.0))
+        if self.mode == "app" and self.active_app and self.registry:
+            app = self.registry.app(self.active_app)
+            if app is not None:
+                return float(app.default_delay)
         try:
             return float(self.settings.get("page_delay", 5.0) or 5.0)
         except (TypeError, ValueError):
             return 5.0
 
     async def _sleep(self, seconds: float) -> None:
+        """Wait for a page, interrupting the wait for queued notifications.
+
+        ``_stop_event`` still stops the loop immediately; a notification sets
+        ``_wake_event`` so the remaining delay is paused, the message shown,
+        and the wait then resumed for the time that was left.
+        """
+
         if seconds <= 0:
             await asyncio.sleep(0)
             return
+
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + seconds
+        while True:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                return
+            stop_wait = asyncio.create_task(self._stop_event.wait())
+            wake_wait = asyncio.create_task(self._wake_event.wait())
+            _, pending = await asyncio.wait(
+                {stop_wait, wake_wait},
+                timeout=remaining,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            for task in pending:
+                task.cancel()
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
+            if self._stop_event.is_set():
+                return
+            if self._wake_event.is_set():
+                self._wake_event.clear()
+                await self._drain_notifications()
+
+    # ------------------------------------------------------------------
+    # Notifications
+    # ------------------------------------------------------------------
+    async def _show_notification(self, item: dict[str, Any]) -> None:
+        rows, cols = self.board
+        lines, board = compose_board(item["text"], rows, cols)
+        page = Page(text=item["text"], style=item["style"])
+        await self._publish_board(lines, board, item["style"], page)
+        self._last_style = item["style"]
+        self._last_speed = None
+        self._last_text = item["text"]
+
+    async def _drain_notifications(self) -> None:
+        """Show queued messages, then let the caller continue where it was."""
+
+        while self._notifications and self.mode != "idle":
+            item = self._notifications.pop(0)
+            try:
+                await self._show_notification(item)
+            except Exception:  # noqa: BLE001 - a bad message must not kill the loop
+                _LOGGER.exception("Could not display Split-Flap OS notification")
+                continue
+            try:
+                await asyncio.wait_for(
+                    self._stop_event.wait(), timeout=item["seconds"]
+                )
+            except asyncio.TimeoutError:
+                pass
+            if self._stop_event.is_set():
+                return
+
+    def _start_idle_notifications(self) -> None:
+        if self._idle_notify_task and not self._idle_notify_task.done():
+            return
+        self._idle_notify_task = self.hass.async_create_task(
+            self._run_idle_notifications()
+        )
+
+    async def _run_idle_notifications(self) -> None:
+        state = self._capture_display_state()
         try:
-            await asyncio.wait_for(self._stop_event.wait(), timeout=seconds)
-        except asyncio.TimeoutError:
+            while self._notifications and self.mode == "idle":
+                item = self._notifications.pop(0)
+                await self._show_notification(item)
+                try:
+                    await asyncio.wait_for(
+                        self._stop_event.wait(), timeout=item["seconds"]
+                    )
+                except asyncio.TimeoutError:
+                    pass
+        except asyncio.CancelledError:
             pass
+        finally:
+            if self._idle_notify_task is asyncio.current_task():
+                self._idle_notify_task = None
+            if self.mode == "idle":
+                await self._restore_display_state(state)
+
+    async def _cancel_idle_notifications(self) -> None:
+        task = self._idle_notify_task
+        if task is None:
+            return
+        self._idle_notify_task = None
+        if task is asyncio.current_task():
+            return
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+
+    def _capture_display_state(self) -> dict[str, Any]:
+        return {
+            "lines": list(self._last_lines),
+            "board": self._last_board,
+            "style": self._last_style,
+            "speed": self._last_speed,
+            "text": self._last_text,
+            "page": self._current_page,
+            "index": self._current_page_index,
+            "count": self._current_page_count,
+        }
+
+    async def _restore_display_state(self, state: dict[str, Any]) -> None:
+        rows, cols = self.board
+        lines = state.get("lines") or [" " * cols for _ in range(rows)]
+        board = state.get("board") or (" " * (rows * cols))
+        style = state.get("style") or "ltr"
+        speed = state.get("speed")
+        text = state.get("text") or ""
+        page = Page(text=text, style=style, speed=speed)
+        try:
+            await self._publish_board(lines, board, style, page)
+            self._last_style = style
+            self._last_speed = speed
+            self._last_text = text
+        except Exception:  # noqa: BLE001 - restoring is best effort
+            _LOGGER.exception("Could not restore the display after a notification")
+        self._last_lines = list(state.get("lines") or [])
+        self._last_board = state.get("board") or ""
+        self._last_style = state.get("style")
+        self._last_speed = state.get("speed")
+        self._last_text = state.get("text") or ""
+        self._current_page = state.get("page")
+        self._current_page_index = int(state.get("index") or 0)
+        self._current_page_count = int(state.get("count") or 0)
+        self._notify()
 
     # ------------------------------------------------------------------
     # Caching / network helpers
@@ -806,7 +1069,7 @@ class AppEngine:
         return {
             "version": VERSION,
             "exported_at": datetime.now(self.tz).isoformat(),
-            "settings": settings_for_ui(self.settings),
+            "settings": self._settings_for_ui(),
             "saved_playlists": self.saved_playlists,
             "saved_drums": self.saved_drums,
             "playlist": [page.as_dict() for page in self.playlist],
@@ -819,14 +1082,16 @@ class AppEngine:
             raise ValueError("Backup must be a JSON object")
 
         settings = data.get("settings")
-        if isinstance(settings, dict):
+        if isinstance(settings, dict) and self.registry:
             # Backups made by older versions may carry per-module
-            # "drum_<id>" overrides; they are ignored (see async_setup).
+            # "drum_<id>" overrides and flat (pre-namespacing) keys; the
+            # registry migration handles the latter.
+            migrated = self.registry.migrate_settings(settings)
             self.settings.update(
                 {
                     key: value
-                    for key, value in settings.items()
-                    if key in SETTINGS_KEYS
+                    for key, value in migrated.items()
+                    if key in self.registry.keys
                 }
             )
 
@@ -860,7 +1125,7 @@ class AppEngine:
     def _state_snapshot(self) -> dict[str, Any]:
         return {
             "version": VERSION,
-            "settings": settings_for_ui(self.settings),
+            "settings": self._settings_for_ui(),
             "saved_playlists": self.saved_playlists,
             "saved_drums": self.saved_drums,
             "playlist": [page.as_dict() for page in self.playlist],

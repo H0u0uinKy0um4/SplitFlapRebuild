@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.8";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.8";
+import { formatMessage } from "../utils.js?v=1.1.0";
+import { DEFAULT_DRUM } from "../constants.js?v=1.1.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -35,8 +35,11 @@ export const PanelMixin = (Base) => class extends Base {
       this._renderOtaInstalled();
       return;
     }
-    if (target.dataset && target.dataset.setting && target.closest(".settings-groups")) {
-      this._settingsDirty = true;
+    if (target.dataset && target.dataset.setting) {
+      if (target.closest(".settings-groups")) this._settingsDirty = true;
+      this._applyFieldVisibility(
+        target.closest(".settings-groups, #modalFields")
+      );
     }
   }
 
@@ -49,6 +52,11 @@ export const PanelMixin = (Base) => class extends Base {
     }
     if (target.id === "moduleDrumSelect") {
       this._updateModuleDrumPreview();
+    }
+    if (target.dataset && target.dataset.setting) {
+      this._applyFieldVisibility(
+        target.closest(".settings-groups, #modalFields")
+      );
     }
   }
 
@@ -355,9 +363,11 @@ export const PanelMixin = (Base) => class extends Base {
       this._t("app_settings_named"),
       { name: this._appName(key) }
     );
-    this.shadowRoot.getElementById("modalFields").innerHTML = fields.length
+    const modalFields = this.shadowRoot.getElementById("modalFields");
+    modalFields.innerHTML = fields.length
       ? fields.map((field) => this._fieldHtml(field, settings[field.key])).join("")
       : `<p class="muted">${escapeHtml(this._t("app_no_options"))}</p>`;
+    this._applyFieldVisibility(modalFields);
     const saveBtn = this.shadowRoot.querySelector('[data-action="save-app-settings"]');
     if (saveBtn) saveBtn.classList.remove("hidden");
     this.shadowRoot.getElementById("modal").classList.remove("hidden");

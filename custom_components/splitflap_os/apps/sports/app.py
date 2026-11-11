@@ -6,8 +6,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from ..models import Page
-from .common import split_csv
+from ...models import Page
+from ..common import split_csv
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ def _team_name(competitor: dict[str, Any]) -> str:
     ).upper()
 
 
-async def _scoreboard(engine) -> dict[str, Any]:
-    return await engine.http_json(
+async def _scoreboard(ctx) -> dict[str, Any]:
+    return await ctx.http_json(
         "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
         headers={"User-Agent": "Split-Flap-OS/1.0"},
     )
@@ -70,24 +70,24 @@ def _games(data: dict[str, Any], teams: list[str]) -> list[dict[str, str]]:
     return results
 
 
-async def sports(engine, now: datetime) -> list[Page]:
-    teams = split_csv(engine.get_setting("sports_teams"))
+async def fetch(ctx, now: datetime) -> list[Page]:
+    teams = split_csv(ctx.get_setting("sports_teams"))
     try:
-        data = await engine.async_cached("sports", 120, lambda: _scoreboard(engine))
+        data = await ctx.async_cached("sports", 120, lambda: _scoreboard(ctx))
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Sports fetch failed: %s", err)
-        return [Page(engine.lines("SPORTS", "DATA ERROR", "CHECK NETWORK"))]
+        return [Page(ctx.lines("SPORTS", "DATA ERROR", "CHECK NETWORK"))]
 
     games = _games(data, teams)
     if not games:
         subject = teams[0].upper() if teams else "GAMES"
-        return [Page(engine.lines(subject, "NO GAME", "TODAY"))]
+        return [Page(ctx.lines(subject, "NO GAME", "TODAY"))]
 
     pages: list[Page] = []
     for game in games:
         pages.append(
             Page(
-                engine.lines(
+                ctx.lines(
                     f"{game['away']} {game['away_score']}",
                     f"{game['home']} {game['home_score']}",
                     game["status"],

@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 
 @dataclass(frozen=True)
 class SettingField:
-    """Description of one editable setting, rendered by the panel."""
+    """Description of one editable setting, rendered by the panel.
+
+    ``key`` is the local key declared by the app manifest.  The registry
+    namespaces it as ``<app key>.<local key>`` before exposing it to the UI
+    and persistence, so two apps can use the same local key independently.
+    """
 
     key: str
     label: str
@@ -21,6 +26,7 @@ class SettingField:
     step: float | None = None
     domain: str | None = None
     help: str = ""
+    visible_when: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -35,6 +41,7 @@ class SettingField:
             "step": self.step,
             "domain": self.domain,
             "help": self.help,
+            "visible_when": self.visible_when,
         }
 
 
@@ -66,6 +73,91 @@ class AppDef:
             "min_cols": self.min_cols,
             "modes": list(self.modes),
         }
+
+
+class AppContext:
+    """The small capability surface an app provider is allowed to use.
+
+    Providers deliberately receive this object instead of the engine.  They
+    can render pages, read their own settings, and make cached HTTP requests,
+    but cannot touch MQTT, persistence, calibration, playlists or the display
+    loop.
+    """
+
+    def __init__(self, engine: Any, app_key: str) -> None:
+        self._engine = engine
+        self.app_key = app_key
+
+    # Read-only engine state -------------------------------------------
+    @property
+    def hass(self) -> Any:
+        return self._engine.hass
+
+    @property
+    def board(self) -> tuple[int, int]:
+        return self._engine.board
+
+    @property
+    def rows(self) -> int:
+        return self._engine.rows
+
+    @property
+    def cols(self) -> int:
+        return self._engine.cols
+
+    @property
+    def layout(self) -> Any:
+        return self._engine.layout
+
+    @property
+    def tz(self) -> Any:
+        return self._engine.tz
+
+    @property
+    def unit_system(self) -> str:
+        return self._engine.unit_system
+
+    @property
+    def active_app_mode(self) -> str | None:
+        return self._engine.active_app_mode
+
+    @property
+    def session(self) -> Any:
+        return self._engine.session
+
+    @property
+    def http_timeout(self) -> Any:
+        return self._engine.http_timeout
+
+    # Capabilities ------------------------------------------------------
+    def get_setting(self, key: str, default: Any = None) -> Any:
+        """Return this app's value for a local setting key."""
+
+        return self._engine.get_setting(key, default, app=self.app_key)
+
+    def lines(self, *values: object) -> str:
+        return self._engine.lines(*values)
+
+    async def async_cached(
+        self,
+        key: str,
+        ttl: float,
+        factory: Callable[[], Awaitable[Any]],
+    ) -> Any:
+        """Cache a value for this app only."""
+
+        return await self._engine.async_cached(
+            f"{self.app_key}:{key}", ttl, factory
+        )
+
+    async def http_json(
+        self,
+        url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return await self._engine.http_json(url, params=params, headers=headers)
 
 
 def split_csv(value: object) -> list[str]:

@@ -1,0 +1,20 @@
+{
+  "key": "clock",
+  "name": "Clock",
+  "icon": "🕒",
+  "description": "Local time",
+  "category": "time",
+  "default_delay": 1.0,
+  "min_rows": 3,
+  "min_cols": 9,
+  "modes": ["full", "time", "date"],
+  "fields": [
+    {
+      "key": "clock_format",
+      "label": "Clock format",
+      "type": "select",
+      "options": ["12h", "24h"],
+      "default": "12h"
+    }
+  ]
+}

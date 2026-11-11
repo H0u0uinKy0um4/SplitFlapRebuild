@@ -323,11 +323,17 @@ export const APPS = {
 export const SETTINGS = {
   groups: {
     display: "Display",
+    clock: "Clock",
+    date: "Date",
+    dashboard: "Dashboard",
     weather: "Weather",
-    markets: "Markets",
+    stocks: "Stocks",
+    crypto: "Crypto",
     sports: "Sports",
-    transit: "Transit",
-    time: "Time",
+    metro: "Metro",
+    countdown: "Countdown",
+    world_clock: "World Clock",
+    iss: "ISS",
     animations: "Animations",
   },
   labels: {

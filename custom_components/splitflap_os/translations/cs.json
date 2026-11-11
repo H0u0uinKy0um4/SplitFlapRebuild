@@ -67,6 +67,28 @@
         }
       }
     },
+    "notify": {
+      "name": "Oznámení",
+      "description": "Zařadí přerušující zprávu; aplikace nebo playlist pak pokračuje tam, kde přestal, a nečinný displej obnoví předchozí obsah.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "Zpráva k zobrazení. Zalamuje se na tabuli stejně jako send_text."
+        },
+        "seconds": {
+          "name": "Doba zobrazení",
+          "description": "Počet sekund, po které zpráva zůstane na displeji."
+        },
+        "style": {
+          "name": "Pořadí odesílání",
+          "description": "Pořadí animace při odesílání zprávy do modulů."
+        },
+        "priority": {
+          "name": "Priorita",
+          "description": "Zprávy s vyšší prioritou se zobrazí dříve. Stejná priorita zachová pořadí příchodu."
+        }
+      }
+    },
     "play_playlist": {
       "name": "Přehrát playlist",
       "description": "Přehrává seznam stránek, volitelně ve smyčce. Před přehráním se všechny stránky zkontrolují proti seznamům lístků modulů.",

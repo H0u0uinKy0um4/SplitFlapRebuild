@@ -43,8 +43,8 @@ Home Assistant                         ESP32 master                 Slaves
 - **Character validation**: text and playlists are checked against each
   module's reported `flap_list` before anything is sent; a missing flap raises
   an error naming the module and character.
-- **Czech localization** of the setup/options flow and service names; the panel
-  and entity names remain English.
+- **Czech localization** of the setup/options flow, service names, and panel
+  strings; entity names remain English.
 - **Backup/restore** of settings, playlists, and the last module snapshot.
 - Only one config entry is allowed, matching the single-master firmware.
 
@@ -83,8 +83,8 @@ needed.
 - **Apps** — tap an app to start it; the gear opens the settings that app reads.
 - **Tuning** — module matrix, per-module diagnostics, motor home/goto/step,
   record and position-map controls, and a clickable character map.
-- **Settings** — grouped settings (display, weather, markets, sports, transit,
-  time, animations), hardware actions, backup/restore, and connection details.
+- **Settings** — grouped settings (display plus one group per app), hardware
+  actions, backup/restore, and connection details.
 
 The panel uses Home Assistant WebSocket commands and does not require a build
 step. It is loaded from `frontend/splitflap-os-panel.js` through `panel_custom`.
@@ -112,13 +112,14 @@ All services live under `splitflap_os.*`.
 | Service | Description |
 | --- | --- |
 | `send_text` | Send wrapped text with `start`, `style`, `speed`, `stop`, `raw` |
+| `notify` | Queue an interrupting message with display time, style and priority; the active app or playlist resumes afterwards |
 | `play_playlist` | Play pages with `delay` and `loop` |
 | `start_app` / `stop_app` | Control the app engine |
 | `sync` / `scan` / `update` | Hardware state actions |
 | `calibrate` | Per-module goto/home/step/record/apply/clear_map/get_pos |
 | `home_all` / `record_all` | Bulk calibration helpers |
 | `save_playlist` / `delete_playlist` / `run_saved_playlist` | Playlist management |
-| `set_settings` | Merge and persist settings |
+| `set_settings` | Merge and persist settings (namespaced keys such as `clock.clock_format`) |
 
 Service `pages` fields accept a real YAML list when called from scripts, or a
 JSON array string when using the UI. `send_text` treats `start` as a 1-based
@@ -135,7 +136,9 @@ against.
 ## Settings
 
 Settings are stored with Home Assistant's `Store` under the config entry and are
-available from the panel. Important keys include:
+available from the panel. App settings are namespaced as `<app>.<key>` (for
+example `clock.clock_format` or `weather.weather_entity`); legacy flat keys are
+migrated automatically on first load. Important keys include:
 
 - `row_counts`, `rows`, `cols` — the physical display layout. `row_counts` is
   one comma-separated module count per row, for example `3,3,1`. Blank means
@@ -278,12 +281,12 @@ composed from the numbers that apply to it:
 ```
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
 master   <bus>.<mqtt>.<release>       1.1.0.0    bus 1, mqtt 1, release 0.0
-HA       <mqtt>.<release>             1.0.8      mqtt 1, release 0.8
+HA       <mqtt>.<release>             1.1.0      mqtt 1, release 1.0
 ```
 
 | Where | Version | Compatibility | Read from |
 | --- | --- | --- | --- |
-| Home Assistant integration | `1.0.8` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
+| Home Assistant integration | `1.1.0` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, connection info |
 | Slave application | `1.0.1` | bus `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
 
@@ -321,27 +324,32 @@ second `m<id>w0:0`; current firmware does not.
 
 ## Adding an app
 
-1. Add an async provider in `custom_components/splitflap_os/apps/`:
+Apps are local plugins. Create a directory under
+`custom_components/splitflap_os/apps/<key>/` containing:
 
-   ```python
-   async def my_app(engine, now) -> list[Page]:
-       return [Page(engine.lines("HELLO", "WORLD", ""), delay=5)]
-   ```
+- `manifest.json` — key, name, icon, description, category, minimum rows/columns,
+  modes, and setting fields. Setting keys are local to the app and namespaced
+  automatically as `<key>.<field>`.
+- `app.py` — an async `fetch(context, now)` returning a `Page`, a list of
+  pages, or `None`. `context` is a narrow `AppContext` exposing `get_setting`,
+  `lines`, `board`, `rows`, `cols`, `tz`, `unit_system`, `hass`, `async_cached`,
+  `http_json`, `session`, and `http_timeout`.
 
-2. Describe it with `AppDef` and register it in
-   `custom_components/splitflap_os/apps/__init__.py`.
-3. If it has settings, add `SettingField`s and optionally add them to a group in
-   `settings.py`.
+```python
+async def fetch(ctx, now):
+    return [Page(ctx.lines("HELLO", "WORLD", ""), delay=5)]
+```
 
-Providers are called once per display cycle. Slow network calls should use
-`await engine.async_cached(key, ttl, factory)`.
+Reload the integration to pick up the new directory. `visible_when` on a field
+shows or hides it based on another field's value. Providers are called once per
+display cycle; slow network calls should use `await ctx.async_cached(key, ttl, factory)`.
 
 ## Project layout
 
 ```
 custom_components/splitflap_os/
 ├── __init__.py          setup, unload, cleanup
-├── apps/                app providers and registry
+├── apps/                local app plugins (manifest.json + app.py) and registry
 ├── config_flow.py       single-instance setup and options
 ├── const.py             domain constants
 ├── coordinator.py       MQTT state, normalization, publishing
@@ -370,7 +378,7 @@ need a full Home Assistant install:
 
 ```bash
 python3 -m py_compile custom_components/splitflap_os/*.py \
-  custom_components/splitflap_os/apps/*.py
+  custom_components/splitflap_os/apps/*/app.py
 for f in $(find custom_components/splitflap_os/frontend -name '*.js'); do node --check "$f"; done
 python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from ..models import Page
+from ...models import Page
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,9 +23,9 @@ def _parse_time(value: Any) -> datetime | None:
     return parsed
 
 
-async def _predictions(engine) -> list[dict[str, Any]]:
-    stop = str(engine.get_setting("metro_stop", "")).strip()
-    route = str(engine.get_setting("metro_route", "")).strip()
+async def _predictions(ctx) -> list[dict[str, Any]]:
+    stop = str(ctx.get_setting("metro_stop", "")).strip()
+    route = str(ctx.get_setting("metro_route", "")).strip()
     if not stop:
         return []
 
@@ -36,32 +36,32 @@ async def _predictions(engine) -> list[dict[str, Any]]:
     }
     if route:
         params["filter[route]"] = route
-    api_key = str(engine.get_setting("mbta_api_key", "")).strip()
+    api_key = str(ctx.get_setting("mbta_api_key", "")).strip()
     if api_key:
         params["api_key"] = api_key
 
-    data = await engine.http_json(
+    data = await ctx.http_json(
         "https://api-v3.mbta.com/predictions", params=params
     )
     return (data or {}).get("data", [])  # type: ignore[union-attr]
 
 
-async def metro(engine, now: datetime) -> list[Page]:
-    stop = str(engine.get_setting("metro_stop", "")).strip()
-    route = str(engine.get_setting("metro_route", "")).strip() or "TRANSIT"
+async def fetch(ctx, now: datetime) -> list[Page]:
+    stop = str(ctx.get_setting("metro_stop", "")).strip()
+    route = str(ctx.get_setting("metro_route", "")).strip() or "TRANSIT"
     if not stop:
-        return [Page(engine.lines(route.upper(), "SET STOP", "IN SETTINGS"))]
+        return [Page(ctx.lines(route.upper(), "SET STOP", "IN SETTINGS"))]
 
     try:
-        predictions = await engine.async_cached(
-            "metro", 30, lambda: _predictions(engine)
+        predictions = await ctx.async_cached(
+            "metro", 30, lambda: _predictions(ctx)
         )
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Metro fetch failed: %s", err)
-        return [Page(engine.lines(route.upper(), "DATA ERROR", "CHECK NETWORK"))]
+        return [Page(ctx.lines(route.upper(), "DATA ERROR", "CHECK NETWORK"))]
 
     if not predictions:
-        return [Page(engine.lines(route.upper(), "NO", "PREDICTIONS"))]
+        return [Page(ctx.lines(route.upper(), "NO", "PREDICTIONS"))]
 
     pages: list[Page] = []
     for prediction in predictions:
@@ -73,12 +73,12 @@ async def metro(engine, now: datetime) -> list[Page]:
         direction = "OUT" if attrs.get("direction_id") == 1 else "IN"
         pages.append(
             Page(
-                engine.lines(
+                ctx.lines(
                     f"{route.upper()} {direction}",
                     f"{minutes} MIN",
-                    when.astimezone(engine.tz).strftime("%I:%M %p").lstrip("0"),
+                    when.astimezone(ctx.tz).strftime("%I:%M %p").lstrip("0"),
                 ),
                 delay=5.0,
             )
         )
-    return pages or [Page(engine.lines(route.upper(), "NO", "PREDICTIONS"))]
+    return pages or [Page(ctx.lines(route.upper(), "NO", "PREDICTIONS"))]

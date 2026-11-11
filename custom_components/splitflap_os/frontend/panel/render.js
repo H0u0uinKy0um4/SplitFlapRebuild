@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.8";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.8";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.8";
-import { PANEL_STYLES } from "../styles.js?v=1.0.8";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.1.0";
+import { APPS_I18N } from "../i18n/index.js?v=1.1.0";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.1.0";
+import { PANEL_STYLES } from "../styles.js?v=1.1.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -1330,12 +1330,40 @@ export const PanelMixin = (Base) => class extends Base {
     }
 
     const help = this._settingHelp(field.key, field.help || "");
+    const visible =
+      field.visible_when && field.visible_when.key
+        ? ` data-visible-key="${escapeAttr(field.visible_when.key)}" data-visible-value="${escapeAttr(
+            JSON.stringify(field.visible_when.equals == null ? "" : field.visible_when.equals)
+          )}"`
+        : "";
     return `
-      <label class="field">
+      <label class="field"${visible}>
         <span>${escapeHtml(this._settingLabel(field.key, field.label || field.key))}</span>
         ${input}
         ${help ? `<small>${escapeHtml(help)}</small>` : ""}
       </label>`;
+  }
+
+  _applyFieldVisibility(root) {
+    if (!root) return;
+    const inputs = new Map();
+    root.querySelectorAll("[data-setting]").forEach((input) => {
+      inputs.set(input.dataset.setting, input);
+    });
+    root.querySelectorAll("[data-visible-key]").forEach((label) => {
+      const source = inputs.get(label.dataset.visibleKey);
+      let expected = "";
+      try {
+        expected = JSON.parse(label.dataset.visibleValue);
+      } catch (err) {
+        expected = label.dataset.visibleValue;
+      }
+      let actual = source ? source.value : "";
+      if (source && source.type === "number" && actual !== "") {
+        actual = Number(actual);
+      }
+      label.classList.toggle("hidden", String(actual) !== String(expected));
+    });
   }
 
   _settingsGroupHtml(group, settings, showHeading = true, paneKey = null) {
@@ -1422,6 +1450,7 @@ export const PanelMixin = (Base) => class extends Base {
         const next = value == null ? "" : String(value);
         if (input.value !== next) input.value = next;
       });
+      this._applyFieldVisibility(node);
     }
   }
 

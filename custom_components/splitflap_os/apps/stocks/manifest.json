@@ -1,0 +1,20 @@
+{
+  "key": "stocks",
+  "name": "Stocks",
+  "icon": "📈",
+  "description": "Live prices",
+  "category": "data",
+  "default_delay": 4.0,
+  "min_rows": 3,
+  "min_cols": 7,
+  "fields": [
+    {
+      "key": "stocks_list",
+      "label": "Stock symbols",
+      "type": "text",
+      "placeholder": "MSFT,GOOG,NVDA",
+      "default": "MSFT,GOOG,NVDA",
+      "help": "Comma-separated Yahoo Finance symbols."
+    }
+  ]
+}

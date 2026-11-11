@@ -58,6 +58,58 @@ send_text:
       selector:
         boolean:
 
+notify:
+  name: Notify
+  description: >-
+    Queue an interrupting message. It is shown between pages (or during a long
+    page delay) and the app or playlist then resumes where it stopped. When
+    the display is idle the previous board is restored afterwards.
+  fields:
+    text:
+      name: Text
+      description: Message to display. It is wrapped to the board like send_text.
+      required: true
+      example: DOOR OPEN
+      selector:
+        text:
+          multiline: true
+    seconds:
+      name: Display time
+      description: Seconds the message stays on the display.
+      default: 10
+      selector:
+        number:
+          min: 0.5
+          max: 300
+          step: 0.5
+          unit_of_measurement: s
+          mode: box
+    style:
+      name: Send order
+      description: Animation order used when the message is sent to the modules.
+      default: ltr
+      selector:
+        select:
+          options:
+            - ltr
+            - rtl
+            - columns
+            - center_out
+            - outside_in
+            - diagonal
+            - random
+            - rain
+            - spiral
+    priority:
+      name: Priority
+      description: Higher priority messages are shown before lower priority ones. Equal priorities keep arrival order.
+      default: 0
+      selector:
+        number:
+          min: -100
+          max: 100
+          mode: box
+
 play_playlist:
   name: Play playlist
   description: Play a list of pages, optionally looping. All pages are checked against the modules' flap lists before playback.

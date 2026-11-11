@@ -1,19 +1,15 @@
-"""Settings metadata and defaults shared by the integration and the panel."""
+"""Global display settings metadata.
+
+App settings live in each app's ``manifest.json``; the registry in
+``apps/loader.py`` namespaces them and builds the app settings groups.  This
+module only owns the settings that belong to the display itself, and must stay
+free of Home Assistant imports.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
-from .apps import (
-    ANIMATION_FIELDS,
-    COUNTDOWN_FIELDS,
-    CRYPTO_FIELDS,
-    METRO_FIELDS,
-    SPORTS_FIELDS,
-    STOCK_FIELDS,
-    WEATHER_FIELDS,
-    WORLD_CLOCK_FIELDS,
-)
 from .apps.common import SettingField
 
 DISPLAY_FIELDS = (
@@ -88,8 +84,18 @@ DISPLAY_FIELDS = (
     ),
 )
 
-SETTINGS_GROUPS: list[dict[str, Any]] = [
-    {
+# Global keys that are not edited from a settings group.
+EXTRA_GLOBAL_DEFAULTS: dict[str, Any] = {
+    # Fallback drum for modules that have not reported their own.  Written
+    # from the Drums settings sub-tab, not a normal text field.
+    "default_drum": "",
+}
+
+
+def display_group() -> dict[str, Any]:
+    """Return the Display settings group as rendered by the panel."""
+
+    return {
         "key": "display",
         "name": "Display",
         "icon": "🖥️",
@@ -97,98 +103,12 @@ SETTINGS_GROUPS: list[dict[str, Any]] = [
         # settings sub-tab.
         "category": "display",
         "fields": [field.as_dict() for field in DISPLAY_FIELDS],
-    },
-    {
-        "key": "weather",
-        "name": "Weather",
-        "icon": "🌤️",
-        "category": "apps",
-        "fields": [field.as_dict() for field in WEATHER_FIELDS],
-    },
-    {
-        "key": "markets",
-        "name": "Markets",
-        "icon": "📈",
-        "category": "apps",
-        "fields": [field.as_dict() for field in (*STOCK_FIELDS, *CRYPTO_FIELDS)],
-    },
-    {
-        "key": "sports",
-        "name": "Sports",
-        "icon": "🏒",
-        "category": "apps",
-        "fields": [field.as_dict() for field in SPORTS_FIELDS],
-    },
-    {
-        "key": "transit",
-        "name": "Transit",
-        "icon": "🚇",
-        "category": "apps",
-        "fields": [field.as_dict() for field in METRO_FIELDS],
-    },
-    {
-        "key": "time",
-        "name": "Time",
-        "icon": "⏳",
-        "category": "apps",
-        "fields": [
-            field.as_dict()
-            for field in (*COUNTDOWN_FIELDS, *WORLD_CLOCK_FIELDS)
-        ],
-    },
-    {
-        "key": "animations",
-        "name": "Animations",
-        "icon": "🎨",
-        "category": "apps",
-        "fields": [field.as_dict() for field in ANIMATION_FIELDS],
-    },
-]
+    }
 
 
-DEFAULT_SETTINGS: dict[str, Any] = {
-    "row_counts": "",
-    "default_drum": "",
-    "rows": 0,
-    "cols": 0,
-    "ui_scale": 100,
-    "timezone": "",
-    "units": "auto",
-    "page_delay": 5,
-    "weather_entity": "",
-    "zip_code": "",
-    "weather_api_key": "",
-    "stocks_list": "MSFT,GOOG,NVDA",
-    "crypto_list": "bitcoin,ethereum,solana",
-    "sports_teams": "BOS,DAL",
-    "metro_stop": "place-bbsta",
-    "metro_route": "Orange",
-    "mbta_api_key": "",
-    "countdown_event": "NEW YEAR",
-    "countdown_target": "2027-01-01T00:00:00",
-    "world_clock_zones": "US/Eastern,US/Pacific,Europe/London",
-    "clock_format": "12h",
-    "anim_effect": "rainbow",
-    "anim_style": "ltr",
-    "anim_speed": "0.4",
-    "anim_text": "SPLIT  FLAP  DISPLAY",
-}
+def global_defaults() -> dict[str, Any]:
+    """Return defaults for settings that do not belong to an app."""
 
-# Fill in any default declared on a field but missing above.
-for _group in SETTINGS_GROUPS:
-    for _field in _group["fields"]:
-        if _field.get("default") not in (None, ""):
-            DEFAULT_SETTINGS.setdefault(_field["key"], _field["default"])
-
-
-SETTINGS_KEYS = frozenset(DEFAULT_SETTINGS)
-
-
-def settings_for_ui(settings: dict[str, Any]) -> dict[str, Any]:
-    """Return a merged, JSON-safe settings dictionary for the panel."""
-
-    merged = dict(DEFAULT_SETTINGS)
-    merged.update(
-        {key: value for key, value in settings.items() if key in SETTINGS_KEYS}
-    )
-    return merged
+    defaults = {field.key: field.default for field in DISPLAY_FIELDS}
+    defaults.update(EXTRA_GLOBAL_DEFAULTS)
+    return defaults

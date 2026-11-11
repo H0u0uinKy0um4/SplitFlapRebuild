@@ -7,7 +7,6 @@ from typing import Final
 from homeassistant.const import Platform
 
 from .layout import COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, FLAP_COUNT, PHYSICAL_COLOR_CODES
-from .settings import DEFAULT_SETTINGS, SETTINGS_GROUPS, SETTINGS_KEYS
 
 DOMAIN: Final = "splitflap_os"
 NAME: Final = "Split-Flap OS"
@@ -19,7 +18,7 @@ NAME: Final = "Split-Flap OS"
 # so the coordinator can compare it with the master's payload without parsing
 # the string.
 MQTT_COMPAT: Final = 1
-VERSION: Final = "1.0.8"
+VERSION: Final = "1.1.0"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
@@ -91,7 +90,6 @@ __all__ = [
     "COORDINATOR_STORAGE_VERSION",
     "DEFAULT_DEVICE_NAME",
     "DEFAULT_DRUM",
-    "DEFAULT_SETTINGS",
     "DEFAULT_TOPIC_PREFIX",
     "DOMAIN",
     "ENGINE_STORAGE_VERSION",
@@ -106,8 +104,6 @@ __all__ = [
     "PANEL_TITLE",
     "PANEL_URL_PATH",
     "PLATFORMS",
-    "SETTINGS_GROUPS",
-    "SETTINGS_KEYS",
     "STORAGE_SAVE_DELAY",
     "STORAGE_VERSION",
     "VERSION",

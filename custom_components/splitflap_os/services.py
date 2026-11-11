@@ -17,6 +17,7 @@ from .runtime import get_runtime
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_SEND_TEXT = "send_text"
+SERVICE_NOTIFY = "notify"
 SERVICE_PLAY_PLAYLIST = "play_playlist"
 SERVICE_START_APP = "start_app"
 SERVICE_STOP_APP = "stop_app"
@@ -33,6 +34,7 @@ SERVICE_SET_SETTINGS = "set_settings"
 
 SERVICES = (
     SERVICE_SEND_TEXT,
+    SERVICE_NOTIFY,
     SERVICE_PLAY_PLAYLIST,
     SERVICE_START_APP,
     SERVICE_STOP_APP,
@@ -82,6 +84,19 @@ async def _handle_send_text(call: ServiceCall) -> None:
         speed=call.data.get("speed", 15),
         stop=call.data.get("stop", True),
         raw=call.data.get("raw", False),
+    )
+
+
+async def _handle_notify(call: ServiceCall) -> None:
+    runtime = _get_runtime(call.hass)
+    if not runtime:
+        _LOGGER.warning("Split-Flap OS is not configured")
+        return
+    await runtime["engine"].async_notify(
+        call.data["text"],
+        seconds=call.data.get("seconds", 10),
+        style=call.data.get("style", "ltr"),
+        priority=call.data.get("priority", 0),
     )
 
 
@@ -198,6 +213,17 @@ SEND_TEXT_SCHEMA = vol.Schema(
     }
 )
 
+NOTIFY_SCHEMA = vol.Schema(
+    {
+        vol.Required("text"): vol.All(str, vol.Length(min=1, max=4096)),
+        vol.Optional("seconds", default=10): vol.All(
+            vol.Coerce(float), vol.Range(min=0.5, max=300)
+        ),
+        vol.Optional("style", default="ltr"): str,
+        vol.Optional("priority", default=0): vol.Coerce(int),
+    }
+)
+
 PLAY_PLAYLIST_SCHEMA = vol.Schema(
     {
         vol.Required("pages"): vol.Any([vol.Any(str, dict)], str),
@@ -228,6 +254,9 @@ async def async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, SERVICE_SEND_TEXT, _handle_send_text, schema=SEND_TEXT_SCHEMA
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_NOTIFY, _handle_notify, schema=NOTIFY_SCHEMA
     )
     hass.services.async_register(
         DOMAIN, SERVICE_PLAY_PLAYLIST, _handle_play_playlist, schema=PLAY_PLAYLIST_SCHEMA

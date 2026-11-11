@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.0.8";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.0.8";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.0.8";
+import { DOMAIN, STYLES } from "../constants.js?v=1.1.0";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.1.0";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.1.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -287,20 +287,32 @@ export const PanelMixin = (Base) => class extends Base {
     ).join("");
   }
 
+  // App settings are namespaced as "<app>.<local key>".  Translation tables
+  // stay keyed by the local name, so look up the full key first and then the
+  // part after the dot.
+  _settingKey(key) {
+    const value = String(key || "");
+    const dot = value.indexOf(".");
+    return dot >= 0 ? value.slice(dot + 1) : value;
+  }
+
   _optionLabel(fieldKey, option) {
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
-    const group = dict.options && dict.options[fieldKey];
-    return (group && group[option]) || String(option);
+    const table = (dict.options && dict.options[fieldKey]) ||
+      (dict.options && dict.options[this._settingKey(fieldKey)]);
+    return (table && table[option]) || String(option);
   }
 
   _settingLabel(key, fallback) {
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
-    return (dict.labels && dict.labels[key]) || fallback || key;
+    const labels = dict.labels || {};
+    return labels[key] || labels[this._settingKey(key)] || fallback || key;
   }
 
   _settingHelp(key, fallback) {
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
-    return (dict.helps && dict.helps[key]) || fallback || "";
+    const helps = dict.helps || {};
+    return helps[key] || helps[this._settingKey(key)] || fallback || "";
   }
 
   _settingGroup(key, fallback) {
@@ -310,7 +322,13 @@ export const PanelMixin = (Base) => class extends Base {
 
   _settingPlaceholder(key, fallback) {
     const dict = SETTINGS_I18N[this._lang()] || SETTINGS_I18N.en;
-    return (dict.placeholders && dict.placeholders[key]) || fallback || "";
+    const placeholders = dict.placeholders || {};
+    return (
+      placeholders[key] ||
+      placeholders[this._settingKey(key)] ||
+      fallback ||
+      ""
+    );
   }
 
   _board() {

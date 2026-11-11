@@ -149,13 +149,14 @@ voláte přes `action:` (dříve `service:`).
 | Služba | K čemu je |
 | --- | --- |
 | `send_text` | Pošle text na tabuli. |
+| `notify` | Zařadí přerušující zprávu s dobou zobrazení, stylem a prioritou; aktivní aplikace nebo playlist pak pokračuje, kde skončil. |
 | `play_playlist` | Přehraje seznam stránek, volitelně ve smyčce. |
 | `start_app` / `stop_app` | Spustí nebo zastaví aplikaci. |
 | `sync` / `scan` / `update` | Práce s hardwarem a stavem masteru. |
 | `calibrate` | Kalibrace jednoho modulu. |
 | `home_all` / `record_all` | Hromadné najetí domů / záznam pozice. |
 | `save_playlist` / `delete_playlist` / `run_saved_playlist` | Správa playlistů. |
-| `set_settings` | Změna a uložení nastavení. |
+| `set_settings` | Sloučí a uloží nastavení (klíče s prefixem aplikace, např. `clock.clock_format`). |
 
 V tabulce jsou krátké názvy; v YAML je vždy voláte jako `splitflap_os.<název>`,
 například `splitflap_os.send_text`.
@@ -458,7 +459,9 @@ Minimální velikosti aplikací:
 ## 10. Nejdůležitější nastavení
 
 Nastavení se ukládají k integraci a najdete je v panelu na záložce **Settings**.
-Přes službu `set_settings` je můžete měnit i z automatizace.
+Nastavení aplikací mají prefix `<aplikace>.<klíč>` (například `clock.clock_format`
+nebo `weather.weather_entity`); staré ploché klíče se migrují automaticky při
+prvním načtení. Přes službu `set_settings` je můžete měnit i z automatizace.
 
 | Klíč | Význam |
 | --- | --- |
@@ -496,12 +499,12 @@ která se na něj vztahují:
 ```
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
 master   <bus>.<mqtt>.<vydání>        1.1.0.0    bus 1, mqtt 1, vydání 0.0
-HA       <mqtt>.<vydání>              1.0.8      mqtt 1, vydání 0.8
+HA       <mqtt>.<vydání>              1.1.0      mqtt 1, vydání 1.0
 ```
 
 | Kde | Verze | Kompatibilita | Kde ji uvidíte |
 | --- | --- | --- | --- |
-| Integrace Home Assistant | `1.0.8` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
+| Integrace Home Assistant | `1.1.0` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, informace o připojení |
 | Firmware modulu | `1.0.1` | bus `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
 

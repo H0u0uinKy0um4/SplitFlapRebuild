@@ -1,0 +1,34 @@
+{
+  "key": "weather",
+  "name": "Weather",
+  "icon": "🌤️",
+  "description": "Current conditions",
+  "category": "data",
+  "default_delay": 5.0,
+  "min_rows": 3,
+  "min_cols": 10,
+  "fields": [
+    {
+      "key": "weather_entity",
+      "label": "Weather entity",
+      "type": "entity",
+      "domain": "weather",
+      "placeholder": "weather.home",
+      "help": "Preferred source. Uses Home Assistant's own weather data."
+    },
+    {
+      "key": "zip_code",
+      "label": "ZIP code (OpenWeather fallback)",
+      "type": "text",
+      "placeholder": "02118",
+      "visible_when": {"key": "weather_entity", "equals": ""}
+    },
+    {
+      "key": "weather_api_key",
+      "label": "OpenWeather API key (fallback)",
+      "type": "password",
+      "placeholder": "optional",
+      "visible_when": {"key": "weather_entity", "equals": ""}
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "key": "iss",
+  "name": "ISS",
+  "icon": "🛸",
+  "description": "Space station position",
+  "category": "data",
+  "default_delay": 5.0,
+  "min_rows": 3,
+  "min_cols": 10
+}

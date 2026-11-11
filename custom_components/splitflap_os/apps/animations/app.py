@@ -5,9 +5,9 @@ from __future__ import annotations
 import random
 from datetime import datetime
 
-from ..layout import COLOR_CODES
-from ..models import Page
-from .common import as_float
+from ...layout import COLOR_CODES
+from ...models import Page
+from ..common import as_float
 
 
 def _rainbow(rows: int, cols: int) -> list[str]:
@@ -64,11 +64,11 @@ def _twinkle(rows: int, cols: int, count: int = 12) -> list[str]:
     ]
 
 
-async def animations(engine, now: datetime) -> list[Page]:
-    rows, cols = engine.board
-    effect = str(engine.get_setting("anim_effect", "rainbow")).lower()
-    style = str(engine.get_setting("anim_style", "ltr"))
-    speed = max(0.1, as_float(engine.get_setting("anim_speed", "0.4"), 0.4))
+async def fetch(ctx, now: datetime) -> list[Page]:
+    rows, cols = ctx.board
+    effect = str(ctx.get_setting("anim_effect", "rainbow")).lower()
+    style = str(ctx.get_setting("anim_style", "ltr"))
+    speed = max(0.1, as_float(ctx.get_setting("anim_speed", "0.4"), 0.4))
 
     if effect in {"sweep", "wave"}:
         frames = _sweep(rows, cols)

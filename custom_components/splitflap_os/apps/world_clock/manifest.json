@@ -1,0 +1,27 @@
+{
+  "key": "world_clock",
+  "name": "World Clock",
+  "icon": "🌍",
+  "description": "Multiple time zones",
+  "category": "time",
+  "default_delay": 1.0,
+  "min_rows": 1,
+  "min_cols": 10,
+  "fields": [
+    {
+      "key": "world_clock_zones",
+      "label": "Time zones",
+      "type": "text",
+      "placeholder": "US/Eastern,US/Pacific,Europe/London",
+      "default": "US/Eastern,US/Pacific,Europe/London",
+      "help": "Comma-separated IANA zone names."
+    },
+    {
+      "key": "clock_format",
+      "label": "Clock format",
+      "type": "select",
+      "options": ["12h", "24h"],
+      "default": "12h"
+    }
+  ]
+}

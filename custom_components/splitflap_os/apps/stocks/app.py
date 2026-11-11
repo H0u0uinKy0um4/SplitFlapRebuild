@@ -1,4 +1,4 @@
-"""Stocks and crypto apps."""
+"""Stocks app."""
 
 from __future__ import annotations
 
@@ -6,18 +6,18 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from ..models import Page
-from .common import compact_number, signed_percent, split_csv
+from ...models import Page
+from ..common import compact_number, signed_percent, split_csv
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def _yahoo_quote(engine, symbol: str) -> dict[str, Any]:
+async def _yahoo_quote(ctx, symbol: str) -> dict[str, Any]:
     url = (
         "https://query1.finance.yahoo.com/v8/finance/chart/"
         f"{symbol}?range=1d&interval=5m"
     )
-    data = await engine.http_json(url, headers={"User-Agent": "Mozilla/5.0"})
+    data = await ctx.http_json(url, headers={"User-Agent": "Mozilla/5.0"})
     result = ((data or {}).get("chart") or {}).get("result") or []
     if not result:
         raise ValueError(f"No quote for {symbol}")
@@ -42,13 +42,13 @@ async def _yahoo_quote(engine, symbol: str) -> dict[str, Any]:
     }
 
 
-async def _stooq_quote(engine, symbol: str) -> dict[str, Any]:
+async def _stooq_quote(ctx, symbol: str) -> dict[str, Any]:
     ticker = symbol.lower()
     if "." not in ticker:
         ticker = f"{ticker}.us"
     url = f"https://stooq.com/q/l/?s={ticker}&f=sd2t2ohlcv&h&e=csv"
-    session = engine.session
-    async with session.get(url, timeout=engine.http_timeout) as response:
+    session = ctx.session
+    async with session.get(url, timeout=ctx.http_timeout) as response:
         response.raise_for_status()
         text = await response.text()
     lines = [line for line in text.splitlines() if line.strip()]
@@ -68,39 +68,39 @@ async def _stooq_quote(engine, symbol: str) -> dict[str, Any]:
     }
 
 
-async def _quote(engine, symbol: str) -> dict[str, Any]:
+async def _quote(ctx, symbol: str) -> dict[str, Any]:
     try:
-        return await _yahoo_quote(engine, symbol)
+        return await _yahoo_quote(ctx, symbol)
     except Exception as err:  # noqa: BLE001 - fall back to Stooq
         _LOGGER.debug("Yahoo quote failed for %s: %s", symbol, err)
-        return await _stooq_quote(engine, symbol)
+        return await _stooq_quote(ctx, symbol)
 
 
-async def stocks(engine, now: datetime) -> list[Page]:
-    symbols = split_csv(engine.get_setting("stocks_list"))[:8]
+async def fetch(ctx, now: datetime) -> list[Page]:
+    symbols = split_csv(ctx.get_setting("stocks_list"))[:8]
     if not symbols:
-        return [Page(engine.lines("STOCKS", "SET SYMBOLS", "IN SETTINGS"))]
+        return [Page(ctx.lines("STOCKS", "SET SYMBOLS", "IN SETTINGS"))]
 
-    async def fetch() -> list[dict[str, Any]]:
+    async def fetch_quotes() -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         for symbol in symbols:
             try:
-                results.append(await _quote(engine, symbol))
+                results.append(await _quote(ctx, symbol))
             except Exception as err:  # noqa: BLE001 - keep the other symbols
                 _LOGGER.warning("Stock quote failed for %s: %s", symbol, err)
                 results.append({"symbol": symbol.upper(), "error": True})
         return results
 
     try:
-        quotes = await engine.async_cached("stocks", 60, fetch)
+        quotes = await ctx.async_cached("stocks", 60, fetch_quotes)
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Stock fetch failed: %s", err)
-        return [Page(engine.lines("STOCKS", "DATA ERROR", "CHECK NETWORK"))]
+        return [Page(ctx.lines("STOCKS", "DATA ERROR", "CHECK NETWORK"))]
 
     pages: list[Page] = []
     for quote in quotes:
         if quote.get("error"):
-            pages.append(Page(engine.lines(quote["symbol"], "NO DATA", ""), delay=4.0))
+            pages.append(Page(ctx.lines(quote["symbol"], "NO DATA", ""), delay=4.0))
             continue
         price = compact_number(float(quote["price"]), currency=quote.get("currency", ""))
         change_text = ""
@@ -110,7 +110,7 @@ async def stocks(engine, now: datetime) -> list[Page]:
             change_text = signed_percent(change)
         pages.append(
             Page(
-                engine.lines(
+                ctx.lines(
                     quote.get("symbol", "?"),
                     price,
                     change_text,
@@ -118,62 +118,4 @@ async def stocks(engine, now: datetime) -> list[Page]:
                 delay=4.0,
             )
         )
-    return pages or [Page(engine.lines("STOCKS", "NO DATA", ""))]
-
-
-async def _crypto_quotes(engine) -> list[dict[str, Any]]:
-    coins = split_csv(engine.get_setting("crypto_list"))[:8]
-    if not coins:
-        return []
-    data = await engine.http_json(
-        "https://api.coingecko.com/api/v3/simple/price",
-        params={
-            "ids": ",".join(coins),
-            "vs_currencies": "usd",
-            "include_24hr_change": "true",
-        },
-        headers={"User-Agent": "Split-Flap-OS/1.0"},
-    )
-    results: list[dict[str, Any]] = []
-    for coin in coins:
-        item = (data or {}).get(coin) or {}
-        if not item:
-            results.append({"id": coin, "error": True})
-            continue
-        results.append(
-            {
-                "id": coin,
-                "name": coin.replace("-", " ").upper(),
-                "price": item.get("usd"),
-                "change": item.get("usd_24h_change"),
-            }
-        )
-    return results
-
-
-async def crypto(engine, now: datetime) -> list[Page]:
-    try:
-        quotes = await engine.async_cached("crypto", 60, lambda: _crypto_quotes(engine))
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Crypto fetch failed: %s", err)
-        return [Page(engine.lines("CRYPTO", "DATA ERROR", "CHECK NETWORK"))]
-
-    if not quotes:
-        return [Page(engine.lines("CRYPTO", "SET COINS", "IN SETTINGS"))]
-
-    pages: list[Page] = []
-    for quote in quotes:
-        if quote.get("error"):
-            pages.append(Page(engine.lines(str(quote["id"]).upper(), "NO DATA", ""), delay=4.0))
-            continue
-        price = quote.get("price")
-        price_text = compact_number(float(price), currency="USD") if price is not None else "--"
-        change = quote.get("change")
-        change_text = signed_percent(float(change)) if change is not None else ""
-        pages.append(
-            Page(
-                engine.lines(str(quote.get("name", "?")).upper(), price_text, change_text),
-                delay=4.0,
-            )
-        )
-    return pages
+    return pages or [Page(ctx.lines("STOCKS", "NO DATA", ""))]
