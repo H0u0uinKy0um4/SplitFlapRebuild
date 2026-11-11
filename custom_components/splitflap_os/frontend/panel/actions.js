@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.1";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.1";
+import { formatMessage } from "../utils.js?v=1.2.2";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -874,9 +874,10 @@ export const PanelMixin = (Base) => class extends Base {
     this._atState.selected.clear();
     const drum = DEFAULT_DRUM.split("");
     const ch = drum[idx] || " ";
+    const board = this._board();
     const coordinator = this._coordinator();
     const modules = coordinator.modules || [];
-    const count = modules.length || 45;
+    const count = (board.rows * board.cols) || modules.length || 45;
 
     this._renderAutoTune();
 
@@ -887,6 +888,7 @@ export const PanelMixin = (Base) => class extends Base {
         style: "immediate",
         speed: 0,
         stop: true,
+        raw: true,
       });
     } catch (e) {
       console.error(e);
@@ -939,7 +941,8 @@ export const PanelMixin = (Base) => class extends Base {
     // Re-send to verify
     const drum = DEFAULT_DRUM.split("");
     const ch = drum[charIdx] || " ";
-    const count = (this._coordinator().modules || []).length || 45;
+    const board = this._board();
+    const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
     try {
       await this._send("send_text", {
         text: ch.repeat(count),
@@ -947,6 +950,7 @@ export const PanelMixin = (Base) => class extends Base {
         style: "immediate",
         speed: 0,
         stop: true,
+        raw: true,
       });
     } catch (e) {
       console.error(e);
@@ -989,7 +993,8 @@ export const PanelMixin = (Base) => class extends Base {
     // Re-send to verify
     const drum = DEFAULT_DRUM.split("");
     const ch = drum[charIdx] || " ";
-    const count = (this._coordinator().modules || []).length || 45;
+    const board = this._board();
+    const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
     try {
       await this._send("send_text", {
         text: ch.repeat(count),
@@ -997,6 +1002,7 @@ export const PanelMixin = (Base) => class extends Base {
         style: "immediate",
         speed: 0,
         stop: true,
+        raw: true,
       });
     } catch (e) {
       console.error(e);

@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.1";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.1";
-import { PANEL_STYLES } from "../styles.js?v=1.2.1";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.2";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.2";
+import { PANEL_STYLES } from "../styles.js?v=1.2.2";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -1442,9 +1442,11 @@ export const PanelMixin = (Base) => class extends Base {
     }
 
     const { moduleId, index, char, expected, tuned, active } = this._tuneFlapState;
+    const isColor = COLOR_CODES.includes(char);
+    const colorSuffix = isColor ? ` (${this._t("color_" + char)})` : "";
     title.textContent = formatMessage(this._t("tune_flap_title"), {
       index,
-      char: char === " " ? "␣" : char,
+      char: (char === " " ? "␣" : char) + colorSuffix,
       id: moduleId,
     });
 
@@ -1551,11 +1553,15 @@ export const PanelMixin = (Base) => class extends Base {
     const prevChar = curIdx > 0 ? (drum[curIdx - 1] === " " ? "␣" : drum[curIdx - 1]) : "?";
     const nextChar = curIdx < 63 ? (drum[curIdx + 1] === " " ? "␣" : drum[curIdx + 1]) : "?";
     const curCharDisp = curChar === " " ? "␣" : curChar;
+    const isColor = COLOR_CODES.includes(curChar);
+    const colorClass = isColor ? ` color-${curChar}` : "";
+    const colorSuffix = isColor ? ` (${this._t("color_" + curChar)})` : "";
+    const charTitle = curCharDisp + colorSuffix;
 
     if (meta) {
       meta.textContent = formatMessage(this._t("at_char_title"), {
         idx: curIdx,
-        char: curCharDisp,
+        char: charTitle,
       });
     }
 
@@ -1634,9 +1640,9 @@ export const PanelMixin = (Base) => class extends Base {
       <div class="at-stage">
         <div class="row between" style="align-items:center">
           <div class="row" style="align-items:center;gap:12px">
-            <div class="at-char-box">${curCharDisp}</div>
+            <div class="at-char-box${colorClass}">${curCharDisp}</div>
             <div>
-              <div style="font-weight:700;font-size:1.1rem">${formatMessage(this._t("at_char_title"), { idx: curIdx, char: curCharDisp })}</div>
+              <div style="font-weight:700;font-size:1.1rem">${formatMessage(this._t("at_char_title"), { idx: curIdx, char: charTitle })}</div>
               <div class="muted" style="font-size:.82rem">${at.phase.toUpperCase()}</div>
             </div>
           </div>
@@ -1719,6 +1725,10 @@ export const PanelMixin = (Base) => class extends Base {
     const curIdx = state.flapIndex;
     const curChar = drum[curIdx] || " ";
     const curCharDisp = curChar === " " ? "␣" : curChar;
+    const isColor = COLOR_CODES.includes(curChar);
+    const colorClass = isColor ? ` color-${curChar}` : "";
+    const colorSuffix = isColor ? ` (${this._t("color_" + curChar)})` : "";
+    const charTitle = curCharDisp + colorSuffix;
     const cal = Number(module.total_steps) || 4096;
     const expected = Math.floor((curIdx * cal) / 64);
     const activeStep = state.currentStep != null ? state.currentStep : expected;
@@ -1727,10 +1737,10 @@ export const PanelMixin = (Base) => class extends Base {
       <div class="at-stage">
         <div class="row between" style="align-items:center">
           <div class="row" style="align-items:center;gap:14px">
-            <div class="at-char-box">${curCharDisp}</div>
+            <div class="at-char-box${colorClass}">${curCharDisp}</div>
             <div>
               <div style="font-weight:700;font-size:1.1rem">
-                ${formatMessage(this._t("teach_phase_label"), { current: curIdx + 1, total: 64 })} — "${curCharDisp}"
+                ${formatMessage(this._t("teach_phase_label"), { current: curIdx + 1, total: 64 })} — "${charTitle}"
               </div>
               <div class="muted" style="font-size:.82rem">
                 ${formatMessage(this._t("teach_expected_step"), { step: expected })} • 

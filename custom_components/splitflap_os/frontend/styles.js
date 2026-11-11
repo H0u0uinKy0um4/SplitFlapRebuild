@@ -443,6 +443,13 @@ input:focus, select:focus, textarea:focus {
   border-radius: 6px; font-size: 32px; font-family: "Roboto Mono", monospace;
   font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
+.at-char-box.color-r { background: #b71c1c; color: #fff; }
+.at-char-box.color-o { background: #e65100; color: #fff; }
+.at-char-box.color-y { background: #f9a825; color: #1a1a1a; }
+.at-char-box.color-g { background: #2e7d32; color: #fff; }
+.at-char-box.color-b { background: #1565c0; color: #fff; }
+.at-char-box.color-p { background: #6a1b9a; color: #fff; }
+.at-char-box.color-w { background: #eceff1; color: #111; }
 .nudge-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
 .nudge-row button {
   padding: 8px 14px; font-family: "Roboto Mono", monospace;
