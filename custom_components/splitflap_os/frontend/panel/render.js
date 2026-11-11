@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.22";
-import { APPS_I18N } from "../i18n/index.js?v=0.1.22";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.22";
-import { PANEL_STYLES } from "../styles.js?v=0.1.22";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=0.1.23";
+import { APPS_I18N } from "../i18n/index.js?v=0.1.23";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=0.1.23";
+import { PANEL_STYLES } from "../styles.js?v=0.1.23";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -1364,7 +1364,10 @@ export const PanelMixin = (Base) => class extends Base {
     const state = String(ota.state || "idle");
     const active = ["collecting", "entering", "flashing", "verifying"].includes(state);
     const cancelBtn = this.shadowRoot.querySelector('[data-action="cancel-firmware"]');
-    if (cancelBtn) cancelBtn.disabled = !(active || this._otaBusy);
+    // Keep cancel clickable for any non-idle state (including failed /
+    // cancelled) so a stuck session can always be aborted, not just while
+    // an active phase is reported.
+    if (cancelBtn) cancelBtn.disabled = !(this._otaBusy || state !== "idle");
     const resetBtn = this.shadowRoot.querySelector('[data-action="reset-firmware"]');
     if (resetBtn) resetBtn.disabled = active || this._otaBusy;
 
