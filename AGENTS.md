@@ -58,6 +58,46 @@ and must not be treated as production code or deleted.
   where applicable. When adding new UI or messages, update both languages in the
   same change.
 
+## Versioning (two compatibility axes)
+
+The canonical procedure lives in the slave repo's `docs/VERSIONING.md`. Do not
+invent a new scheme; follow it.
+
+- `BUS_COMPAT` covers the slave <-> master side (RS485 app protocol + OTA entry
+  contract). It lives in the slave's `FW_BUS_COMPAT` and the master's
+  `MASTER_BUS_COMPAT`.
+- `MQTT_COMPAT` covers the master <-> Home Assistant side (MQTT status/command
+  JSON schema). It lives in the master's `MASTER_MQTT_COMPAT` and this repo's
+  `MQTT_COMPAT` in `const.py`.
+- Published strings are composed from the axes that apply:
+  - slave: `<bus>.<release>` (for example `1.0.1`)
+  - master: `<bus>.<mqtt>.<release>` (for example `1.1.0.0`)
+  - HA: `<mqtt>.<release>` (for example `1.0.1`)
+- The OTA bootloader protocol is a **third, separate** number:
+  `OTA_PROTOCOL_VERSION` (master) must equal `BOOTLOADER_VERSION` (slave
+  `bootloader/src/protocol.h`). Never fold it into either compat axis.
+
+Bump only what the change actually breaks:
+
+| Change | Bump |
+| --- | --- |
+| Bug fix, UI, new optional field, new command | release only |
+| RS485 command/reply shape, module-id rules, OTA entry contract | `FW_BUS_COMPAT` + `MASTER_BUS_COMPAT` |
+| MQTT JSON field/action removal or rename, panel snapshot shape | `MASTER_MQTT_COMPAT` + `MQTT_COMPAT` |
+| Bootloader framing, commands, CRC, boot policy | `OTA_PROTOCOL_VERSION` + `BOOTLOADER_VERSION` |
+
+For Home Assistant specifically:
+
+1. `VERSION` in `const.py` must always have its major number equal to
+   `MQTT_COMPAT`; `tests/test_versions.py` enforces this.
+2. Any frontend edit also requires the lockstep bump in the rule above
+   (`manifest.json`, `const.py`, `frontend/constants.js`, every `?v=` import).
+3. Read the master's `mqtt_compat` (fall back to the older `compat` alias) to
+   decide compatibility. The master's bus generation is diagnostic only.
+4. When a version changes, update `README.md`, `README.cs.md`, the matrix in the
+   slave's `docs/VERSIONING.md`, and any status-payload examples in the same
+   change.
+
 ## Important architecture
 
 - `coordinator.py` owns MQTT, normalization, persistence, and publishing.
@@ -118,6 +158,8 @@ python3 -m json.tool custom_components/splitflap_os/translations/cs.json >/dev/n
 python3 tests/test_layout.py
 python3 tests/test_positions.py
 python3 tests/test_translations.py
+python3 tests/test_ota.py
+python3 tests/test_versions.py
 ```
 
 ## Style
