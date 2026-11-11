@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.4";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.4";
-import { PANEL_STYLES } from "../styles.js?v=1.2.4";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.2.5";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.2.5";
+import { PANEL_STYLES } from "../styles.js?v=1.2.5";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -1413,8 +1413,7 @@ export const PanelMixin = (Base) => class extends Base {
           : DEFAULT_DRUM.split("");
     const idx = Number(flapIndex);
     const char = drum[idx] || " ";
-    const cal = Number(module.total_steps) || 4096;
-    const expected = Math.floor((idx * cal) / 64);
+    const expected = this._expectedStep(module, idx, drum.length);
     const positions = module.map_of_positions || {};
     const tuned = positions[String(idx)];
     const active = tuned !== undefined ? Number(tuned) : expected;
@@ -1735,8 +1734,7 @@ export const PanelMixin = (Base) => class extends Base {
     const colorClass = isColor ? ` color-${curChar}` : "";
     const colorSuffix = isColor ? ` (${this._t("color_" + curChar)})` : "";
     const charTitle = curCharDisp + colorSuffix;
-    const cal = Number(module.total_steps) || 4096;
-    const expected = Math.floor((curIdx * cal) / 64);
+    const expected = this._expectedStep(module, curIdx, drum.length);
     const activeStep = state.currentStep != null ? state.currentStep : expected;
 
     body.innerHTML = `

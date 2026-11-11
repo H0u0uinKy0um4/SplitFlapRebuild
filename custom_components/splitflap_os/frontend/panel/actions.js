@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.4";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.4";
+import { formatMessage } from "../utils.js?v=1.2.5";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.5";
 
 // The master blocks while a module moves and only then writes/refreshes the
 // position map, so the auto-tune verification frame must not be requested in
@@ -860,6 +860,21 @@ export const PanelMixin = (Base) => class extends Base {
     return Math.max(1, Math.min(63, this._atDrum().length - 1));
   }
 
+  /** Absolute step the master uses for one flap index.
+   *
+   * Mirrors ``derive_flap_state`` in coordinator.py:
+   * ``(home_offset + index * total_steps / drum) % total_steps``.  The home
+   * offset is part of the physical mapping, so a map entry written without it
+   * lands ``home_offset`` steps away from the flap that was asked for.
+   */
+  _expectedStep(module, index, drumLen = 64) {
+    const cal = Math.max(1, Number(module && module.total_steps) || 4096);
+    const offset = Number(module && module.home_offset) || 0;
+    const length = Math.max(1, Number(drumLen) || 64);
+    const step = Math.floor((Number(index) * cal + length / 2) / length);
+    return ((offset % cal) + step) % cal;
+  }
+
   async _atBegin() {
     const startInput = this.shadowRoot.getElementById("atStartIdx");
     const stepInput = this.shadowRoot.getElementById("atStepSize");
@@ -960,10 +975,16 @@ export const PanelMixin = (Base) => class extends Base {
       const module = this._moduleFor(modId);
       if (!module) continue;
       const cal = Number(module.total_steps) || 4096;
-      const expected = Math.floor((charIdx * cal) / drum.length);
+      const expected = this._expectedStep(module, charIdx, drum.length);
       const positions = module.map_of_positions || {};
       const tuned = positions[String(charIdx)];
-      const base = tuned !== undefined ? Number(tuned) : expected;
+      // A sane map entry is within half a flap of the geometric position.
+      // Further away it points at a different flap (old wizard maps that
+      // omitted home_offset), so start from the model instead of moving a
+      // whole revolution in 25-step clicks.
+      const near =
+        tuned !== undefined && Math.abs(Number(tuned) - expected) <= cal / 128;
+      const base = near ? Number(tuned) : expected;
       const newVal = Math.max(0, Math.min(cal - 1, base - step));
       await this._send("calibrate", {
         module: modId,
@@ -1020,10 +1041,12 @@ export const PanelMixin = (Base) => class extends Base {
       const module = this._moduleFor(modId);
       if (!module) continue;
       const cal = Number(module.total_steps) || 4096;
-      const expected = Math.floor((charIdx * cal) / drum.length);
+      const expected = this._expectedStep(module, charIdx, drum.length);
       const positions = module.map_of_positions || {};
       const tuned = positions[String(charIdx)];
-      const base = tuned !== undefined ? Number(tuned) : expected;
+      const near =
+        tuned !== undefined && Math.abs(Number(tuned) - expected) <= cal / 128;
+      const base = near ? Number(tuned) : expected;
       const newVal = Math.max(0, Math.min(cal - 1, base + step));
       await this._send("calibrate", {
         module: modId,
@@ -1171,8 +1194,7 @@ export const PanelMixin = (Base) => class extends Base {
       return;
     }
 
-    const cal = Number(module.total_steps) || 4096;
-    const expectedNext = Math.floor((nextFlap * cal) / 64);
+    const expectedNext = this._expectedStep(module, nextFlap);
     const tunedNext = module.map_of_positions[String(nextFlap)];
     this._teachState.flapIndex = nextFlap;
     this._teachState.currentStep = tunedNext !== undefined ? Number(tunedNext) : expectedNext;
@@ -1199,8 +1221,7 @@ export const PanelMixin = (Base) => class extends Base {
       return;
     }
 
-    const cal = Number(module.total_steps) || 4096;
-    const expectedNext = Math.floor((nextFlap * cal) / 64);
+    const expectedNext = this._expectedStep(module, nextFlap);
     const tunedNext = (module.map_of_positions || {})[String(nextFlap)];
     this._teachState.flapIndex = nextFlap;
     this._teachState.currentStep = tunedNext !== undefined ? Number(tunedNext) : expectedNext;
@@ -1220,8 +1241,7 @@ export const PanelMixin = (Base) => class extends Base {
     if (!module) return;
 
     const prevFlap = flapIndex - 1;
-    const cal = Number(module.total_steps) || 4096;
-    const expectedPrev = Math.floor((prevFlap * cal) / 64);
+    const expectedPrev = this._expectedStep(module, prevFlap);
     const tunedPrev = (module.map_of_positions || {})[String(prevFlap)];
     this._teachState.flapIndex = prevFlap;
     this._teachState.currentStep = tunedPrev !== undefined ? Number(tunedPrev) : expectedPrev;
