@@ -291,6 +291,7 @@ input:focus, select:focus, textarea:focus {
   color: inherit; opacity: .45; cursor: pointer; font-size: 1rem; padding: 4px;
 }
 .gear:hover { opacity: 1; }
+.app-card.disabled .gear { opacity: .85; pointer-events: auto; cursor: pointer; }
 .mod-matrix {
   display: grid; gap: 4px;
   grid-template-columns: repeat(var(--cols, 15), minmax(0, 1fr));

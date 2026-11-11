@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.6";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.6";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.6";
-import { PANEL_STYLES } from "../styles.js?v=1.0.6";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.7";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.7";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.7";
+import { PANEL_STYLES } from "../styles.js?v=1.0.7";
 
 
 export const PanelMixin = (Base) => class extends Base {
