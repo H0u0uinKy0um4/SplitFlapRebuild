@@ -95,7 +95,8 @@ export const PANEL = {
   master_online: "master online",
   master_offline: "master offline",
   master_version: "Master version",
-  compatibility: "Compatibility",
+  bus_compatibility: "Bus compatibility",
+  mqtt_compatibility: "MQTT compatibility",
   blank_cell: "Blank frame cell",
   select_module_hint: "Select a module in the matrix above.",
   char_map_title: "Module {id} • {flaps}",
@@ -125,15 +126,15 @@ export const PANEL = {
   firmware: "FIRMWARE",
   firmware_installed: "Installed firmware: {version}",
   firmware_installed_compat:
-    "Installed firmware: {version} (compat {compat})",
+    "Installed firmware: {version} (bus compat {compat})",
   firmware_incompatible:
-    "Installed firmware: {version} — compat {compat} does not match {expected}",
+    "Installed firmware: {version} — bus compat {compat} does not match {expected}",
   firmware_installed_unknown:
     "Installed firmware: unknown (module offline or firmware without version tracking)",
   compat_mismatch:
-    "The master reports compatibility {master}, but this integration needs {local}. Update the master or the integration before relying on OTA.",
+    "The master reports MQTT compatibility {master}, but this integration needs {local}. Update the master or the integration before relying on OTA.",
   compat_missing:
-    "The master does not report a compatibility generation (firmware older than the version protocol). Update the master to make compatibility checkable.",
+    "The master does not report an MQTT compatibility generation (firmware older than the version protocol). Update the master to make compatibility checkable.",
   flash_firmware: "FLASH MODULE",
   firmware_help:
     "Flash one module over RS485 from the ATtiny1616_OTA build's firmware.hex. The image is sent to the master first, then written in one session of about 25 seconds while the display pauses. Module calibration and the drum stay in EEPROM.",

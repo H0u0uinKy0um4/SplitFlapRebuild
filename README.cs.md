@@ -480,28 +480,43 @@ Finance, kryptoměny CoinGecko a MBTA funguje i bez klíče při malém provozu.
 
 ## 11. Verze a firmware modulů
 
-Všechny tři části systému (firmware modulů, ESP32 master a tato integrace) sdílí
-jedno **číslo kompatibility** a každá má vlastní vydání. Zobrazovaná verze má
-tvar `<kompatibilita>.<vydání>`, takže první číslo je generace (`1.4.2` =
-generace 1, vydání 4.2). Úplný protokol je v repozitáři firmwaru modulů v
-`docs/VERSIONING.md`.
+Všechny tři části systému (firmware modulů, ESP32 master a tato integrace)
+používají dvě nezávislé **osy kompatibility**, protože spolu mluví dva různé
+páry partnerů:
+
+| Osa | Kontrakt | Kdo ji nese |
+| --- | --- | --- |
+| **BUS_COMPAT** | RS485 aplikační protokol a kontrakt vstupu do OTA/bootloaderu | modul + master |
+| **MQTT_COMPAT** | JSON schéma MQTT statusu a příkazů | master + Home Assistant |
+
+Master obě strany propojuje, takže nese obě čísla. Každý repozitář má navíc
+vlastní vydání v rámci těchto generací a zobrazovaná verze se skládá z čísel,
+která se na něj vztahují:
+
+```
+modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
+master   <bus>.<mqtt>.<vydání>        1.1.0.0    bus 1, mqtt 1, vydání 0.0
+HA       <mqtt>.<vydání>              1.0.1      mqtt 1, vydání 0.1
+```
 
 | Kde | Verze | Kompatibilita | Kde ji uvidíte |
 | --- | --- | --- | --- |
-| Integrace Home Assistant | `1.0.0` | `1` | hlavička panelu, informace o připojení |
-| ESP32 master | `1.0.0` | `1` | status `version`/`compat`, informace o připojení |
-| Firmware modulu | `1.0.0` | `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
+| Integrace Home Assistant | `1.0.1` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
+| ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, informace o připojení |
+| Firmware modulu | `1.0.1` | bus `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
 
-Integrace porovnává `compat` masteru s `COMPAT_VERSION` v `const.py`. Při
+Integrace porovnává `mqtt_compat` masteru s `MQTT_COMPAT` v `const.py`. Při
 neshodě se zobrazí žluté upozornění, ale normální zobrazení, zrušení OTA ani
 reset modulu to nikdy nezablokuje. Pokud master verzi vůbec nehlásí (starší
 firmware), panel ji označí jako neznámou a nebude předpokládat kompatibilitu.
+Generace sběrnice se zobrazuje pro diagnostiku; Home Assistant s ní přímo
+nemluví.
 
-Karta **MODULE FIRMWARE** ukazuje verzi, kterou každý modul skutečně hlásí.
-Použijte ji jako důkaz, že OTA proběhla: zvyšte `FW_RELEASE` ve firmwaru modulu,
-nahrajte nový `.hex` a po restartu a homogenizaci se na kartě musí objevit nová
-verze. OTA sama odmítne neznámý protokol bootloaderu ještě před zápisem první
-stránky.
+Karta **MODULE FIRMWARE** ukazuje verzi a generaci sběrnice, kterou každý modul
+skutečně hlásí. Použijte ji jako důkaz, že OTA proběhla: zvyšte `FW_RELEASE` ve
+firmwaru modulu, nahrajte nový `.hex` a po restartu a homogenizaci se na kartě
+musí objevit nová verze. OTA sama odmítne neznámý protokol bootloaderu ještě
+před zápisem první stránky.
 
 Při změně frontendu zvyšte `VERSION` v `const.py`, `manifest.json` i
 `frontend/constants.js` a všechny parametry `?v=` v importech současně.

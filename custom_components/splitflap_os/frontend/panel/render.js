@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.0";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.0";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.0";
-import { PANEL_STYLES } from "../styles.js?v=1.0.0";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, PALETTE, VERSION } from "../constants.js?v=1.0.1";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.1";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.1";
+import { PANEL_STYLES } from "../styles.js?v=1.0.1";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -943,17 +943,28 @@ export const PanelMixin = (Base) => class extends Base {
       banner.classList.add("hidden");
       return;
     }
-    // compat_ok is false for a reported mismatch, null when the master
+    // mqtt_compat_ok is false for a reported mismatch, null when the master
     // predates the version protocol. Never treat "unknown" as compatible.
-    if (coordinator.compat_ok === false) {
+    // "compat_ok"/"compat" are aliases emitted for older panel builds.
+    const mqttOk =
+      coordinator.mqtt_compat_ok !== undefined
+        ? coordinator.mqtt_compat_ok
+        : coordinator.compat_ok;
+    if (mqttOk === false) {
       banner.classList.remove("hidden");
       text.textContent = formatMessage(this._t("compat_mismatch"), {
-        master: coordinator.master_compat,
-        local: coordinator.compat,
+        master:
+          coordinator.master_mqtt_compat != null
+            ? coordinator.master_mqtt_compat
+            : coordinator.master_compat,
+        local:
+          coordinator.mqtt_compat != null
+            ? coordinator.mqtt_compat
+            : coordinator.compat,
       });
       return;
     }
-    if (coordinator.compat_ok === null) {
+    if (mqttOk === null) {
       banner.classList.remove("hidden");
       text.textContent = this._t("compat_missing");
       return;
@@ -1383,15 +1394,31 @@ export const PanelMixin = (Base) => class extends Base {
     const moduleId = input ? String(input.value || "").trim() : "";
     const module = moduleId ? this._moduleFor(moduleId) : null;
     const version = module && module.fw_version ? String(module.fw_version) : "";
-    const compat = module && module.fw_compat != null ? module.fw_compat : null;
+    // fw_bus_compat/fw_bus_compatible are the bus-side values; the old
+    // fw_compat/fw_compatible names remain as aliases for older masters.
+    const compat =
+      module && module.fw_bus_compat != null
+        ? module.fw_bus_compat
+        : module && module.fw_compat != null
+          ? module.fw_compat
+          : null;
+    const compatible =
+      module && module.fw_bus_compatible !== undefined
+        ? module.fw_bus_compatible
+        : module
+          ? module.fw_compatible
+          : undefined;
     const coordinator = this._coordinator() || {};
     if (!version) {
       node.textContent = this._t("firmware_installed_unknown");
-    } else if (module.fw_compatible === false) {
+    } else if (compatible === false) {
       node.textContent = formatMessage(this._t("firmware_incompatible"), {
         version,
         compat,
-        expected: coordinator.compat,
+        expected:
+          coordinator.master_bus_compat == null
+            ? this._t("unknown")
+            : coordinator.master_bus_compat,
       });
     } else if (compat != null) {
       node.textContent = formatMessage(this._t("firmware_installed_compat"), {
@@ -1474,9 +1501,20 @@ export const PanelMixin = (Base) => class extends Base {
       `${this._t("master_version")}: ${
         coordinator.master_version || this._t("unknown")
       }`,
-      `${this._t("compatibility")}: ${
-        coordinator.master_compat == null ? this._t("unknown") : coordinator.master_compat
-      } (${this._t("integration")}: ${VERSION})`,
+      `${this._t("bus_compatibility")}: ${
+        coordinator.master_bus_compat == null
+          ? this._t("unknown")
+          : coordinator.master_bus_compat
+      }`,
+      `${this._t("mqtt_compatibility")}: ${
+        coordinator.master_mqtt_compat == null
+          ? this._t("unknown")
+          : coordinator.master_mqtt_compat
+      } (${this._t("integration")}: ${
+        coordinator.mqtt_compat == null
+          ? this._t("unknown")
+          : coordinator.mqtt_compat
+      })`,
       `${this._t("last_status")}: ${coordinator.last_status || this._t("never")}`,
       `${this._t("modules_label")}: ${coordinator.modules_count || 0}`,
       `${this._t("board")}: ${board.rows} × ${board.cols}`,
