@@ -1,9 +1,9 @@
 /** Panel component logic. */
 
-import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.5";
-import { APPS_I18N } from "../i18n/index.js?v=1.0.5";
-import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.5";
-import { PANEL_STYLES } from "../styles.js?v=1.0.5";
+import { APP_ICONS, COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, DOMAIN, PALETTE, VERSION } from "../constants.js?v=1.0.6";
+import { APPS_I18N } from "../i18n/index.js?v=1.0.6";
+import { escapeAttr, escapeHtml, numberText, centerLine, formatMessage } from "../utils.js?v=1.0.6";
+import { PANEL_STYLES } from "../styles.js?v=1.0.6";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -832,6 +832,13 @@ export const PanelMixin = (Base) => class extends Base {
     return (t && t.name) || fallback;
   }
 
+  _appModeLabel(appKey, mode) {
+    const dict = APPS_I18N[this._lang()] || APPS_I18N.en;
+    const modes = (dict && dict.modes) || {};
+    const appModes = modes[appKey] || {};
+    return appModes[mode] || String(mode || "").toUpperCase();
+  }
+
   _appDescription(app) {
     if (!app) return "";
     const t = this._appI18n(app.key);
@@ -892,7 +899,7 @@ export const PanelMixin = (Base) => class extends Base {
                ${available ? `data-action="start-app" data-app="${escapeAttr(app.key)}" role="button" tabindex="0"` : 'aria-disabled="true"'}
                title="${escapeAttr(requirement || description)}">
             ${running ? `<span class="app-live">${escapeHtml(this._t("live_badge"))}</span>` : ""}
-            <button class="gear" data-action="app-settings" data-app="${escapeAttr(app.key)}" title="${escapeAttr(this._t('app_settings'))}">⚙</button>
+            <button class="gear" data-action="app-mode" data-app="${escapeAttr(app.key)}" title="${escapeAttr(this._t('app_mode'))}">▦</button>
             <div class="app-icon">${this._appIcon(app.key)}</div>
             <div class="app-name">${escapeHtml(this._appName(app.key))}</div>
             <div class="app-desc">${escapeHtml(description)}</div>

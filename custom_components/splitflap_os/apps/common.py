@@ -51,6 +51,7 @@ class AppDef:
     category: str = "data"
     min_rows: int = 1
     min_cols: int = 1
+    modes: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -63,6 +64,7 @@ class AppDef:
             "category": self.category,
             "min_rows": self.min_rows,
             "min_cols": self.min_cols,
+            "modes": list(self.modes),
         }
 
 

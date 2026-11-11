@@ -178,6 +178,7 @@ APP_DEFS: tuple[AppDef, ...] = (
         category="time",
         min_rows=3,
         min_cols=9,
+        modes=("full", "time", "date"),
     ),
     AppDef(
         key="date",

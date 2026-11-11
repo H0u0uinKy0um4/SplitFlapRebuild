@@ -168,6 +168,7 @@ async def websocket_play_playlist(hass: HomeAssistant, connection, msg) -> None:
     {
         vol.Required("type"): f"{DOMAIN}/start_app",
         vol.Required("app"): str,
+        vol.Optional("mode"): str,
     }
 )
 @websocket_api.async_response
@@ -178,7 +179,7 @@ async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
         hass,
         connection,
         msg,
-        lambda runtime: runtime["engine"].async_start_app(msg["app"]),
+        lambda runtime: runtime["engine"].async_start_app(msg["app"], msg.get("mode")),
     )
 
 

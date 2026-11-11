@@ -26,6 +26,20 @@ def _date_lines(dt: datetime, engine) -> str:
 
 async def clock(engine, now: datetime) -> list[Page]:
     dt = now.astimezone(engine.tz)
+    mode = getattr(engine, "active_app_mode", None)
+    if mode == "time":
+        return [Page(engine.lines("", _time_text(dt, engine), ""), delay=1.0)]
+    if mode == "date":
+        return [
+            Page(
+                engine.lines(
+                    dt.strftime("%A").upper(),
+                    dt.strftime("%b %d").upper(),
+                    dt.strftime("%Y").upper(),
+                ),
+                delay=1.0,
+            )
+        ]
     return [
         Page(
             engine.lines(

@@ -92,7 +92,8 @@ export const PANEL = {
   app_settings: "Settings",
   app_idle: "Idle",
   app_settings_title: "App settings",
-  master_online: "master online",
+  app_mode: "App mode",
+  app_mode_named: "App mode — {name}",  master_online: "master online",
   master_offline: "master offline",
   master_version: "Master version",
   bus_compatibility: "Bus compatibility",
@@ -314,6 +315,9 @@ export const APPS = {
   world_clock: { name: "World Clock", description: "Multiple time zones" },
   iss: { name: "ISS", description: "Space station position" },
   animations: { name: "Animations", description: "Colour effects" },
+  modes: {
+    clock: { full: "Full", time: "Time only", date: "Date only" },
+  },
 };
 
 export const SETTINGS = {

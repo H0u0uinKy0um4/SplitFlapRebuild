@@ -92,7 +92,8 @@ export const PANEL = {
   app_settings: "Nastavení",
   app_idle: "Nečinnost",
   app_settings_title: "Nastavení aplikace",
-  master_online: "master online",
+  app_mode: "Režim aplikace",
+  app_mode_named: "Režim aplikace — {name}",  master_online: "master online",
   master_offline: "master offline",
   master_version: "Verze masteru",
   bus_compatibility: "Kompatibilita sběrnice",
@@ -315,6 +316,9 @@ export const APPS = {
   world_clock: { name: "Světové hodiny", description: "Více časových pásem" },
   iss: { name: "ISS", description: "Poloha vesmírné stanice" },
   animations: { name: "Animace", description: "Barevné efekty" },
+  modes: {
+    clock: { full: "Celé", time: "Jen čas", date: "Jen datum" },
+  },
 };
 
 export const SETTINGS = {

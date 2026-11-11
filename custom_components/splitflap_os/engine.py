@@ -75,6 +75,7 @@ class AppEngine:
 
         self.mode = "idle"  # idle | playlist | app
         self.active_app: str | None = None
+        self.active_app_mode: str | None = None
         self._loop_playlist = True
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
@@ -253,6 +254,7 @@ class AppEngine:
         return {
             "mode": self.mode,
             "active_app": self.active_app,
+            "active_app_mode": self.active_app_mode,
             "running": self.running,
             "board": {
                 "rows": rows,
@@ -478,7 +480,7 @@ class AppEngine:
         self._notify()
         self._schedule_save()
 
-    async def async_start_app(self, app_key: str) -> None:
+    async def async_start_app(self, app_key: str, mode: str | None = None) -> None:
         key = str(app_key or "").strip()
         app = APP_DEFS_BY_KEY.get(key)
         if app is None:
@@ -486,9 +488,12 @@ class AppEngine:
         available, reason = self._app_available(app)
         if not available:
             raise ValueError(f"{app.name} cannot run on this display: {reason}")
+        if mode is not None and app.modes and mode not in app.modes:
+            mode = None
         await self.async_stop(notify=False)
         self.mode = "app"
         self.active_app = key
+        self.active_app_mode = mode
         self._current_page = None
         self._current_page_index = 0
         self._current_page_count = 0
@@ -499,6 +504,7 @@ class AppEngine:
     async def async_stop(self, *, notify: bool = True) -> None:
         self.mode = "idle"
         self.active_app = None
+        self.active_app_mode = None
         self._loop_playlist = False
         self._stop_event.set()
 
@@ -861,6 +867,7 @@ class AppEngine:
             "playlist_delay": self.playlist_delay,
             "mode": self.mode,
             "active_app": self.active_app,
+            "active_app_mode": self.active_app_mode,
         }
 
     def _sanitize_saved_playlist(self, value: Any) -> dict[str, Any]:

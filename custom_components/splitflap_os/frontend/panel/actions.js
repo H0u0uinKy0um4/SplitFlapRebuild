@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.0.5";
-import { DEFAULT_DRUM } from "../constants.js?v=1.0.5";
+import { formatMessage } from "../utils.js?v=1.0.6";
+import { DEFAULT_DRUM } from "../constants.js?v=1.0.6";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -122,6 +122,12 @@ export const PanelMixin = (Base) => class extends Base {
       }
       case "app-settings":
         this._openAppSettings(target.dataset.app);
+        break;
+      case "app-mode":
+        this._openAppMode(target.dataset.app);
+        break;
+      case "start-app-mode":
+        await this._startAppMode(target.dataset.app, target.dataset.mode);
         break;
       case "settings-app":
         this._setAppSettingsTab(target.dataset.key);
@@ -352,11 +358,70 @@ export const PanelMixin = (Base) => class extends Base {
     this.shadowRoot.getElementById("modalFields").innerHTML = fields.length
       ? fields.map((field) => this._fieldHtml(field, settings[field.key])).join("")
       : `<p class="muted">${escapeHtml(this._t("app_no_options"))}</p>`;
+    const saveBtn = this.shadowRoot.querySelector('[data-action="save-app-settings"]');
+    if (saveBtn) saveBtn.classList.remove("hidden");
     this.shadowRoot.getElementById("modal").classList.remove("hidden");
+  }
+
+  _openAppMode(key) {
+    const apps = (this._engine() && this._engine().apps) || [];
+    const app = apps.find((item) => item.key === key);
+    if (!app) return;
+    const modes = Array.isArray(app.modes) ? app.modes : [];
+    if (!modes.length) {
+      // No variants: launch the app directly.
+      this._startApp(key);
+      return;
+    }
+    this._modalApp = key;
+    this.shadowRoot.getElementById("modalTitle").textContent = formatMessage(
+      this._t("app_mode_named"),
+      { name: this._appName(key) }
+    );
+    this.shadowRoot.getElementById("modalFields").innerHTML = modes
+      .map(
+        (mode) =>
+          `<button class="btn secondary" data-action="start-app-mode" data-app="${escapeAttr(
+            key
+          )}" data-mode="${escapeAttr(mode)}">${escapeHtml(
+            this._appModeLabel(key, mode)
+          )}</button>`
+      )
+      .join("");
+    const saveBtn = this.shadowRoot.querySelector('[data-action="save-app-settings"]');
+    if (saveBtn) saveBtn.classList.add("hidden");
+    this.shadowRoot.getElementById("modal").classList.remove("hidden");
+  }
+
+  async _startApp(key) {
+    const apps = (this._engine() && this._engine().apps) || [];
+    const app = apps.find((item) => item.key === key);
+    if (app && app.available === false) {
+      const reason =
+        this._appRequirement(app, this._board()) || this._t("display_too_small");
+      this._toast(`${this._appName(key)}: ${reason}`, "warn");
+      return;
+    }
+    await this._send("start_app", { app: key });
+  }
+
+  async _startAppMode(app, mode) {
+    const apps = (this._engine() && this._engine().apps) || [];
+    const found = apps.find((item) => item.key === app);
+    if (found && found.available === false) {
+      const reason =
+        this._appRequirement(found, this._board()) || this._t("display_too_small");
+      this._toast(`${this._appName(app)}: ${reason}`, "warn");
+      return;
+    }
+    await this._send("start_app", { app, mode });
+    this._closeModal();
   }
 
   _closeModal() {
     this._modalApp = null;
+    const saveBtn = this.shadowRoot.querySelector('[data-action="save-app-settings"]');
+    if (saveBtn) saveBtn.classList.remove("hidden");
     this.shadowRoot.getElementById("modal").classList.add("hidden");
   }
 
