@@ -1,12 +1,12 @@
 /** Tuning tab: module matrix, commands, map, auto-tune, teach and drum. */
 
-import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.8";
+import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.9";
 import {
   escapeAttr,
   escapeHtml,
   formatMessage,
   numberText,
-} from "../../utils.js?v=1.2.8";
+} from "../../utils.js?v=1.2.9";
 
 export const PanelMixin = (Base) =>
   class extends Base {

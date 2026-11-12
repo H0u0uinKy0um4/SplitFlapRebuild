@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.8";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.8";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.8";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.9";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.9";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.9";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -63,9 +63,10 @@ export const PanelMixin = (Base) => class extends Base {
       /* local storage may be unavailable in private windows. */
     }
 
-    // Apply the cached theme before the first paint to avoid a light flash;
-    // the engine's persisted setting takes over on the first state update.
-    this.setAttribute("data-theme", this._theme === "dark" ? "dark" : "light");
+    // Do NOT set attributes here: a custom element constructor must not add
+    // attributes to itself, otherwise document.createElement() throws
+    // `NotSupportedError: The result must not have attributes`. `_renderShell`
+    // applies the cached theme (via `_applyTheme`) once the element exists.
   }
 
   set hass(hass) {
