@@ -16,9 +16,12 @@ export const PANEL_STYLES = `
   --sf-text: #111827;
   --sf-text-2: #4b5563;
   --sf-muted: #6b7280;
-  --sf-accent: #0095c8;
+  /* Prefer the active Home Assistant theme colours, keep the panel palette as
+     the fallback when they are not defined (e.g. outside Home Assistant). */
+  --sf-accent: var(--primary-color, #0095c8);
   --sf-accent-hover: #007ea8;
   --sf-accent-glow: rgba(0, 149, 200, 0.25);
+  --sf-accent-2: var(--accent-color, #f59e0b);
   --sf-btn-sec-bg: #eef1f4;
   --sf-btn-sec-hover: #e2e6eb;
   --sf-card-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
@@ -52,9 +55,10 @@ export const PANEL_STYLES = `
   --sf-text: #f3f4f6;
   --sf-text-2: #9ca3af;
   --sf-muted: #6b7280;
-  --sf-accent: #00a2d8;
+  --sf-accent: var(--primary-color, #00a2d8);
   --sf-accent-hover: #008bb9;
   --sf-accent-glow: rgba(0, 162, 216, 0.32);
+  --sf-accent-2: var(--accent-color, #fbbf24);
   --sf-btn-sec-bg: #1f242d;
   --sf-btn-sec-hover: #282e3a;
   --sf-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -62,6 +66,19 @@ export const PANEL_STYLES = `
   --sf-ok: #34d399;
   --sf-warn: #fbbf24;
   --sf-danger: #f87171;
+}
+
+/* Derive hover/glow from the live Home Assistant primary colour when the
+   browser supports color-mix(). The static values above remain the fallback. */
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+  :host {
+    --sf-accent-hover: color-mix(in srgb, var(--primary-color, #0095c8) 82%, #000);
+    --sf-accent-glow: color-mix(in srgb, var(--primary-color, #0095c8) 26%, transparent);
+  }
+  :host([data-theme="dark"]) {
+    --sf-accent-hover: color-mix(in srgb, var(--primary-color, #00a2d8) 82%, #fff);
+    --sf-accent-glow: color-mix(in srgb, var(--primary-color, #00a2d8) 34%, transparent);
+  }
 }
 * { box-sizing: border-box; }
 .hidden { display: none !important; }
@@ -88,12 +105,17 @@ export const PANEL_STYLES = `
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #00a4dc 0%, #0082af 100%);
+  background: var(--primary-color, #00a4dc);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color, #00a4dc) 0%,
+    color-mix(in srgb, var(--accent-color, #0082af) 65%, var(--primary-color, #00a4dc)) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 3px 8px rgba(0, 149, 200, 0.25);
+  color: var(--text-primary-color, #fff);
+  box-shadow: 0 3px 8px var(--sf-accent-glow);
   flex: 0 0 auto;
 }
 .title {
@@ -194,7 +216,7 @@ export const PANEL_STYLES = `
 .tab:hover:not(.active) { background: var(--sf-bg-subtle); color: var(--sf-text); }
 .tab.active {
   background: var(--sf-accent);
-  color: #ffffff;
+  color: var(--text-primary-color, #ffffff);
   box-shadow: 0 2px 8px var(--sf-accent-glow);
 }
 
@@ -293,7 +315,7 @@ export const PANEL_STYLES = `
 .subtab:hover:not(.active) { background: var(--sf-bg-subtle); color: var(--sf-text); }
 .subtab.active {
   background: var(--sf-accent);
-  color: #ffffff;
+  color: var(--text-primary-color, #ffffff);
   box-shadow: 0 2px 8px var(--sf-accent-glow);
 }
 .subtabs.nested {
@@ -567,7 +589,7 @@ export const PANEL_STYLES = `
   justify-content: center;
   gap: 7px;
   background: var(--sf-accent);
-  color: #ffffff;
+  color: var(--text-primary-color, #ffffff);
   box-shadow: 0 3px 12px var(--sf-accent-glow);
   transition: all 0.15s ease;
 }
@@ -615,6 +637,8 @@ input, select, textarea {
   padding: 9px 11px;
   font: inherit;
   font-size: 0.86rem;
+  /* Native checkboxes/sliders follow the Home Assistant accent colour. */
+  accent-color: var(--sf-accent-2);
 }
 textarea { resize: vertical; font-family: var(--sf-font-mono); }
 input:focus, select:focus, textarea:focus {
@@ -953,7 +977,7 @@ input:focus, select:focus, textarea:focus {
 }
 .quick-offsets button:hover {
   background: var(--sf-accent);
-  color: #fff;
+  color: var(--text-primary-color, #fff);
   border-color: var(--sf-accent);
 }
 .at-stage { display: flex; flex-direction: column; gap: 12px; }
@@ -1035,7 +1059,7 @@ input:focus, select:focus, textarea:focus {
 }
 .nudge-row button:hover {
   background: var(--sf-accent);
-  color: #fff;
+  color: var(--text-primary-color, #fff);
   border-color: var(--sf-accent);
 }
 

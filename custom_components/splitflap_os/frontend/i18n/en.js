@@ -427,7 +427,7 @@ export const SETTINGS = {
     ui_scale:
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     theme:
-      "Auto follows the theme selected in your Home Assistant profile, including its Light/Dark/Auto mode. Light or Dark force the panel appearance. The physical split-flap display and the module map stay dark in every mode.",
+      "Auto follows the theme selected in your Home Assistant profile, including its Light/Dark/Auto mode. Light or Dark force the panel appearance. The panel also uses your Home Assistant primary and accent colours. The physical split-flap display and the module map stay dark in every mode.",
     timezone:
       "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
   },
