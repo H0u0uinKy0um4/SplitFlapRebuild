@@ -7,6 +7,10 @@ export const PANEL_STYLES = `
   background: var(--primary-background-color, #f4f4f4);
   color: var(--primary-text-color, #1d1d1d);
   font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
+
+  /* Scoped animation knobs so the flap display stays CSS-only. */
+  --sf-flip-angle: -82deg;
+  --sf-flip-duration: .2s;
 }
 * { box-sizing: border-box; }
 .app {
@@ -124,6 +128,7 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
   font-weight: 700; line-height: 1;
   font-size: var(--flap-font, clamp(8px, 2.15vw, 28px));
   text-shadow: 0 1px 2px #000; overflow: hidden;
+  transform-style: preserve-3d; transform-origin: center center;
 }
 .flap::after {
   content: ""; position: absolute; left: 0; right: 0; top: 50%;
@@ -143,9 +148,9 @@ h1 { margin: 0; font-size: 1.1rem; letter-spacing: .16em; }
 .flap.color-w { background: #eceff1; border-color: #fff; color: #111; text-shadow: none; }
 .flap.color-c { background: #00bcd4; border-color: #26c6da; color: #111; text-shadow: none; }
 .flap.color-m { background: #e91e63; border-color: #ec407a; }
-.flap.flip { animation: flapFlip .2s ease-out; }
+.flap.flip { animation: flapFlip var(--sf-flip-duration, .2s) ease-out; }
 @keyframes flapFlip {
-  from { transform: rotateX(-82deg); opacity: .35; }
+  from { transform: rotateX(var(--sf-flip-angle, -82deg)); opacity: .35; }
   to { transform: rotateX(0); opacity: 1; }
 }
 .banner {

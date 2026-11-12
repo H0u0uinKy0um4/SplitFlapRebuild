@@ -38,8 +38,14 @@ def _panel_cache_key() -> str:
         "i18n/cs.js",
         "i18n/index.js",
         "panel/core.js",
-        "panel/render.js",
+        "panel/components.js",
+        "panel/flap-display.js",
         "panel/actions.js",
+        "panel/views/control.js",
+        "panel/views/playlists.js",
+        "panel/views/apps.js",
+        "panel/views/tuning.js",
+        "panel/views/settings.js",
     ]
     mtimes = []
     for relative in candidates:

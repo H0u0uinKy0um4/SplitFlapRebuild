@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.5";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.5";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.5";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.6";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.6";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.6";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -31,7 +31,6 @@ export const PanelMixin = (Base) => class extends Base {
     this._settingsBuilt = false;
     this._settingsDirty = false;
     this._charSignature = "";
-    this._lastChars = [];
     this._modalApp = null;
     this._shellRendered = false;
 
@@ -181,6 +180,12 @@ export const PanelMixin = (Base) => class extends Base {
 
   _coordinator() {
     return this._state ? this._state.coordinator : null;
+  }
+
+  _moduleFor(moduleId) {
+    const coordinator = this._coordinator();
+    const modules = (coordinator && coordinator.modules) || [];
+    return modules.find((module) => String(module.id) === String(moduleId));
   }
 
   _lang() {
@@ -435,19 +440,6 @@ export const PanelMixin = (Base) => class extends Base {
       out.push(String(lines[row] || "").padEnd(board.cols, " ").slice(0, board.cols));
     }
     return out;
-  }
-
-  _toast(message, type = "ok") {
-    const host = this.shadowRoot.getElementById("toasts");
-    if (!host) return;
-    const node = document.createElement("div");
-    node.className = `toast${type === "ok" ? "" : ` ${type}`}`;
-    node.textContent = String(message);
-    host.appendChild(node);
-    window.setTimeout(() => {
-      node.classList.add("out");
-      window.setTimeout(() => node.remove(), 300);
-    }, 3600);
   }
 
 };
