@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.7";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.7";
+import { formatMessage } from "../utils.js?v=1.2.8";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.8";
 
 // The master blocks while a module moves and only then writes/refreshes the
 // position map, so the auto-tune verification frame must not be requested in
@@ -79,6 +79,9 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "refresh":
         await this._loadState();
+        break;
+      case "toggle-theme":
+        await this._toggleTheme();
         break;
       case "push-text":
         await this._pushText();
@@ -260,6 +263,21 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       default:
         break;
+    }
+  }
+
+  async _toggleTheme() {
+    const next = this._themeValue() === "dark" ? "light" : "dark";
+    // Optimistic switch so the button feels instant. `_themePending` keeps the
+    // value pinned until the engine confirms it, then the persisted setting
+    // wins again.
+    this._themePending = next;
+    this._applyTheme(next);
+    try {
+      await this._send("set_settings", { settings: { theme: next } });
+    } finally {
+      this._themePending = null;
+      this._applyTheme();
     }
   }
 

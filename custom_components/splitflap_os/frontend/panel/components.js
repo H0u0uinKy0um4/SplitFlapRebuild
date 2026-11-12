@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.7";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.7";
-import { PANEL_STYLES } from "../styles.js?v=1.2.7";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.8";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.8";
+import { PANEL_STYLES } from "../styles.js?v=1.2.8";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -32,6 +32,7 @@ export const PanelMixin = (Base) =>
               <span class="status-dot"></span>
               <span id="statusText">${this._t("connecting")}</span>
             </span>
+            <button class="icon-btn" data-action="toggle-theme" id="themeBtn" title="${escapeAttr(this._t('toggle_theme'))}" aria-label="${escapeAttr(this._t('toggle_theme'))}"></button>
             <button class="icon-btn" data-action="refresh" title="${escapeAttr(this._t('refresh_state'))}" aria-label="${escapeAttr(this._t('refresh_state'))}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12a9 9 0 1 1-2.64-6.36" />
@@ -113,6 +114,7 @@ export const PanelMixin = (Base) =>
       }
 
       this._applyTab();
+      this._applyTheme();
     }
 
     _applyTab() {
@@ -172,6 +174,7 @@ export const PanelMixin = (Base) =>
 
     _renderAll() {
       if (!this._state) return;
+      this._applyTheme();
       this._renderStatus();
       this._renderLive();
       this._renderComposePreview();
@@ -193,6 +196,50 @@ export const PanelMixin = (Base) =>
       this._renderConnectionInfo();
       this._renderAutoTune();
       this._renderTeach();
+    }
+
+    _themeValue() {
+      // A toggle in flight wins over the engine snapshot so a state push that
+      // lands before persistence cannot flip the panel back for one frame.
+      if (this._themePending) return this._themePending;
+      const engine = this._engine();
+      const settings = (engine && engine.settings) || {};
+      const stored = String(settings.theme || "").toLowerCase();
+      if (stored === "dark" || stored === "light") return stored;
+      return this._theme === "dark" ? "dark" : "light";
+    }
+
+    _applyTheme(theme = null) {
+      const next = theme == null ? this._themeValue() : theme;
+      const applied = next === "dark" ? "dark" : "light";
+      if (this._theme !== applied) {
+        this._theme = applied;
+        // Cache so the next page load paints the right theme immediately.
+        try {
+          window.localStorage.setItem(`${DOMAIN}_theme`, applied);
+        } catch (err) {
+          /* local storage may be unavailable in private windows. */
+        }
+      }
+      // `data-theme` drives the `:host([data-theme="dark"])` token block.
+      if (this.getAttribute("data-theme") !== applied) {
+        this.setAttribute("data-theme", applied);
+      }
+      this._renderThemeButton(applied);
+    }
+
+    _renderThemeButton(theme) {
+      const btn = this.shadowRoot && this.shadowRoot.getElementById("themeBtn");
+      if (!btn || btn.dataset.theme === theme) return;
+      btn.dataset.theme = theme;
+      const label = this._t("toggle_theme");
+      btn.title = label;
+      btn.setAttribute("aria-label", label);
+      // The icon shows the theme the button switches to.
+      btn.innerHTML =
+        theme === "dark"
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>`
+          : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>`;
     }
 
     _renderStatus() {

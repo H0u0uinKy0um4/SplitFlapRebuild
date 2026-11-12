@@ -25,6 +25,7 @@ export const PANEL = {
   run: "RUN",
   refresh: "REFRESH",
   refresh_state: "Refresh state",
+  toggle_theme: "Toggle light / dark mode",
   remove: "Remove",
   scan_bus: "SCAN BUS",
   sync: "SYNC",
@@ -413,6 +414,7 @@ export const SETTINGS = {
     rows: "Frame rows (0 = auto)",
     cols: "Frame columns (0 = auto)",
     ui_scale: "Preview scale (%)",
+    theme: "Panel theme",
     timezone: "Timezone",
     units: "Units",
     page_delay: "Default page delay (s)",
@@ -424,6 +426,8 @@ export const SETTINGS = {
     cols: "Physical frame width. Leave 0 to derive it from the display.",
     ui_scale:
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
+    theme:
+      "Light or dark appearance for the panel. The physical split-flap display and the module map stay dark in both themes.",
     timezone:
       "IANA name such as Europe/London. Empty uses Home Assistant's timezone.",
   },
@@ -432,5 +436,6 @@ export const SETTINGS = {
   },
   options: {
     units: { auto: "Auto", imperial: "Imperial", metric: "Metric" },
+    theme: { light: "Light", dark: "Dark" },
   },
 };

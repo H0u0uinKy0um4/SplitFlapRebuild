@@ -371,6 +371,12 @@ class AppEngine:
                     cleaned[key] = max(50, min(200, int(float(value))))
                 except (TypeError, ValueError):
                     continue
+            elif key == "theme":
+                # Panel-only appearance; unknown values fall back to light.
+                normalized = str(value or "").strip().lower()
+                cleaned[key] = (
+                    normalized if normalized in {"light", "dark"} else "light"
+                )
             elif key == "page_delay":
                 try:
                     cleaned[key] = max(0.1, min(120.0, float(value)))

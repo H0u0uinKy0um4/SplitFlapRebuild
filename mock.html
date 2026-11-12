@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPLIT-FLAP OS — Cohesive Light & Dark Theme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── LIGHT THEME TOKENS ── */
+    :root, [data-theme="light"] {
+      --sf-bg-canvas: #f4f6f8;
+      --sf-bg-panel: #ffffff;
+      --sf-bg-recessed: #f1f3f5;
+      --sf-bg-input: #f9fafb;
+      --sf-border: #e2e6ea;
+      --sf-border-strong: #cfd6de;
+      --sf-text-primary: #111827;
+      --sf-text-secondary: #4b5563;
+      --sf-text-muted: #6b7280;
+      --sf-accent: #0095c8;
+      --sf-accent-hover: #007ea8;
+      --sf-accent-glow: rgba(0, 149, 200, 0.25);
+      --sf-btn-sec-bg: #eef1f4;
+      --sf-btn-sec-hover: #e2e6eb;
+      --sf-shadow-panel: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+      --sf-shadow-inset: inset 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+
+    /* ── DARK THEME TOKENS ── */
+    [data-theme="dark"] {
+      --sf-bg-canvas: #0c0e12;
+      --sf-bg-panel: #15181e;
+      --sf-bg-recessed: #0e1015;
+      --sf-bg-input: #0a0b0e;
+      --sf-border: #252a34;
+      --sf-border-strong: #353c4b;
+      --sf-text-primary: #f3f4f6;
+      --sf-text-secondary: #9ca3af;
+      --sf-text-muted: #6b7280;
+      --sf-accent: #00a2d8;
+      --sf-accent-hover: #008bb9;
+      --sf-accent-glow: rgba(0, 162, 216, 0.32);
+      --sf-btn-sec-bg: #1f242d;
+      --sf-btn-sec-hover: #282e3a;
+      --sf-shadow-panel: 0 8px 24px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
+      --sf-shadow-inset: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px 16px 40px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--sf-bg-canvas);
+      color: var(--sf-text-primary);
+      transition: background-color 0.2s ease, color 0.2s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sf-container {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── TOP BAR ── */
+    .sf-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 2px;
+    }
+
+    .sf-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sf-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #00a4dc 0%, #0082af 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 3px 10px var(--sf-accent-glow);
+    }
+
+    .sf-title {
+      margin: 0;
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .sf-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sf-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+
+    .sf-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulseDot 1.6s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .sf-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--sf-bg-panel);
+      border: 1px solid var(--sf-border);
+      color: var(--sf-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .sf-icon-btn:hover {
+      background: var(--sf-bg-recessed);
+      color: var(--sf-text-primary);
+      border-color: var(--sf-border-strong);
+    }
+
+    /* ── SEGMENTED TAB BAR ── */
+    .sf-tabs {
+      background: var(--sf-bg-panel);
+      border: 1px solid var(--sf-border);
+      border-radius: 13px;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      box-shadow: var(--sf-shadow-panel);
+    }
+
+    .sf-tab {
+      border: none;
+      background: transparent;
+      color: var(--sf-text-secondary);
+      padding: 9px 8px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .sf-tab:hover:not(.active) {
+      background: var(--sf-bg-recessed);
+      color: var(--sf-text-primary);
+    }
+
+    .sf-tab.active {
+      background: var(--sf-accent);
+      color: #ffffff;
+      box-shadow: 0 2px 10px var(--sf-accent-glow);
+    }
+
+    /* ── SECTION HEADERS ── */
+    .sf-section-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sf-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .sf-section-title {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--sf-text-secondary);
+    }
+
+    .sf-meta-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--sf-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── HARDWARE FLAP BEZEL (ALWAYS PHYSICAL DARK) ── */
+    .sf-display-bezel {
+      width: 100%;
+      background: linear-gradient(180deg, #16181c 0%, #0c0d10 100%);
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid #262930;
+      box-shadow:
+        inset 0 3px 12px rgba(0, 0, 0, 0.85),
+        var(--sf-shadow-panel);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    .sf-flap-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 15), var(--tile-w, 50px));
+      gap: var(--tile-gap, 5px);
+    }
+
+    .sf-flap {
+      position: relative;
+      width: var(--tile-w, 50px);
+      height: var(--tile-h, 72px);
+      border-radius: var(--tile-radius, 6px);
+      background: #141619;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--tile-font, 30px);
+      font-weight: 700;
+      color: #f8fafc;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .sf-flap::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 50% 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+    }
+
+    .sf-flap-split {
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 2px;
+      background: #070809;
+      transform: translateY(-50%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+
+    /* ── ADAPTIVE PANEL (MATCHES ACTIVE THEME) ── */
+    .sf-panel {
+      width: 100%;
+      background: var(--sf-bg-panel);
+      border: 1px solid var(--sf-border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      box-shadow: var(--sf-shadow-panel);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .sf-textarea {
+      width: 100%;
+      min-height: 86px;
+      border-radius: 12px;
+      border: 1px solid var(--sf-border);
+      background: var(--sf-bg-input);
+      padding: 13px 15px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--sf-text-primary);
+      caret-color: var(--sf-accent);
+      resize: vertical;
+      box-shadow: var(--sf-shadow-inset);
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.2s;
+    }
+
+    .sf-textarea::placeholder {
+      color: var(--sf-text-muted);
+    }
+
+    .sf-textarea:focus {
+      outline: none;
+      border-color: var(--sf-accent);
+      box-shadow: var(--sf-shadow-inset), 0 0 0 3px var(--sf-accent-glow);
+    }
+
+    .sf-swatch-tray {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      background: var(--sf-bg-recessed);
+      padding: 6px 8px;
+      border-radius: 11px;
+      border: 1px solid var(--sf-border);
+      align-self: flex-start;
+      box-shadow: var(--sf-shadow-inset);
+    }
+
+    .sf-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.25), 0 1px 3px rgba(0, 0, 0, 0.25);
+      transition: transform 0.12s ease;
+    }
+
+    .sf-swatch:hover { transform: translateY(-2px) scale(1.07); }
+
+    .sf-params-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .sf-params-grid { grid-template-columns: 1fr; }
+      .sf-tabs { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .sf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sf-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--sf-text-secondary);
+    }
+
+    .sf-input, .sf-select {
+      width: 100%;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--sf-border);
+      background: var(--sf-bg-input);
+      padding: 0 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--sf-text-primary);
+      box-shadow: var(--sf-shadow-inset);
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.2s;
+    }
+
+    .sf-input:focus, .sf-select:focus {
+      outline: none;
+      border-color: var(--sf-accent);
+      box-shadow: var(--sf-shadow-inset), 0 0 0 3px var(--sf-accent-glow);
+    }
+
+    .sf-mini-preview-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 0 4px;
+      border-top: 1px dashed var(--sf-border);
+    }
+
+    .sf-mini-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--sf-text-muted);
+    }
+
+    .sf-mini-bezel {
+      background: #0b0c0f;
+      padding: 7px 9px;
+      border-radius: 9px;
+      border: 1px solid #242830;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85);
+      display: inline-grid;
+      grid-template-columns: repeat(var(--cols, 15), 24px);
+      gap: 3px;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .sf-mini-flap {
+      position: relative;
+      width: 24px;
+      height: 33px;
+      border-radius: 4px;
+      background: #181a1f;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sf-mini-flap::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.85);
+    }
+
+    .sf-btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sf-btn {
+      height: 39px;
+      padding: 0 17px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s ease;
+    }
+
+    .sf-btn-primary {
+      background: var(--sf-accent);
+      color: #ffffff;
+      box-shadow: 0 3px 12px var(--sf-accent-glow);
+    }
+
+    .sf-btn-primary:hover {
+      background: var(--sf-accent-hover);
+    }
+
+    .sf-btn-secondary {
+      background: var(--sf-btn-sec-bg);
+      color: var(--sf-text-primary);
+      border-color: var(--sf-border);
+    }
+
+    .sf-btn-secondary:hover {
+      background: var(--sf-btn-sec-hover);
+      border-color: var(--sf-border-strong);
+    }
+
+    /* ── FOOTER ── */
+    .sf-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 6px 0;
+      border-top: 1px solid var(--sf-border);
+      color: var(--sf-text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    .sf-version-tag {
+      background: var(--sf-bg-recessed);
+      border: 1px solid var(--sf-border);
+      color: var(--sf-text-secondary);
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="sf-container">
+    <header class="sf-topbar">
+      <div class="sf-brand">
+        <div class="sf-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="4" y="4" width="16" height="16" rx="2.5" />
+            <line x1="4" y1="9" x2="20" y2="9" />
+            <line x1="4" y1="15" x2="20" y2="15" />
+            <line x1="9" y1="4" x2="9" y2="20" />
+            <line x1="15" y1="4" x2="15" y2="20" />
+          </svg>
+        </div>
+        <h1 class="sf-title">SPLIT-FLAP OS</h1>
+      </div>
+
+      <div class="sf-topbar-right">
+        <span class="sf-status-pill">
+          <span class="sf-status-dot"></span>
+          <span>ONLINE</span>
+        </span>
+        <button class="sf-icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Light / Dark Mode" aria-label="Toggle theme">
+          ☀️
+        </button>
+      </div>
+    </header>
+
+    <nav class="sf-tabs">
+      <button class="sf-tab active">CONTROL</button>
+      <button class="sf-tab">PLAYLISTS</button>
+      <button class="sf-tab">APPS</button>
+      <button class="sf-tab">TUNING</button>
+      <button class="sf-tab">SETTINGS</button>
+    </nav>
+
+    <section class="sf-section-wrap">
+      <div class="sf-section-header">
+        <h2 class="sf-section-title">LIVE DISPLAY</h2>
+        <span class="sf-meta-badge">idle &bull; 3 rows &times; 15 columns</span>
+      </div>
+      <div class="sf-display-bezel">
+        <div class="sf-flap-grid" id="liveGrid"></div>
+      </div>
+    </section>
+
+    <section class="sf-section-wrap">
+      <div class="sf-section-header">
+        <h2 class="sf-section-title">COMPOSE</h2>
+        <span class="sf-meta-badge">0 / 45 chars &bull; start col 1</span>
+      </div>
+      <div class="sf-panel">
+        <textarea class="sf-textarea" placeholder="Type a message — new lines become rows"></textarea>
+        <div class="sf-swatch-tray">
+          <button class="sf-swatch" style="background:#b91c1c"></button>
+          <button class="sf-swatch" style="background:#ea580c"></button>
+          <button class="sf-swatch" style="background:#f59e0b"></button>
+          <button class="sf-swatch" style="background:#15803d"></button>
+          <button class="sf-swatch" style="background:#026aa7"></button>
+          <button class="sf-swatch" style="background:#6b21a8"></button>
+          <button class="sf-swatch" style="background:#f8fafc"></button>
+          <button class="sf-swatch" style="background:#14161a"></button>
+          <button class="sf-swatch" style="background:#06b6d4"></button>
+          <button class="sf-swatch" style="background:#e11d48"></button>
+        </div>
+        <div class="sf-params-grid">
+          <div class="sf-field">
+            <label class="sf-label">START COLUMN</label>
+            <input class="sf-input" type="number" value="1" />
+          </div>
+          <div class="sf-field">
+            <label class="sf-label">SEND ORDER</label>
+            <select class="sf-select"><option>Left &rarr; Right (ltr)</option></select>
+          </div>
+          <div class="sf-field">
+            <label class="sf-label">SPEED (MS/MODULE)</label>
+            <input class="sf-input" type="number" value="15" />
+          </div>
+        </div>
+        <div class="sf-mini-preview-wrap">
+          <span class="sf-mini-label">Preview</span>
+          <div class="sf-mini-bezel" id="miniGrid"></div>
+        </div>
+        <div class="sf-btn-group">
+          <button class="sf-btn sf-btn-primary">PUSH TO DISPLAY</button>
+          <button class="sf-btn sf-btn-secondary">+ ADD TO PLAYLIST</button>
+          <button class="sf-btn sf-btn-secondary">CLEAR</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sf-footer">
+      <div><span class="sf-version-tag">v1.2.5</span> splitflap &bull; 3&times;15 &bull; 45 modules &bull; idle</div>
+    </footer>
+  </div>
+
+  <script>
+    const text = "SPLIT-FLAP OS  READY TO FLIP   MODRANY 22C    ";
+    document.getElementById('liveGrid').innerHTML = Array.from(text).map(c =>
+      `<div class="sf-flap"><span>${c === ' ' ? '&nbsp;' : c}</span><div class="sf-flap-split"></div></div>`
+    ).join('');
+    document.getElementById('miniGrid').innerHTML = Array.from(' '.repeat(45)).map(() =>
+      `<div class="sf-mini-flap">&nbsp;</div>`
+    ).join('');
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+  </script>
+</body>
+</html>

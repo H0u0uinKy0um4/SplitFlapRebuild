@@ -60,6 +60,17 @@ DISPLAY_FIELDS = (
         ),
     ),
     SettingField(
+        key="theme",
+        label="Panel theme",
+        type="select",
+        options=("light", "dark"),
+        default="light",
+        help=(
+            "Panel appearance. The physical split-flap display and the module "
+            "map stay dark in both themes."
+        ),
+    ),
+    SettingField(
         key="timezone",
         label="Timezone",
         type="timezone",

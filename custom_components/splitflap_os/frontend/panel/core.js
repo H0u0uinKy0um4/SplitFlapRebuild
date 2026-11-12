@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.7";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.7";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.7";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.8";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.8";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.8";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -33,10 +33,16 @@ export const PanelMixin = (Base) => class extends Base {
     this._charSignature = "";
     this._modalApp = null;
     this._shellRendered = false;
+    this._theme = "light";
+    this._themePending = null;
 
     try {
       const saved = window.localStorage.getItem(`${DOMAIN}_tab`);
       if (saved) this._tab = saved;
+      const savedTheme = window.localStorage.getItem(`${DOMAIN}_theme`);
+      if (savedTheme === "light" || savedTheme === "dark") {
+        this._theme = savedTheme;
+      }
       // Only accept known sub-tabs so a stale stored value can never leave
       // a page with no visible subpage.
       const known = {
@@ -56,6 +62,10 @@ export const PanelMixin = (Base) => class extends Base {
     } catch (err) {
       /* local storage may be unavailable in private windows. */
     }
+
+    // Apply the cached theme before the first paint to avoid a light flash;
+    // the engine's persisted setting takes over on the first state update.
+    this.setAttribute("data-theme", this._theme === "dark" ? "dark" : "light");
   }
 
   set hass(hass) {

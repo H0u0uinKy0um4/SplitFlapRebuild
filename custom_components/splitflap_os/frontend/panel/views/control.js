@@ -1,12 +1,12 @@
 /** Control tab: live display, composer and preview. */
 
-import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.7";
+import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.8";
 import {
   centerLine,
   escapeAttr,
   escapeHtml,
   formatMessage,
-} from "../../utils.js?v=1.2.7";
+} from "../../utils.js?v=1.2.8";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -26,7 +26,7 @@ export const PanelMixin = (Base) =>
               <h2 class="section-title">${this._t('compose')}</h2>
               <span class="meta-badge" id="composeMeta"></span>
             </div>
-            <div class="compose-deck hardware-bezel">
+            <div class="compose-deck">
               <textarea id="compose" class="compose-input" rows="3"
                 placeholder="${escapeAttr(this._t('compose_placeholder'))}"></textarea>
               <div class="palette">

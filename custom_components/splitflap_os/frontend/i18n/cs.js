@@ -25,6 +25,7 @@ export const PANEL = {
   run: "SPUSTIT",
   refresh: "OBNOVIT",
   refresh_state: "Obnovit stav",
+  toggle_theme: "Přepnout světlý / tmavý režim",
   remove: "Odebrat",
   scan_bus: "PROHLEDAT SBĚRNICI",
   sync: "SYNCHRONIZOVAT",
@@ -414,6 +415,7 @@ export const SETTINGS = {
     rows: "Řádky rámu (0 = auto)",
     cols: "Sloupce rámu (0 = auto)",
     ui_scale: "Měřítko náhledu (%)",
+    theme: "Motiv panelu",
     timezone: "Časové pásmo",
     units: "Jednotky",
     page_delay: "Výchozí prodleva stránky (s)",
@@ -425,6 +427,8 @@ export const SETTINGS = {
     cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
     ui_scale:
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
+    theme:
+      "Světlý nebo tmavý vzhled panelu. Fyzický split-flap displej i mapa modulů zůstávají tmavé v obou režimech.",
     timezone:
       "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
   },
@@ -433,5 +437,6 @@ export const SETTINGS = {
   },
   options: {
     units: { auto: "Automaticky", imperial: "Imperiální", metric: "Metrické" },
+    theme: { light: "Světlý", dark: "Tmavý" },
   },
 };
