@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.6";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.6";
-import { PANEL_STYLES } from "../styles.js?v=1.2.6";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.7";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.7";
+import { PANEL_STYLES } from "../styles.js?v=1.2.7";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -14,17 +14,30 @@ export const PanelMixin = (Base) =>
       this.shadowRoot.innerHTML = `
       <style>${PANEL_STYLES}</style>
       <div class="app">
-        <header>
+        <header class="topbar">
           <div class="brand">
-            <div class="mark">▦</div>
-            <div>
-              <h1>SPLIT-FLAP OS <span style="font-size:.58rem;opacity:.45;font-weight:600;vertical-align:middle">v${VERSION}</span></h1>
-              <div class="sub" id="subtitle">${this._t('connecting_subtitle')}</div>
+            <div class="logo" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="4" y="4" width="16" height="16" rx="2.5" />
+                <line x1="4" y1="9" x2="20" y2="9" />
+                <line x1="4" y1="15" x2="20" y2="15" />
+                <line x1="9" y1="4" x2="9" y2="20" />
+                <line x1="15" y1="4" x2="15" y2="20" />
+              </svg>
             </div>
+            <h1 class="title">SPLIT-FLAP OS</h1>
           </div>
-          <div class="conn">
-            <span class="pill connecting" id="statusPill">${this._t('connecting')}</span>
-            <button class="icon-btn" data-action="refresh" title="${escapeAttr(this._t('refresh_state'))}">⟳</button>
+          <div class="topbar-right">
+            <span class="status-pill connecting" id="statusPill">
+              <span class="status-dot"></span>
+              <span id="statusText">${this._t("connecting")}</span>
+            </span>
+            <button class="icon-btn" data-action="refresh" title="${escapeAttr(this._t('refresh_state'))}" aria-label="${escapeAttr(this._t('refresh_state'))}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <polyline points="21 3 21 9 15 9" />
+              </svg>
+            </button>
           </div>
         </header>
 
@@ -54,6 +67,14 @@ export const PanelMixin = (Base) =>
           ${this._tuningPage()}
           ${this._settingsPage()}
         </main>
+
+        <footer class="footer">
+          <div class="footer-info">
+            <span class="version-tag">v${VERSION}</span>
+            <span id="footerMeta">${escapeHtml(this._t("connecting_subtitle"))}</span>
+          </div>
+          <span class="version-tag" id="compatMeta">MQTT —</span>
+        </footer>
 
         <div class="toasts" id="toasts"></div>
 
@@ -176,11 +197,13 @@ export const PanelMixin = (Base) =>
 
     _renderStatus() {
       const pill = this.shadowRoot.getElementById("statusPill");
-      const subtitle = this.shadowRoot.getElementById("subtitle");
+      const pillText = this.shadowRoot.getElementById("statusText");
+      const footer = this.shadowRoot.getElementById("footerMeta");
+      if (!pill) return;
       if (!this._state) {
-        pill.textContent = this._t('connecting');
-        pill.className = "pill connecting";
-        subtitle.textContent = this._t('connecting_subtitle');
+        pill.className = "status-pill connecting";
+        if (pillText) pillText.textContent = this._t("connecting");
+        if (footer) footer.textContent = this._t("connecting_subtitle");
         return;
       }
 
@@ -188,8 +211,8 @@ export const PanelMixin = (Base) =>
       const engine = this._engine();
       const board = this._board();
       const online = Boolean(coordinator.online);
-      pill.textContent = this._t(online ? "online" : "offline");
-      pill.className = `pill ${online ? "online" : "offline"}`;
+      pill.className = `status-pill ${online ? "online" : "offline"}`;
+      if (pillText) pillText.textContent = this._t(online ? "online" : "offline");
 
       const prefix = coordinator.prefix || "—";
       const mode = engine.active_app
@@ -202,7 +225,21 @@ export const PanelMixin = (Base) =>
         mode,
       ];
       if (board.error) parts.push(this._t("layout_error_short"));
-      subtitle.textContent = parts.join(" • ");
+      if (footer) footer.textContent = parts.join(" • ");
+
+      const compat = this.shadowRoot.getElementById("compatMeta");
+      if (compat) {
+        // Prefer what the master reports; fall back to the generation this
+        // integration expects so the badge is meaningful before the first
+        // versioned status payload arrives.
+        const master = coordinator.master_mqtt_compat;
+        const local =
+          coordinator.mqtt_compat != null
+            ? coordinator.mqtt_compat
+            : coordinator.compat;
+        const shown = master != null ? master : local;
+        compat.textContent = shown != null ? `MQTT ${shown}` : "MQTT —";
+      }
     }
 
     _renderBanner() {

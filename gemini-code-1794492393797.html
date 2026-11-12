@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPLIT-FLAP OS v1.2.5 — Unified Hardware Console Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #f4f6f8;
+      --bg-card: #ffffff;
+      --bg-subtle: #f1f3f5;
+      --border-subtle: #e2e6ea;
+      --border-strong: #cfd6de;
+      --text-primary: #111827;
+      --text-secondary: #4b5563;
+      --text-muted: #6b7280;
+      --accent: #0095c8;
+      --accent-hover: #007ea8;
+      --accent-glow: rgba(0, 149, 200, 0.28);
+      --card-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px 16px 40px;
+      font-family: var(--font-sans);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sf-container {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── COMPACT SINGLE-ROW TOP BAR ── */
+    .sf-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 2px;
+    }
+
+    .sf-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sf-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #00a4dc 0%, #0082af 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 3px 8px rgba(0, 149, 200, 0.25);
+    }
+
+    .sf-title {
+      margin: 0;
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .sf-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sf-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      cursor: pointer;
+    }
+
+    .sf-status-pill.online {
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+
+    .sf-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .sf-status-pill.online .sf-status-dot {
+      animation: pulseDot 1.6s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .sf-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: all 0.15s;
+    }
+
+    .sf-icon-btn:hover {
+      background: #f9fafb;
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    /* ── SEGMENTED TAB BAR ── */
+    .sf-tabs {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 13px;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .sf-tab {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 9px 8px;
+      border-radius: 10px;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .sf-tab:hover:not(.active) {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .sf-tab.active {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    /* ── SHARED SECTION HEADER ROW ── */
+    .sf-section-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sf-section-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .sf-section-title {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .sf-meta-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── DARK HARDWARE BEZEL HOUSING (SHARED BY LIVE & COMPOSE) ── */
+    .sf-hardware-bezel {
+      width: 100%;
+      background: linear-gradient(180deg, #17191d 0%, #0e1013 100%);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border: 1px solid #262930;
+      box-shadow:
+        inset 0 2px 10px rgba(0, 0, 0, 0.75),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+      color: #f3f4f6;
+    }
+
+    .sf-display-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    .sf-flap-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 15), var(--tile-w, 50px));
+      gap: var(--tile-gap, 5px);
+    }
+
+    /* ── AUTHENTIC SPLIT-FLAP TILE ── */
+    .sf-flap {
+      position: relative;
+      width: var(--tile-w, 50px);
+      height: var(--tile-h, 72px);
+      border-radius: var(--tile-radius, 6px);
+      background: #141619;
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: var(--tile-font, 30px);
+      font-weight: 700;
+      color: #f8fafc;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .sf-flap::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 50% 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+      pointer-events: none;
+    }
+
+    .sf-flap-split {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 2px;
+      background: #070809;
+      transform: translateY(-50%);
+      z-index: 3;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+
+    .sf-flap-split::before,
+    .sf-flap-split::after {
+      content: "";
+      position: absolute;
+      top: -3px;
+      width: 3px;
+      height: 7px;
+      background: #272b33;
+      border-radius: 1px;
+    }
+    .sf-flap-split::before { left: 0; }
+    .sf-flap-split::after { right: 0; }
+
+    /* ── DARK HARDWARE COMPOSE DECK ── */
+    .sf-compose-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sf-textarea-dark {
+      width: 100%;
+      min-height: 86px;
+      border-radius: 12px;
+      border: 1px solid #2b2f38;
+      background: #090a0d;
+      padding: 13px 15px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.5;
+      color: #f8fafc;
+      caret-color: var(--accent);
+      resize: vertical;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .sf-textarea-dark::placeholder {
+      color: #525866;
+    }
+
+    .sf-textarea-dark:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.65),
+        0 0 0 3px rgba(0, 149, 200, 0.22);
+    }
+
+    /* Dark Tactile Color Swatch Tray */
+    .sf-swatch-tray-dark {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      background: #0a0b0e;
+      padding: 6px 8px;
+      border-radius: 11px;
+      border: 1px solid #242830;
+      align-self: flex-start;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .sf-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .sf-swatch:hover {
+      transform: translateY(-2px) scale(1.07);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .sf-swatch:active {
+      transform: translateY(0) scale(0.96);
+    }
+
+    /* 3-Column Dark Parameter Grid */
+    .sf-params-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .sf-params-grid { grid-template-columns: 1fr; }
+      .sf-tabs { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .sf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sf-label-dark {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8b93a1;
+    }
+
+    .sf-input-dark, .sf-select-dark {
+      width: 100%;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid #2b2f38;
+      background: #0b0c0f;
+      padding: 0 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #f3f4f6;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .sf-input-dark:focus, .sf-select-dark:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow:
+        inset 0 1px 4px rgba(0, 0, 0, 0.55),
+        0 0 0 3px rgba(0, 149, 200, 0.22);
+    }
+
+    /* Mini Live Compose Preview Strip */
+    .sf-mini-preview-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 0 4px;
+      border-top: 1px dashed #262a33;
+    }
+
+    .sf-mini-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+
+    .sf-mini-bezel {
+      background: #08090b;
+      padding: 7px 9px;
+      border-radius: 9px;
+      border: 1px solid #22262e;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85);
+      display: inline-grid;
+      grid-template-columns: repeat(var(--cols, 15), 24px);
+      gap: 3px;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .sf-mini-flap {
+      position: relative;
+      width: 24px;
+      height: 33px;
+      border-radius: 4px;
+      background: #181a1f;
+      color: #f8fafc;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .sf-mini-flap::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.85);
+    }
+
+    /* Dark Deck Action Buttons */
+    .sf-btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .sf-btn {
+      height: 39px;
+      padding: 0 17px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s ease;
+    }
+
+    .sf-btn:active { transform: scale(0.98); }
+
+    .sf-btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 3px 12px rgba(0, 149, 200, 0.35);
+    }
+
+    .sf-btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 16px rgba(0, 149, 200, 0.48);
+    }
+
+    .sf-btn-dark-secondary {
+      background: #21252d;
+      color: #e5e7eb;
+      border-color: #303641;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .sf-btn-dark-secondary:hover {
+      background: #2a2f3a;
+      color: #ffffff;
+      border-color: #3f4756;
+    }
+
+    /* ── SUBTLE SYSTEM FOOTER ── */
+    .sf-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 6px 0;
+      border-top: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sf-footer-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .sf-version-tag {
+      background: #e9ecef;
+      color: var(--text-secondary);
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-weight: 600;
+    }
+
+    .sf-scale-switcher {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: #e9ecef;
+      padding: 2px;
+      border-radius: 7px;
+    }
+
+    .sf-scale-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 3px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .sf-scale-btn.active {
+      background: #fff;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="sf-container">
+
+    <!-- COMPACT TOP BAR -->
+    <header class="sf-topbar">
+      <div class="sf-brand">
+        <div class="sf-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="4" y="4" width="16" height="16" rx="2.5" />
+            <line x1="4" y1="9" x2="20" y2="9" />
+            <line x1="4" y1="15" x2="20" y2="15" />
+            <line x1="9" y1="4" x2="9" y2="20" />
+            <line x1="15" y1="4" x2="15" y2="20" />
+          </svg>
+        </div>
+        <h1 class="sf-title">SPLIT-FLAP OS</h1>
+      </div>
+
+      <div class="sf-topbar-right">
+        <span class="sf-status-pill online" id="statusPill" onclick="toggleOnline()" title="Click to toggle Online/Offline">
+          <span class="sf-status-dot"></span>
+          <span id="statusText">ONLINE</span>
+        </span>
+
+        <button class="sf-icon-btn" aria-label="Refresh">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <polyline points="21 3 21 9 15 9" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 5-TAB NAVIGATION -->
+    <nav class="sf-tabs">
+      <button class="sf-tab active" onclick="selectTab(this)">CONTROL</button>
+      <button class="sf-tab" onclick="selectTab(this)">PLAYLISTS</button>
+      <button class="sf-tab" onclick="selectTab(this)">APPS</button>
+      <button class="sf-tab" onclick="selectTab(this)">TUNING</button>
+      <button class="sf-tab" onclick="selectTab(this)">SETTINGS</button>
+    </nav>
+
+    <!-- LIVE DISPLAY SECTION -->
+    <section class="sf-section-wrap">
+      <div class="sf-section-header">
+        <h2 class="sf-section-title">LIVE DISPLAY</h2>
+        <span class="sf-meta-badge" id="displayMeta">idle &bull; 3 rows &times; 15 columns</span>
+      </div>
+
+      <div class="sf-hardware-bezel sf-display-center" id="displayBezel">
+        <div class="sf-flap-grid" id="liveGrid"></div>
+      </div>
+    </section>
+
+    <!-- DARK HARDWARE COMPOSE SECTION -->
+    <section class="sf-section-wrap">
+      <div class="sf-section-header">
+        <h2 class="sf-section-title">COMPOSE</h2>
+        <span class="sf-meta-badge" id="charCounter">0 / 45 chars &bull; start col 1</span>
+      </div>
+
+      <div class="sf-hardware-bezel sf-compose-deck">
+        <textarea
+          id="composeInput"
+          class="sf-textarea-dark"
+          placeholder="Type a message — new lines become rows"
+          oninput="updateComposePreview()"
+        ></textarea>
+
+        <!-- Dark Tactile Swatch Tray -->
+        <div class="sf-swatch-tray-dark">
+          <button class="sf-swatch" style="background:#b91c1c" title="Red" onclick="insertToken('🟥')"></button>
+          <button class="sf-swatch" style="background:#ea580c" title="Orange" onclick="insertToken('🟧')"></button>
+          <button class="sf-swatch" style="background:#f59e0b" title="Yellow" onclick="insertToken('🟨')"></button>
+          <button class="sf-swatch" style="background:#15803d" title="Green" onclick="insertToken('🟩')"></button>
+          <button class="sf-swatch" style="background:#026aa7" title="Blue" onclick="insertToken('🟦')"></button>
+          <button class="sf-swatch" style="background:#6b21a8" title="Purple" onclick="insertToken('🟪')"></button>
+          <button class="sf-swatch" style="background:#f8fafc" title="White" onclick="insertToken('⬜')"></button>
+          <button class="sf-swatch" style="background:#14161a" title="Black" onclick="insertToken('⬛')"></button>
+          <button class="sf-swatch" style="background:#06b6d4" title="Cyan" onclick="insertToken('🟦')"></button>
+          <button class="sf-swatch" style="background:#e11d48" title="Pink" onclick="insertToken('🟥')"></button>
+        </div>
+
+        <!-- Dark Parameters -->
+        <div class="sf-params-grid">
+          <div class="sf-field">
+            <label class="sf-label-dark" for="startCol">START COLUMN</label>
+            <input id="startCol" class="sf-input-dark" type="number" value="1" min="1" oninput="updateComposePreview()" />
+          </div>
+          <div class="sf-field">
+            <label class="sf-label-dark" for="sendOrder">SEND ORDER</label>
+            <select id="sendOrder" class="sf-select-dark">
+              <option value="ltr" selected>Left &rarr; Right (ltr)</option>
+              <option value="rtl">Right &rarr; Left (rtl)</option>
+              <option value="center_out">Center Out</option>
+              <option value="random">Random</option>
+            </select>
+          </div>
+          <div class="sf-field">
+            <label class="sf-label-dark" for="speedMs">SPEED (MS/MODULE)</label>
+            <input id="speedMs" class="sf-input-dark" type="number" value="15" min="0" max="500" />
+          </div>
+        </div>
+
+        <!-- Mini Compose Preview -->
+        <div class="sf-mini-preview-wrap">
+          <span class="sf-mini-label">Preview</span>
+          <div class="sf-mini-bezel" id="miniPreviewGrid"></div>
+        </div>
+
+        <!-- Dark Deck Action Buttons -->
+        <div class="sf-btn-group">
+          <button class="sf-btn sf-btn-primary" onclick="pushToLive()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            PUSH TO DISPLAY
+          </button>
+          <button class="sf-btn sf-btn-dark-secondary">+ ADD TO PLAYLIST</button>
+          <button class="sf-btn sf-btn-dark-secondary" onclick="clearCompose()">CLEAR</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM METADATA FOOTER -->
+    <footer class="sf-footer">
+      <div class="sf-footer-info">
+        <span class="sf-version-tag">v1.2.5</span>
+        <span id="footerMeta">splitflap &bull; 3&times;15 &bull; 45 modules &bull; idle</span>
+      </div>
+
+      <div class="sf-scale-switcher" title="Preview how UI adapts to different hardware sizes">
+        <button class="sf-scale-btn" onclick="setGrid(1, 1, this)">1&times;1</button>
+        <button class="sf-scale-btn" onclick="setGrid(1, 6, this)">1&times;6</button>
+        <button class="sf-scale-btn active" onclick="setGrid(3, 15, this)">3&times;15</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    let rows = 3;
+    let cols = 15;
+    let liveText = "SPLIT-FLAP OS  READY TO FLIP   MODRANY 22C    ";
+
+    const SAMPLE_TEXTS = {
+      "1x1": "5",
+      "1x6": "PRAGUE",
+      "3x15": "SPLIT-FLAP OS  READY TO FLIP   MODRANY 22C    "
+    };
+
+    function getTileMetrics(c) {
+      if (c === 1) return { w: 92, h: 128, font: 60, gap: 8, pad: 22, radius: 10 };
+      if (c <= 6)  return { w: 68, h: 96,  font: 44, gap: 7, pad: 18, radius: 8 };
+      return            { w: 50, h: 72,  font: 30, gap: 5, pad: 18, radius: 6 };
+    }
+
+    function renderLiveDisplay() {
+      const grid = document.getElementById('liveGrid');
+      const m = getTileMetrics(cols);
+      grid.style.setProperty('--cols', cols);
+      grid.style.setProperty('--tile-w', m.w + 'px');
+      grid.style.setProperty('--tile-h', m.h + 'px');
+      grid.style.setProperty('--tile-font', m.font + 'px');
+      grid.style.setProperty('--tile-gap', m.gap + 'px');
+      grid.style.setProperty('--tile-radius', m.radius + 'px');
+      document.getElementById('displayBezel').style.padding = m.pad + 'px';
+
+      const total = rows * cols;
+      const chars = Array.from(liveText.padEnd(total, ' ').slice(0, total));
+      grid.innerHTML = chars.map(ch => `
+        <div class="sf-flap">
+          <span>${ch === ' ' ? '&nbsp;' : ch}</span>
+          <div class="sf-flap-split"></div>
+        </div>
+      `).join('');
+
+      const modLabel = total === 1 ? '1 module' : `${total} modules`;
+      document.getElementById('footerMeta').innerHTML = `splitflap &bull; ${rows}&times;${cols} &bull; ${modLabel} &bull; idle`;
+      document.getElementById('displayMeta').innerHTML = `idle &bull; ${rows} ${rows === 1 ? 'row' : 'rows'} &times; ${cols} ${cols === 1 ? 'column' : 'columns'}`;
+    }
+
+    function updateComposePreview() {
+      const raw = document.getElementById('composeInput').value.toUpperCase();
+      const startCol = Math.max(1, parseInt(document.getElementById('startCol').value) || 1);
+      const lines = raw.split('\n');
+      const mini = document.getElementById('miniPreviewGrid');
+      mini.style.setProperty('--cols', cols);
+
+      let buffer = [];
+      for (let r = 0; r < rows; r++) {
+        const line = (lines[r] || '');
+        const padded = ' '.repeat(Math.min(cols, startCol - 1)) + line;
+        const rowChars = Array.from(padded.padEnd(cols, ' ').slice(0, cols));
+        buffer.push(...rowChars);
+      }
+
+      mini.innerHTML = buffer.map(ch => `
+        <div class="sf-mini-flap">${ch === ' ' ? '&nbsp;' : ch}</div>
+      `).join('');
+
+      const charCount = Array.from(raw.replace(/\n/g, '')).length;
+      document.getElementById('charCounter').innerHTML = `${charCount} / ${rows * cols} chars &bull; start col ${startCol}`;
+    }
+
+    function setGrid(r, c, btn) {
+      rows = r;
+      cols = c;
+      document.querySelectorAll('.sf-scale-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      liveText = SAMPLE_TEXTS[`${r}x${c}`] || "";
+      document.getElementById('composeInput').value = "";
+      renderLiveDisplay();
+      updateComposePreview();
+    }
+
+    function pushToLive() {
+      const raw = document.getElementById('composeInput').value.toUpperCase();
+      const startCol = Math.max(1, parseInt(document.getElementById('startCol').value) || 1);
+      const lines = raw.split('\n');
+      let out = '';
+      for (let r = 0; r < rows; r++) {
+        const line = ' '.repeat(Math.min(cols, startCol - 1)) + (lines[r] || '');
+        out += line.padEnd(cols, ' ').slice(0, cols);
+      }
+      liveText = out;
+      renderLiveDisplay();
+    }
+
+    function clearCompose() {
+      document.getElementById('composeInput').value = '';
+      updateComposePreview();
+    }
+
+    function insertToken(token) {
+      const ta = document.getElementById('composeInput');
+      ta.value += token;
+      ta.focus();
+      updateComposePreview();
+    }
+
+    function selectTab(btn) {
+      document.querySelectorAll('.sf-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function toggleOnline() {
+      const pill = document.getElementById('statusPill');
+      const txt = document.getElementById('statusText');
+      const isOnline = pill.classList.toggle('online');
+      txt.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
+    }
+
+    renderLiveDisplay();
+    updateComposePreview();
+  </script>
+</body>
+</html>

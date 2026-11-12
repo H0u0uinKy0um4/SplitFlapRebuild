@@ -1,53 +1,68 @@
 /** Control tab: live display, composer and preview. */
 
-import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.6";
+import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.7";
 import {
   centerLine,
   escapeAttr,
   escapeHtml,
   formatMessage,
-} from "../../utils.js?v=1.2.6";
+} from "../../utils.js?v=1.2.7";
 
 export const PanelMixin = (Base) =>
   class extends Base {
     _controlPage() {
       return `
         <section class="page active" data-page="control">
-          <div class="card">
-            <h2>${this._t('live_display')}</h2>
-            <div class="preview wide" id="live"></div>
-            <div class="muted" id="liveMeta" style="margin-top:8px"></div>
-          </div>
+          <section class="section-wrap">
+            <div class="section-header">
+              <h2 class="section-title">${this._t('live_display')}</h2>
+              <span class="meta-badge" id="liveMeta"></span>
+            </div>
+            <div class="preview" id="live"></div>
+          </section>
 
-          <div class="card">
-            <h2>${this._t('compose')}</h2>
-            <textarea id="compose" class="compose-input" rows="3"
-              placeholder="${escapeAttr(this._t('compose_placeholder'))}"></textarea>
-            <div class="palette">
-              ${PALETTE.map(
-                ([emoji, code]) =>
-                  `<button class="palette-${code}" data-action="insert-color" data-char="${emoji}" title="${escapeAttr(this._t('color_' + code))}" aria-label="${escapeAttr(this._t('color_' + code))}"></button>`
-              ).join("")}
+          <section class="section-wrap">
+            <div class="section-header">
+              <h2 class="section-title">${this._t('compose')}</h2>
+              <span class="meta-badge" id="composeMeta"></span>
             </div>
-            <div class="options">
-              <label class="field"><span>${this._t('start_column')}</span>
-                <input id="startCol" type="number" min="1" max="512" value="1">
-              </label>
-              <label class="field"><span>${this._t('send_order')}</span>
-                <select id="styleSelect">${this._styleOptions()}</select>
-              </label>
-              <label class="field"><span>${this._t('speed')}</span>
-                <input id="speedInput" type="number" min="0" max="500" step="5" value="15">
-              </label>
+            <div class="compose-deck hardware-bezel">
+              <textarea id="compose" class="compose-input" rows="3"
+                placeholder="${escapeAttr(this._t('compose_placeholder'))}"></textarea>
+              <div class="palette">
+                ${PALETTE.map(
+                  ([emoji, code]) =>
+                    `<button class="palette-${code}" data-action="insert-color" data-char="${emoji}" title="${escapeAttr(this._t('color_' + code))}" aria-label="${escapeAttr(this._t('color_' + code))}"></button>`
+                ).join("")}
+              </div>
+              <div class="options">
+                <label class="field"><span>${this._t('start_column')}</span>
+                  <input id="startCol" type="number" min="1" max="512" value="1">
+                </label>
+                <label class="field"><span>${this._t('send_order')}</span>
+                  <select id="styleSelect">${this._styleOptions()}</select>
+                </label>
+                <label class="field"><span>${this._t('speed')}</span>
+                  <input id="speedInput" type="number" min="0" max="500" step="5" value="15">
+                </label>
+              </div>
+              <div class="mini-preview-wrap">
+                <span class="mini-label">${this._t('char_map_preview')}</span>
+                <div class="mini-bezel" id="composePreview"></div>
+              </div>
+              <div class="actions">
+                <button class="btn" data-action="push-text">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                  ${this._t('push_to_display')}
+                </button>
+                <button class="btn secondary" data-action="add-playlist">${this._t('add_to_playlist')}</button>
+                <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
+              </div>
             </div>
-            <div class="preview" id="composePreview"></div>
-            <div class="muted" id="composeMeta" style="margin-top:8px"></div>
-            <div class="actions">
-              <button class="btn" data-action="push-text">${this._t('push_to_display')}</button>
-              <button class="btn secondary" data-action="add-playlist">${this._t('add_to_playlist')}</button>
-              <button class="btn secondary" data-action="clear-text">${this._t("clear")}</button>
-            </div>
-          </div>
+          </section>
         </section>`;
     }
 
@@ -55,7 +70,6 @@ export const PanelMixin = (Base) =>
       const board = this._board();
       const engine = this._engine();
       const html = this._previewHtml(this._lines(), true);
-      const width = this._gridMaxWidth(board.cols, this._previewCell(), 3);
       const parts = [
         engine.active_app
           ? this._appName(engine.active_app)
@@ -82,7 +96,7 @@ export const PanelMixin = (Base) =>
         const node = this.shadowRoot.getElementById(id);
         if (node) {
           node.innerHTML = html;
-          this._fitPreview(node, width);
+          this._fitPreview(node);
         }
       }
       for (const id of ["liveMeta", "liveAppsMeta"]) {
@@ -160,18 +174,15 @@ export const PanelMixin = (Base) =>
       );
       const preview = this.shadowRoot.getElementById("composePreview");
       if (preview) {
-        preview.innerHTML = this._previewHtml(lines, false);
-        this._fitPreview(
-          preview,
-          this._gridMaxWidth(board.cols, this._previewCell(), 3)
-        );
+        preview.innerHTML = this._previewHtml(lines, false, this._miniCell());
       }
       const meta = this.shadowRoot.getElementById("composeMeta");
       if (meta) {
+        const total = Math.max(0, board.rows * board.cols);
         meta.textContent = `${this._plural(
           "characters",
           this._composeText.length
-        )} • ${this._t("start_column").toLocaleLowerCase(
+        )} / ${total} • ${this._t("start_column").toLocaleLowerCase(
           this._lang()
         )} ${start}`;
       }

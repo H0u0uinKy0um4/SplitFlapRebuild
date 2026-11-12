@@ -1,25 +1,31 @@
 /** Apps tab: live preview and app launcher grid. */
 
-import { APP_ICONS } from "../../constants.js?v=1.2.6";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.6";
+import { APP_ICONS } from "../../constants.js?v=1.2.7";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.7";
 
 export const PanelMixin = (Base) =>
   class extends Base {
     _appsPage() {
       return `
         <section class="page" data-page="apps">
-          <div class="card">
-            <h2>${this._t('live_display')}</h2>
+          <section class="section-wrap">
+            <div class="section-header">
+              <h2 class="section-title">${this._t('live_display')}</h2>
+              <span class="meta-badge" id="liveAppsMeta"></span>
+            </div>
             <div class="preview wide" id="liveApps"></div>
-            <div class="muted" id="liveAppsMeta" style="margin-top:8px"></div>
-          </div>
-          <div class="card">
-            <h2>${this._t('available_apps')}</h2>
-            <div class="apps-grid" id="appsGrid"></div>
-            <p class="muted" style="margin-bottom:0">
-              ${this._t('apps_help')}
-            </p>
-          </div>
+          </section>
+          <section class="section-wrap">
+            <div class="section-header">
+              <h2 class="section-title">${this._t('available_apps')}</h2>
+            </div>
+            <div class="card">
+              <div class="apps-grid" id="appsGrid"></div>
+              <p class="muted" style="margin-bottom:0">
+                ${this._t('apps_help')}
+              </p>
+            </div>
+          </section>
         </section>`;
     }
 

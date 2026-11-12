@@ -1,7 +1,7 @@
 /** Stateful 3D split-flap preview rendering. */
 
-import { COLOR_CODES } from "../constants.js?v=1.2.6";
-import { escapeHtml } from "../utils.js?v=1.2.6";
+import { COLOR_CODES } from "../constants.js?v=1.2.7";
+import { escapeHtml } from "../utils.js?v=1.2.7";
 
 /**
  * Owns the per-board flap memory used to decide which flaps should animate.
@@ -34,8 +34,16 @@ export class FlapDisplay {
     return Math.max(0.5, Math.min(2, raw / 100));
   }
 
-  previewCell(settings) {
-    return Math.round(48 * this.scale(settings));
+  previewCell(settings, cols = 15) {
+    // A one-module board should read like a real single flap, not a tiny dot;
+    // short rows get a middle size, and full boards keep the compact grid.
+    const count = Math.max(1, Number(cols) || 15);
+    const base = count <= 1 ? 92 : count <= 6 ? 68 : 48;
+    return Math.round(base * this.scale(settings));
+  }
+
+  miniCell(settings) {
+    return Math.round(24 * this.scale(settings));
   }
 
   moduleCell(settings) {
@@ -47,14 +55,27 @@ export class FlapDisplay {
     return Math.round(count * maxCell + Math.max(0, count - 1) * gap);
   }
 
-  fitPreview(node, contentWidth) {
+  fitPreview(node) {
     if (!node) return;
-    node.style.maxWidth = `${Math.min(Math.round(contentWidth) + 22, 940)}px`;
-    node.style.marginLeft = "auto";
-    node.style.marginRight = "auto";
+    // The dark bezel spans the full card; the grid inside stays centred and
+    // scrolls horizontally only when the board is wider than the viewport.
+    node.style.maxWidth = "";
+    node.style.marginLeft = "";
+    node.style.marginRight = "";
+    node.style.width = "100%";
   }
 
-  previewHtml(board, lines, { animate = false, maxCell = 48, gap = 3 } = {}) {
+  previewHtml(board, lines, { animate = false, maxCell = 48, gap = null } = {}) {
+    const cellGap =
+      gap != null
+        ? gap
+        : maxCell >= 80
+          ? 8
+          : maxCell >= 60
+            ? 7
+            : maxCell >= 40
+              ? 5
+              : 3;
     const chars = [];
     let html = "";
     let slotBase = 0;
@@ -85,9 +106,15 @@ export class FlapDisplay {
       slotBase += count;
     }
     if (animate) this._lastChars = chars;
-    const width = this.gridMaxWidth(board.cols, maxCell, gap);
-    const fontSize = Math.max(8, Math.round(maxCell * 0.55));
-    return `<div class="grid" style="--cols:${board.cols};--flap-max:${maxCell}px;--flap-font:${fontSize}px;max-width:${width}px;margin:0 auto">${html}</div>`;
+    const width = this.gridMaxWidth(board.cols, maxCell, cellGap);
+    const fontSize = Math.max(8, Math.round(maxCell * 0.6));
+    // Keep glyphs inside their tiles when the grid is squeezed on a phone.
+    const fontCap = `calc((100vw - 96px) / ${Math.max(
+      1,
+      board.cols
+    )} * 0.6)`;
+    const fontValue = `min(${fontSize}px, ${fontCap})`;
+    return `<div class="grid" style="--cols:${board.cols};--flap-max:${maxCell}px;--flap-font:${fontValue};--flap-gap:${cellGap}px;max-width:${width}px;margin:0 auto">${html}</div>`;
   }
 }
 
@@ -115,7 +142,14 @@ export const PanelMixin = (Base) =>
     _previewCell() {
       const engine = this._engine();
       const settings = (engine && engine.settings) || {};
-      return this._flapDisplay().previewCell(settings);
+      const board = this._board() || {};
+      return this._flapDisplay().previewCell(settings, board.cols);
+    }
+
+    _miniCell() {
+      const engine = this._engine();
+      const settings = (engine && engine.settings) || {};
+      return this._flapDisplay().miniCell(settings);
     }
 
     _moduleCell() {
@@ -132,11 +166,10 @@ export const PanelMixin = (Base) =>
       this._flapDisplay().fitPreview(node, contentWidth);
     }
 
-    _previewHtml(lines, animate) {
+    _previewHtml(lines, animate, maxCell = null) {
       return this._flapDisplay().previewHtml(this._board(), lines, {
         animate,
-        maxCell: this._previewCell(),
-        gap: 3,
+        maxCell: maxCell == null ? this._previewCell() : maxCell,
       });
     }
   };

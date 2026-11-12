@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, layout, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.6";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.6";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.7";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.7";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -211,7 +211,7 @@ export const PanelMixin = (Base) =>
       const charFont = Math.max(10, Math.round(maxCell * 0.26));
       const idFont = Math.max(8, Math.round(maxCell * 0.13));
       node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};--mod-max:${maxCell}px;--mod-char:${charFont}px;--mod-id:${idFont}px;max-width:${width}px;margin:0 auto">${html}</div>`;
-      this._fitPreview(node, width);
+      this._fitPreview(node);
 
       if (summary) {
         summary.textContent = formatMessage(this._t("layout_summary"), {
