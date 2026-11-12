@@ -85,6 +85,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not any(True for _ in iter_runtimes(hass)):
         async_unregister_services(hass)
+        # Drop the panel registration so the next setup recomputes the
+        # cache-busting `module_url`. Without this, a reload kept the old
+        # frontend URL (and therefore the old cached JS) until a full restart.
+        await async_unregister_panel(hass)
 
     return True
 
