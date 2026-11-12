@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.11";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.11";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.11";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.12";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.12";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.12";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -47,7 +47,7 @@ export const PanelMixin = (Base) => class extends Base {
       // a page with no visible subpage.
       const known = {
         tuning: ["commands", "map", "autotune", "teach", "drum"],
-        settings: ["display", "apps", "layout", "drum", "system"],
+        settings: ["display", "apps", "drum", "system"],
       };
       for (const [group, subs] of Object.entries(known)) {
         const savedSub = window.localStorage.getItem(

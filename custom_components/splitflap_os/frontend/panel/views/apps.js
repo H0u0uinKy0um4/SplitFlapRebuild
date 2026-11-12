@@ -1,20 +1,13 @@
-/** Apps tab: live preview and app launcher grid. */
+/** Apps tab: app launcher grid. */
 
-import { APP_ICONS } from "../../constants.js?v=1.2.11";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.11";
+import { APP_ICONS } from "../../constants.js?v=1.2.12";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.12";
 
 export const PanelMixin = (Base) =>
   class extends Base {
     _appsPage() {
       return `
         <section class="page" data-page="apps">
-          <section class="section-wrap">
-            <div class="section-header">
-              <h2 class="section-title">${this._t('live_display')}</h2>
-              <span class="meta-badge" id="liveAppsMeta"></span>
-            </div>
-            <div class="preview wide" id="liveApps"></div>
-          </section>
           <section class="section-wrap">
             <div class="section-header">
               <h2 class="section-title">${this._t('available_apps')}</h2>

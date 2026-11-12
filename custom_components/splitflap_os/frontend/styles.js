@@ -740,13 +740,6 @@ input:focus, select:focus, textarea:focus {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
-.layout-alert {
-  margin-top: 8px;
-  color: var(--sf-danger);
-  font-size: 0.76rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
 .gear {
   position: absolute;
   top: 4px;

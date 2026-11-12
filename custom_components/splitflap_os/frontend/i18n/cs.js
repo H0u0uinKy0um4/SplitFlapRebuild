@@ -15,7 +15,6 @@ export const PANEL = {
   subtab_drums: "BUBNY",
   subtab_display: "DISPLEJ",
   subtab_apps: "APLIKACE",
-  subtab_layout: "ROZLOŽENÍ",
   subtab_system: "SYSTÉM",
   stop: "STOP",
   clear: "SMAZAT",
@@ -54,7 +53,6 @@ export const PANEL = {
   available_apps: "DOSTUPNÉ APLIKACE",
   hardware: "HARDWARE",
   character_map: "MAPA ZNAKŮ",
-  physical_layout: "FYZICKÉ ROZLOŽENÍ",
   settings: "NASTAVENÍ",
   display_settings: "Nastavení displeje",
   app_settings: "Nastavení aplikací",
@@ -79,7 +77,6 @@ export const PANEL = {
   offset: "OFFSET",
   total_steps: "CELKEM KROKŮ",
   steps: "kroky",
-  expected: "očekáváno",
   blank: "(prázdné)",
   frame: "rám",
   rows_label: "řady",
@@ -101,7 +98,6 @@ export const PANEL = {
   master_version: "Verze masteru",
   bus_compatibility: "Kompatibilita sběrnice",
   mqtt_compatibility: "Kompatibilita MQTT",
-  blank_cell: "Prázdná buňka rámu",
   select_module_hint: "Vyberte modul v matici výše.",
   char_map_title: "Modul {id} • {flaps}",
   index_named: "Index {index}",
@@ -146,10 +142,6 @@ export const PANEL = {
     "Po aplikaci mapy master najede modulem domů.",
   char_map_help:
     "Kliknutím na znak přesuňte vybraný modul tam. Zlaté buňky již mají uloženou pozici v EEPROM.",
-  layout_help:
-    "ID modulů se řadí zleva doprava, pak shora dolů. Prázdné buňky jsou čárkované; krátké řady jsou uprostřed rámu.",
-  layout_summary:
-    "{rows} × {cols} rám • řady {counts} • nalezeno {detected}",
   builder_empty: "Sem přidejte složené zprávy pro vytvoření playlistu.",
   saved_empty: "Zatím žádné uložené playlisty.",
   no_apps: "Žádné registrované aplikace.",
@@ -210,7 +202,6 @@ export const PANEL = {
   playlist_running_progress: "Playlist běží • {current}/{total}",
   page_of: "stránka {page}/{total}",
   module_named: "MODUL {id}",
-  layout_error: "Chyba rozložení: {error}",
   layout_err_whole_numbers:
     "Rozložení řad musí obsahovat celá čísla, ne {value}",
   layout_err_positive: "Počty v rozložení řad musí být větší než nula",

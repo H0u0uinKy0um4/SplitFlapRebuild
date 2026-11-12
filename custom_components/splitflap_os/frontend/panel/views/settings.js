@@ -1,7 +1,7 @@
-/** Settings tab: display/app settings, layout, drums, OTA and system info. */
+/** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.11";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.11";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.12";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.12";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -11,7 +11,6 @@ export const PanelMixin = (Base) =>
           <nav class="subtabs">
             <button class="subtab active" data-action="subtab" data-group="settings" data-sub="display">${this._t("subtab_display")}</button>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="apps">${this._t("subtab_apps")}</button>
-            <button class="subtab" data-action="subtab" data-group="settings" data-sub="layout">${this._t("subtab_layout")}</button>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drums")}</button>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="system">${this._t("subtab_system")}</button>
           </nav>
@@ -34,20 +33,6 @@ export const PanelMixin = (Base) =>
               </div>
               <nav class="subtabs nested" id="appsSettingsSubtabs"></nav>
               <div id="appsSettingsGroups" class="settings-groups"></div>
-            </div>
-          </div>
-
-          <div class="subpage" data-subpage="settings" data-sub="layout">
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('physical_layout')}</h2>
-                <span class="muted" id="layoutSummary"></span>
-              </div>
-              <div class="preview" id="layoutPreview" style="margin-top:12px"></div>
-              <div class="layout-alert" id="layoutError"></div>
-              <p class="muted" style="margin-bottom:0">
-                ${this._t('layout_help')}
-              </p>
             </div>
           </div>
 
@@ -162,73 +147,6 @@ export const PanelMixin = (Base) =>
           </div>`;
         })
         .join("");
-    }
-
-    _renderLayout() {
-      if (!this._state) return;
-      const node = this.shadowRoot.getElementById("layoutPreview");
-      const summary = this.shadowRoot.getElementById("layoutSummary");
-      const errorNode = this.shadowRoot.getElementById("layoutError");
-      if (!node) return;
-
-      const board = this._board();
-      const coordinator = this._coordinator() || {};
-      const modules = coordinator.modules || [];
-      let html = "";
-      let slotBase = 0;
-      for (let row = 0; row < board.rows; row += 1) {
-        const count = Math.max(
-          0,
-          Math.min(board.cols, Number(board.rowCounts[row]) || 0)
-        );
-        const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
-        for (let col = 0; col < board.cols; col += 1) {
-          if (col < offset || col >= offset + count) {
-            html += `<div class="mod void" title="${escapeAttr(
-              this._t("blank_cell")
-            )}"></div>`;
-            continue;
-          }
-          const slot = slotBase + col - offset;
-          const module = modules[slot];
-          const label = module ? module.id : slot + 1;
-          const flap =
-            module && module.displayed_flap != null
-              ? module.displayed_flap
-              : module && module.flap
-                ? module.flap
-                : "";
-          html += `
-          <div class="mod" title="${escapeAttr(this._t('module'))} ${escapeAttr(label)}${module ? "" : ` (${escapeAttr(this._t('expected'))})`}">
-            <span class="mid">${escapeHtml(label)}</span>
-            <span class="mchar">${flap === " " || flap === "" ? "·" : escapeHtml(flap)}</span>
-          </div>`;
-        }
-        slotBase += count;
-      }
-      const maxCell = this._moduleCell();
-      const width = this._gridMaxWidth(board.cols, maxCell, 4);
-      const charFont = Math.max(10, Math.round(maxCell * 0.26));
-      const idFont = Math.max(8, Math.round(maxCell * 0.13));
-      node.innerHTML = `<div class="mod-matrix" style="--cols:${board.cols};--mod-max:${maxCell}px;--mod-char:${charFont}px;--mod-id:${idFont}px;max-width:${width}px;margin:0 auto">${html}</div>`;
-      this._fitPreview(node);
-
-      if (summary) {
-        summary.textContent = formatMessage(this._t("layout_summary"), {
-          rows: board.rows,
-          cols: board.cols,
-          counts: board.rowCounts.join(","),
-          detected: this._plural("modules", board.modules),
-        });
-      }
-      if (errorNode) {
-        errorNode.textContent = board.error
-          ? formatMessage(this._t("layout_error"), {
-              error: this._layoutErrorText(board.error),
-            })
-          : "";
-        errorNode.style.display = board.error ? "block" : "none";
-      }
     }
 
     _fieldHtml(field, value) {
