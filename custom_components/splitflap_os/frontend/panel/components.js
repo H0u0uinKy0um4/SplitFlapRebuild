@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.9";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.9";
-import { PANEL_STYLES } from "../styles.js?v=1.2.9";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.10";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.10";
+import { PANEL_STYLES } from "../styles.js?v=1.2.10";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -206,6 +206,28 @@ export const PanelMixin = (Base) =>
       const settings = (engine && engine.settings) || {};
       const stored = String(settings.theme || "").toLowerCase();
       if (stored === "dark" || stored === "light") return stored;
+      // "auto" (or a snapshot from before the setting existed) follows the
+      // theme Home Assistant resolved for this user.
+      return this._systemTheme();
+    }
+
+    _systemTheme() {
+      const themes = this._hass && this._hass.themes;
+      if (themes && typeof themes.darkMode === "boolean") {
+        return themes.darkMode ? "dark" : "light";
+      }
+      // Before `hass` is attached, mirror the OS preference so the first paint
+      // matches what Home Assistant will resolve to.
+      try {
+        if (
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+        ) {
+          return "dark";
+        }
+      } catch (err) {
+        /* matchMedia may be unavailable in unusual embeds. */
+      }
       return this._theme === "dark" ? "dark" : "light";
     }
 

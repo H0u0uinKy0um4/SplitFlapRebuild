@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.9";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.9";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.9";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.10";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.10";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.10";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -81,6 +81,10 @@ export const PanelMixin = (Base) => class extends Base {
       this._shellRendered = true;
       if (this._state) this._renderAll();
     }
+    // Home Assistant re-sends `hass` when the user's theme (or its Auto
+    // light/dark resolution) changes. Re-apply only when the effective theme
+    // actually changed so explicit Light/Dark settings stay pinned.
+    if (this._themeValue() !== this._theme) this._applyTheme();
     if (this.isConnected) this._connect();
   }
 

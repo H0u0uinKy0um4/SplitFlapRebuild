@@ -372,10 +372,12 @@ class AppEngine:
                 except (TypeError, ValueError):
                     continue
             elif key == "theme":
-                # Panel-only appearance; unknown values fall back to light.
+                # Panel-only appearance; unknown values follow Home Assistant.
                 normalized = str(value or "").strip().lower()
                 cleaned[key] = (
-                    normalized if normalized in {"light", "dark"} else "light"
+                    normalized
+                    if normalized in {"auto", "light", "dark"}
+                    else "auto"
                 )
             elif key == "page_delay":
                 try:

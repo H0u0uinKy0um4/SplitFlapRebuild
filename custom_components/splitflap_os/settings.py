@@ -63,11 +63,13 @@ DISPLAY_FIELDS = (
         key="theme",
         label="Panel theme",
         type="select",
-        options=("light", "dark"),
-        default="light",
+        options=("auto", "light", "dark"),
+        default="auto",
         help=(
-            "Panel appearance. The physical split-flap display and the module "
-            "map stay dark in both themes."
+            "Auto follows the theme selected in your Home Assistant profile "
+            "(including its Light/Dark/Auto mode). Light or Dark force the "
+            "panel appearance. The physical split-flap display and the module "
+            "map stay dark in every mode."
         ),
     ),
     SettingField(

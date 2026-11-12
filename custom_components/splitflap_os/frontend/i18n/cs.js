@@ -428,7 +428,7 @@ export const SETTINGS = {
     ui_scale:
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     theme:
-      "Světlý nebo tmavý vzhled panelu. Fyzický split-flap displej i mapa modulů zůstávají tmavé v obou režimech.",
+      "Auto přebírá motiv zvolený v profilu Home Assistantu včetně režimu Světlý/Tmavý/Auto. Světlý nebo Tmavý vynutí vzhled panelu. Fyzický split-flap displej i mapa modulů zůstávají tmavé ve všech režimech.",
     timezone:
       "IANA název, např. Europe/London. Prázdné použije časové pásmo Home Assistantu.",
   },
@@ -437,6 +437,10 @@ export const SETTINGS = {
   },
   options: {
     units: { auto: "Automaticky", imperial: "Imperiální", metric: "Metrické" },
-    theme: { light: "Světlý", dark: "Tmavý" },
+    theme: {
+      auto: "Podle Home Assistantu",
+      light: "Světlý",
+      dark: "Tmavý",
+    },
   },
 };
