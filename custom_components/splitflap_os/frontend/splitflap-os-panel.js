@@ -1,15 +1,15 @@
 /* Split-Flap OS sidebar panel entry point. */
 
-import { PANEL_ELEMENT } from "./constants.js?v=1.2.12";
-import { PanelMixin as PanelCore } from "./panel/core.js?v=1.2.12";
-import { PanelMixin as PanelFlapDisplay } from "./panel/flap-display.js?v=1.2.12";
-import { PanelMixin as PanelControl } from "./panel/views/control.js?v=1.2.12";
-import { PanelMixin as PanelPlaylists } from "./panel/views/playlists.js?v=1.2.12";
-import { PanelMixin as PanelApps } from "./panel/views/apps.js?v=1.2.12";
-import { PanelMixin as PanelTuning } from "./panel/views/tuning.js?v=1.2.12";
-import { PanelMixin as PanelSettings } from "./panel/views/settings.js?v=1.2.12";
-import { PanelMixin as PanelComponents } from "./panel/components.js?v=1.2.12";
-import { PanelMixin as PanelActions } from "./panel/actions.js?v=1.2.12";
+import { PANEL_ELEMENT } from "./constants.js?v=1.2.13";
+import { PanelMixin as PanelCore } from "./panel/core.js?v=1.2.13";
+import { PanelMixin as PanelFlapDisplay } from "./panel/flap-display.js?v=1.2.13";
+import { PanelMixin as PanelControl } from "./panel/views/control.js?v=1.2.13";
+import { PanelMixin as PanelPlaylists } from "./panel/views/playlists.js?v=1.2.13";
+import { PanelMixin as PanelApps } from "./panel/views/apps.js?v=1.2.13";
+import { PanelMixin as PanelTuning } from "./panel/views/tuning.js?v=1.2.13";
+import { PanelMixin as PanelSettings } from "./panel/views/settings.js?v=1.2.13";
+import { PanelMixin as PanelComponents } from "./panel/components.js?v=1.2.13";
+import { PanelMixin as PanelActions } from "./panel/actions.js?v=1.2.13";
 
 class SplitFlapOSPanel extends PanelActions(
   PanelComponents(

@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.12";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.12";
-import { PANEL_STYLES } from "../styles.js?v=1.2.12";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.13";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.13";
+import { PANEL_STYLES } from "../styles.js?v=1.2.13";
 
 export const PanelMixin = (Base) =>
   class extends Base {

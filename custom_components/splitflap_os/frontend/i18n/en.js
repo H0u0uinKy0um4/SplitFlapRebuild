@@ -119,6 +119,8 @@ export const PANEL = {
     "Tap an app to launch it. Use the gear to edit the settings that app reads.",
   app_no_options:
     "This app has no options of its own. It uses the display and data settings from the Settings tab.",
+  app_settings_empty:
+    "No app exposes settings of its own yet. Display options are on the Display tab.",
   backup_help:
     "Export settings, playlists and the last module snapshot. Restoring merges settings and replaces playlists.",
   firmware_update: "MODULE FIRMWARE",

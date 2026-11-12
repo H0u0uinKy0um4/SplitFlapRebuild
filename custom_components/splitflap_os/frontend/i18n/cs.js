@@ -119,6 +119,8 @@ export const PANEL = {
     "Kliknutím na aplikaci ji spustíte. Ozubeným kolečkem upravíte nastavení, která aplikace čte.",
   app_no_options:
     "Tato aplikace nemá vlastní nastavení. Používá nastavení displeje a dat ze záložky Nastavení.",
+  app_settings_empty:
+    "Žádná aplikace zatím nemá vlastní nastavení. Možnosti displeje najdete na kartě Displej.",
   backup_help:
     "Exportuje nastavení, playlisty a poslední snímek modulů. Obnovení sloučí nastavení a nahradí playlisty.",
   firmware_update: "FIRMWARE MODULŮ",

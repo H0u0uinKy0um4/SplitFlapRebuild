@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.12";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.12";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.12";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.13";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.13";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.13";
 
 
 export const PanelMixin = (Base) => class extends Base {

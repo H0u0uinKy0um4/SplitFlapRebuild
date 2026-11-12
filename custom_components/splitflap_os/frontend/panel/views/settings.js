@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.12";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.12";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.13";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.13";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -26,13 +26,22 @@ export const PanelMixin = (Base) =>
           </div>
 
           <div class="subpage" data-subpage="settings" data-sub="apps">
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('app_settings')}</h2>
-                <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+            <div class="card app-settings-card">
+              <div class="app-settings-split" id="appSettingsSplit">
+                <aside class="app-settings-rail" id="appsSettingsSubtabs"></aside>
+                <div class="app-settings-form">
+                  <div class="app-settings-head">
+                    <div class="row between" style="align-items:flex-start">
+                      <div style="min-width:0">
+                        <h2 id="appSettingsTitle">${this._t('app_settings')}</h2>
+                        <p class="muted hidden" id="appSettingsDesc"></p>
+                      </div>
+                      <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+                    </div>
+                  </div>
+                  <div id="appsSettingsGroups" class="settings-groups"></div>
+                </div>
               </div>
-              <nav class="subtabs nested" id="appsSettingsSubtabs"></nav>
-              <div id="appsSettingsGroups" class="settings-groups"></div>
             </div>
           </div>
 
@@ -275,14 +284,13 @@ export const PanelMixin = (Base) =>
           appsNav.innerHTML = appGroups
             .map(
               (group) =>
-                `<button class="subtab" data-action="settings-app" data-key="${escapeAttr(
+                `<button class="app-settings-item" data-action="settings-app" data-key="${escapeAttr(
                   group.key
-                )}">${escapeHtml(
-                  `${group.icon ? `${group.icon} ` : ""}${this._settingGroup(
-                    group.key,
-                    group.name || group.key
-                  )}`
-                )}</button>`
+                )}"><span class="app-settings-icon">${escapeHtml(
+                  group.icon || ""
+                )}</span><span>${escapeHtml(
+                  this._settingGroup(group.key, group.name || group.key)
+                )}</span></button>`
             )
             .join("");
         }
@@ -321,7 +329,21 @@ export const PanelMixin = (Base) =>
           '#appsSettingsSubtabs [data-action="settings-app"]'
         )
       );
-      if (!buttons.length) return;
+      const split = this.shadowRoot.getElementById("appSettingsSplit");
+      const title = this.shadowRoot.getElementById("appSettingsTitle");
+      const desc = this.shadowRoot.getElementById("appSettingsDesc");
+
+      if (!buttons.length) {
+        if (split) split.classList.add("empty");
+        if (title) title.textContent = this._t("app_settings");
+        if (desc) {
+          desc.textContent = this._t("app_settings_empty");
+          desc.classList.remove("hidden");
+        }
+        return;
+      }
+      if (split) split.classList.remove("empty");
+
       const keys = buttons.map((button) => button.dataset.key);
       if (!keys.includes(this._appSettingsKey)) this._appSettingsKey = keys[0];
       for (const button of buttons) {
@@ -336,6 +358,23 @@ export const PanelMixin = (Base) =>
           pane.dataset.appPane === this._appSettingsKey
         );
       });
+
+      // Mirror the selected app in the form-pane header so the rail can stay
+      // narrow and the fields always say which app they belong to.
+      const key = this._appSettingsKey;
+      if (title) {
+        title.textContent = formatMessage(this._t("app_settings_named"), {
+          name: this._settingGroup(key, key),
+        });
+      }
+      if (desc) {
+        const app = ((this._engine() && this._engine().apps) || []).find(
+          (item) => item.key === key
+        );
+        const text = app ? this._appDescription(app) : "";
+        desc.textContent = text || "";
+        desc.classList.toggle("hidden", !text);
+      }
     }
 
     _setAppSettingsTab(key) {

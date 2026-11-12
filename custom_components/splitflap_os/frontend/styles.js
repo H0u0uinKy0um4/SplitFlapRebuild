@@ -285,22 +285,24 @@ export const PANEL_STYLES = `
 .muted { opacity: 0.62; font-size: 0.8rem; color: var(--sf-text-2); }
 .mono { font-family: var(--sf-font-mono); }
 
-/* ── Subtabs ────────────────────────────────────────────────────── */
+/* ── Level 2: underline sub-tabs (Settings / Tuning) ────────────── */
 .subtabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 22px;
   overflow-x: auto;
-  background: var(--sf-bg-card);
+  padding: 0 16px;
+  background: var(--sf-bg-subtle);
   border: 1px solid var(--sf-border);
-  border-radius: 11px;
-  padding: 4px;
+  border-radius: 13px;
   box-shadow: var(--sf-card-shadow);
 }
 .subtab {
-  flex: 1 0 auto;
+  position: relative;
+  flex: 0 0 auto;
   border: 0;
-  border-radius: 8px;
-  padding: 8px 14px;
+  border-radius: 0;
+  padding: 14px 2px;
   background: transparent;
   color: var(--sf-text-2);
   cursor: pointer;
@@ -310,24 +312,118 @@ export const PANEL_STYLES = `
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease;
 }
-.subtab:hover:not(.active) { background: var(--sf-bg-subtle); color: var(--sf-text); }
+.subtab:hover:not(.active) { color: var(--sf-text); }
 .subtab.active {
-  background: var(--sf-accent);
-  color: var(--text-primary-color, #ffffff);
-  box-shadow: 0 2px 8px var(--sf-accent-glow);
-}
-.subtabs.nested {
-  margin-top: 14px;
-  margin-bottom: 12px;
-  padding: 3px 4px;
-  border-style: dashed;
+  background: transparent;
+  color: var(--sf-accent);
   box-shadow: none;
 }
-.subtabs.nested .subtab { padding: 6px 11px; font-size: 9.5px; }
+.subtab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5px;
+  border-radius: 2px 2px 0 0;
+  background: var(--sf-accent);
+}
+
+/* ── Level 3: app settings master-detail split ──────────────────── */
+.app-settings-card { padding: 0; overflow: hidden; }
+.app-settings-split {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 320px;
+}
+.app-settings-split.empty { grid-template-columns: 1fr; }
+.app-settings-split.empty .app-settings-rail { display: none; }
+.app-settings-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--sf-bg-subtle);
+  border-right: 1px solid var(--sf-border);
+  overflow-y: auto;
+}
+.app-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sf-text-2);
+  font-family: var(--sf-font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.14s ease;
+}
+.app-settings-item:hover:not(.active) {
+  background: var(--sf-bg-card);
+  color: var(--sf-text);
+}
+.app-settings-item.active {
+  background: rgba(0, 149, 200, 0.12);
+  border-color: rgba(0, 149, 200, 0.28);
+  color: var(--sf-accent);
+}
+@supports (background: color-mix(in srgb, red 50%, blue)) {
+  .app-settings-item.active {
+    background: color-mix(in srgb, var(--sf-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--sf-accent) 30%, transparent);
+  }
+}
+.app-settings-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+.app-settings-item > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-settings-form {
+  min-width: 0;
+  padding: 18px 20px 22px;
+}
+.app-settings-head {
+  border-bottom: 1px solid var(--sf-border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.app-settings-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sf-text);
+}
+.app-settings-head .muted { margin: 4px 0 0; font-size: 12px; }
 .settings-group.app-settings-pane { display: none; }
 .settings-group.app-settings-pane.active { display: block; }
+
+@media (max-width: 700px) {
+  .app-settings-split { grid-template-columns: 1fr; }
+  .app-settings-rail {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--sf-border);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .app-settings-form { padding: 16px; }
+}
 
 /* ── Dark hardware bezel (physical display, dark in both themes) ── */
 .hardware-bezel,
@@ -1090,7 +1186,7 @@ input:focus, select:focus, textarea:focus {
   .app { padding: 12px 10px 32px; }
   .flap { font-size: var(--flap-font, clamp(7px, 3vw, 18px)); }
   .tab { padding: 9px 6px; font-size: 10px; }
-  .subtab { padding: 8px 10px; }
+  .subtab { padding: 12px 2px; }
   .card { padding: 13px; }
   .hardware-bezel, .preview { padding: 14px 12px; border-radius: 13px; }
   .topbar { padding: 0; }
