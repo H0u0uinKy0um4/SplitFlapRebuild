@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.13";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.13";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.14";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.14";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -286,8 +286,8 @@ export const PanelMixin = (Base) =>
               (group) =>
                 `<button class="app-settings-item" data-action="settings-app" data-key="${escapeAttr(
                   group.key
-                )}"><span class="app-settings-icon">${escapeHtml(
-                  group.icon || ""
+                )}"><span class="app-settings-icon">${this._appIcon(
+                  group.key
                 )}</span><span>${escapeHtml(
                   this._settingGroup(group.key, group.name || group.key)
                 )}</span></button>`

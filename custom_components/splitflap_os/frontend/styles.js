@@ -383,10 +383,27 @@ export const PANEL_STYLES = `
   }
 }
 .app-settings-icon {
+  display: inline-flex;
   flex: 0 0 18px;
+  align-items: center;
+  justify-content: center;
   width: 18px;
-  text-align: center;
+  height: 18px;
   font-size: 14px;
+}
+.app-settings-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+.app-settings-icon ha-icon {
+  --mdc-icon-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+.app-settings-icon .app-icon-emoji {
+  font-size: 15px;
+  line-height: 1;
 }
 .app-settings-item > span:last-child {
   overflow: hidden;
