@@ -31,8 +31,7 @@ Home Assistant                         ESP32 master                 Slaves
   are assigned in reading order, and data apps are disabled with a reason when
   every row is not wide enough.
 - **Apps** rendered from Home Assistant data where possible:
-  clock, date, dashboard, weather, stocks, crypto, NHL scores, MBTA transit,
-  countdown, world clock, ISS position, and colour animations.
+  clock, date, dashboard, weather, stocks, countdown, and colour animations.
 - **Playlists** with per-page text, loop control, and saved named playlists.
 - **Animation send orders**: left-to-right, right-to-left, columns, centre-out,
   outside-in, diagonal, random, rain, and spiral.
@@ -149,15 +148,13 @@ migrated automatically on first load. Important keys include:
 - `timezone`, `units`, `page_delay`.
 - `weather_entity` (preferred), `zip_code` + `weather_api_key` (OpenWeather
   fallback).
-- `stocks_list`, `crypto_list`, `sports_teams`.
-- `metro_stop`, `metro_route`, `mbta_api_key`.
-- `countdown_event`, `countdown_target`, `clock_format`, `world_clock_zones`.
+- `stocks_list`.
+- `countdown_event`, `countdown_target`, `clock_format`.
 - `anim_effect`, `anim_style`, `anim_speed`.
 
 Weather uses the Home Assistant `weather.get_forecasts` service when an entity is
-selected, so no external API key is required for the normal path. Stocks and
-crypto use Yahoo Finance and CoinGecko respectively. MBTA works without a key at
-low volume; an API key is optional.
+selected, so no external API key is required for the normal path. Stocks use
+Yahoo Finance.
 
 ## Physical layout and app availability
 
@@ -194,12 +191,7 @@ App minimums are declared in `apps/__init__.py`:
 | Dashboard | 3 × 11 |
 | Weather | 3 × 10 |
 | Stocks | 3 × 7 |
-| Crypto | 3 × 8 |
-| Sports | 3 × 8 |
-| Metro | 3 × 10 |
 | Countdown | 3 × 12 |
-| World Clock | 1 × 10 |
-| ISS | 3 × 10 |
 
 Unsupported app cards are disabled and show the requirement. Starting one from
 the panel or a service returns an error. If a running app becomes unsupported
@@ -281,12 +273,12 @@ composed from the numbers that apply to it:
 ```
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
 master   <bus>.<mqtt>.<release>       1.1.0.0    bus 1, mqtt 1, release 0.0
-HA       <mqtt>.<release>             1.2.14      mqtt 1, release 2.14
+HA       <mqtt>.<release>             1.2.15      mqtt 1, release 2.15
 ```
 
 | Where | Version | Compatibility | Read from |
 | --- | --- | --- | --- |
-| Home Assistant integration | `1.2.14` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
+| Home Assistant integration | `1.2.15` | MQTT `1` | panel header, connection info, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, connection info |
 | Slave application | `1.0.1` | bus `1` | panel module inspector, firmware card, `m<id>v`, UPDI dump |
 

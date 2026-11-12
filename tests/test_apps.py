@@ -34,23 +34,18 @@ class AppRegistryTests(unittest.IsolatedAsyncioTestCase):
             display_group=display_group(),
         )
 
-    def test_twelve_apps_load(self) -> None:
-        self.assertEqual(len(self.registry.apps), 12)
+    def test_apps_load(self) -> None:
+        self.assertEqual(len(self.registry.apps), 7)
         self.assertEqual(
             {app.key for app in self.registry.apps},
             {
                 "animations",
                 "clock",
                 "countdown",
-                "crypto",
                 "dashboard",
                 "date",
-                "iss",
-                "metro",
-                "sports",
                 "stocks",
                 "weather",
-                "world_clock",
             },
         )
 

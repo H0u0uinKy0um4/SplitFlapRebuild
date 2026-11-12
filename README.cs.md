@@ -217,8 +217,7 @@ Stránka může být jen text (`"AHOJ"`) nebo objekt s klíči `text`, `delay`,
 
 `app` je klíč aplikace:
 
-`clock`, `date`, `dashboard`, `weather`, `stocks`, `crypto`, `sports`, `metro`,
-`countdown`, `world_clock`, `iss`, `animations`.
+`clock`, `date`, `dashboard`, `weather`, `stocks`, `countdown`, `animations`.
 
 ### `splitflap_os.calibrate`
 
@@ -447,12 +446,7 @@ Minimální velikosti aplikací:
 | Dashboard | 3 × 11 |
 | Weather | 3 × 10 |
 | Stocks | 3 × 7 |
-| Crypto | 3 × 8 |
-| Sports | 3 × 8 |
-| Metro | 3 × 10 |
 | Countdown | 3 × 12 |
-| World Clock | 1 × 10 |
-| ISS | 3 × 10 |
 
 ---
 
@@ -470,14 +464,13 @@ prvním načtení. Přes službu `set_settings` je můžete měnit i z automatiz
 | `timezone`, `units`, `page_delay` | Časové pásmo, jednotky a výchozí prodleva stránek. |
 | `weather_entity` | Preferovaná entita počasí z Home Assistantu. |
 | `zip_code`, `weather_api_key` | Záložní cesta přes OpenWeather. |
-| `stocks_list`, `crypto_list`, `sports_teams` | Symboly akcií, kryptoměn a týmy NHL. |
-| `metro_stop`, `metro_route`, `mbta_api_key` | Nastavení MBTA dopravy. |
-| `countdown_event`, `countdown_target`, `clock_format`, `world_clock_zones` | Odpočet, formát hodin a světové časy. |
+| `stocks_list` | Symboly akcií. |
+| `countdown_event`, `countdown_target`, `clock_format` | Odpočet a formát hodin. |
 | `anim_effect`, `anim_style`, `anim_speed` | Vzhled a rychlost animací. |
 
 Počasí se standardně bere z Home Assistantu přes `weather.get_forecasts`, takže
 pro běžné použití nepotřebujete žádný externí API klíč. Akcie používají Yahoo
-Finance, kryptoměny CoinGecko a MBTA funguje i bez klíče při malém provozu.
+Finance.
 
 ---
 
@@ -499,12 +492,12 @@ která se na něj vztahují:
 ```
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
 master   <bus>.<mqtt>.<vydání>        1.1.0.0    bus 1, mqtt 1, vydání 0.0
-HA       <mqtt>.<vydání>              1.2.14      mqtt 1, vydání 2.14
+HA       <mqtt>.<vydání>              1.2.15      mqtt 1, vydání 2.15
 ```
 
 | Kde | Verze | Kompatibilita | Kde ji uvidíte |
 | --- | --- | --- | --- |
-| Integrace Home Assistant | `1.2.14` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
+| Integrace Home Assistant | `1.2.15` | MQTT `1` | hlavička panelu, informace o připojení, WebSocket `version`/`mqtt_compat` |
 | ESP32 master | `1.1.0.0` | bus `1`, MQTT `1` | status `version`/`bus_compat`/`mqtt_compat`, informace o připojení |
 | Firmware modulu | `1.0.1` | bus `1` | inspektor modulu, karta firmwaru, `m<id>v`, UPDI dump |
 

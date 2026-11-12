@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.14";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.14";
+import { formatMessage } from "../utils.js?v=1.2.15";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.15";
 
 // The master blocks while a module moves and only then writes/refreshes the
 // position map, so the auto-tune verification frame must not be requested in

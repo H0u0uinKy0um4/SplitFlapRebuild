@@ -113,7 +113,7 @@
       "fields": {
         "app": {
           "name": "Aplikace",
-          "description": "Klíč aplikace, například clock, weather, stocks, crypto, sports, metro, countdown, world_clock, iss nebo animations."
+          "description": "Klíč aplikace, například clock, date, dashboard, weather, stocks, countdown nebo animations."
         }
       }
     },
