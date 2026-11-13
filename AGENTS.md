@@ -4,8 +4,8 @@
 
 A Home Assistant custom integration (`custom_components/splitflap_os`) plus a
 sidebar panel, built fresh to replace the older `splitflap` integration. The
-root `app.py` and `index.html` are AdamGMakes' original reference implementation
-and must not be treated as production code or deleted.
+root `app.py` and `sources/index.html` are AdamGMakes' original reference
+implementation and must not be treated as production code or deleted.
 
 ## Hard constraints
 
@@ -42,17 +42,37 @@ and must not be treated as production code or deleted.
   3. `custom_components/splitflap_os/frontend/constants.js` (`export const VERSION = "<NEW_VERSION>";`)
   4. All ES module import query parameters (`?v=<NEW_VERSION>`) in:
      - `frontend/splitflap-os-panel.js` (entry point — NEVER forget this file!)
-     - `frontend/panel/render.js`
      - `frontend/panel/core.js`
+     - `frontend/panel/components.js`
      - `frontend/panel/actions.js`
+     - `frontend/panel/flap-display.js`
+     - `frontend/panel/views/{control,playlists,apps,tuning,settings}.js`
      - `frontend/i18n/index.js`
   Never leave stale `?v=...` version parameters in any import, or the browser will
   serve stale cached modules.
 - Preserve the old `/home/iuarchbtw/GIT_Personal/HASC/SplitFlap` repository.
+- **Documentation is bilingual, mirrored, and split into small pages**:
+  `README.md` / `README.cs.md` are short crossroads (intro, requirements, quick
+  start, doc map, versions, credits) and must not grow into reference manuals.
+  Reference pages live in mirrored sub-folders and every page exists twice:
+  - `docs/{en,cs}/setup/` — `install.md`, `development.md`
+  - `docs/{en,cs}/use/` — `panel.md`, `entities.md`, `services.md`
+  - `docs/{en,cs}/automation/` — `examples.md`, `calibration.md`,
+    `scripts.md`, `troubleshooting.md`
+  - `docs/{en,cs}/protocol/` — `overview.md`, `commands.md`, `text.md`,
+    `ota.md`, `layout.md`, `versioning.md`
+  - `docs/{en,cs}/apps/` — `manifest.md`, `authoring.md`, `examples.md`
+
+  A change to one side requires the matching change on the other, including the
+  cross-language header link, the "see also" links, and the doc map in both
+  READMEs. Anchors follow the language, so `#services` in English is `#sluzby`
+  in Czech. Add new detail to an existing small page instead of lengthening the
+  README.
 - All user-facing UI text must be implemented in **English and Czech**. For the
-  panel, add strings to `PANEL_I18N`/`SETTINGS_I18N` in
-  `frontend/splitflap-os-panel.js` and use `_t()`/language-aware helpers (never
-  hardcode user-visible text in one language). For Home Assistant config/options,
+  panel, add strings to `PANEL_I18N` / `SETTINGS_I18N` in
+  `frontend/i18n/en.js` and `frontend/i18n/cs.js` (`frontend/i18n/index.js`
+  re-exports them) and use `_t()`/language-aware helpers (never hardcode
+  user-visible text in one language). For Home Assistant config/options,
   services, and entity names, keep `strings.json`, `translations/en.json`, and
   `translations/cs.json` in sync (same keys/fields) and use `translation_key`
   where applicable. When adding new UI or messages, update both languages in the
@@ -149,12 +169,14 @@ For Home Assistant specifically:
 
 ```bash
 python3 -m py_compile custom_components/splitflap_os/*.py \
-  custom_components/splitflap_os/apps/*.py
+  custom_components/splitflap_os/apps/*.py \
+  custom_components/splitflap_os/apps/*/app.py
 for f in $(find custom_components/splitflap_os/frontend -name '*.js'); do node --check "$f"; done
 python3 -m json.tool custom_components/splitflap_os/manifest.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/strings.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/translations/en.json >/dev/null
 python3 -m json.tool custom_components/splitflap_os/translations/cs.json >/dev/null
+python3 tests/test_apps.py
 python3 tests/test_layout.py
 python3 tests/test_positions.py
 python3 tests/test_translations.py
