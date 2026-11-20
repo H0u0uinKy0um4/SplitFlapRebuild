@@ -68,7 +68,17 @@ async def fetch(ctx, now):
 ```
 
 `fetch_app` runs the other app's provider with a context bound to that app, so its
-settings and cache are used.
+settings and cache are used. The launching user's id is inherited as
+`ctx.user_id`.
+
+## Per-user data
+
+An app launched from the panel receives the Home Assistant user who clicked it in
+`ctx.user_id`. Pass that identity to the data source instead of reading global
+entities. The built-in `calories` app calls `kaloricke_tabulky.get_summary` with a
+`Context(user_id=ctx.user_id)`, so Kaloricke Tabulky resolves the caller's own
+account and refuses another user's account. Apps started by a service call or
+automation have `ctx.user_id = None`; handle that case explicitly.
 
 ## Testing
 

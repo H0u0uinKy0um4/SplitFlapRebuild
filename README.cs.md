@@ -47,8 +47,9 @@ Home Assistant                         ESP32 master                 Moduly
   náhledem a přepínáním angličtiny/češtiny.
 - Automatické rozpoznání tabule z hlášeného počtu modulů, s volitelným
   rozvržením `row_counts`, například `3,3,1`.
-- Sedm lokálních aplikací: animace, hodiny, odpočítávání, přehled, datum, akcie
-  a počasí.
+- Osm lokálních aplikací: animace, kalorie, hodiny, odpočítávání, přehled,
+  datum, akcie a počasí. Aplikace Kalorie zobrazuje vlastní přehled uživatele,
+  který ji spustil, z Kalorických Tabulek.
 - Playlisty s textem, prodlevou, pořadím odesílání a smyčkou pro každou stránku.
 - Entity a služby pro automatizace, včetně přerušujících oznámení.
 - OTA firmware modulů přes MQTT; RS485 bootloader vlastní master.

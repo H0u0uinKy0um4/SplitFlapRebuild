@@ -46,8 +46,9 @@ Home Assistant                         ESP32 master                 Slaves
   and English/Czech switching.
 - Board auto-detection from the reported module count, with optional
   `row_counts` layouts such as `3,3,1`.
-- Seven local app plugins: animations, clock, countdown, dashboard, date,
-  stocks, and weather.
+- Eight local app plugins: animations, calories, clock, countdown, dashboard,
+  date, stocks, and weather. The Calories app shows the launching user's own
+  Kaloricke Tabulky summary.
 - Playlists with per-page text, delay, send order, and looping.
 - Entities and services for automations, including interrupting notifications.
 - Slave-module OTA over MQTT; the master owns the RS485 bootloader.

@@ -68,7 +68,17 @@ async def fetch(ctx, now):
 ```
 
 `fetch_app` spustí provider druhé aplikace s kontextem vázaným na ni, takže se
-použije její nastavení a cache.
+použije její nastavení a cache. Identita uživatele, který aplikaci spustil, se
+přenáší jako `ctx.user_id`.
+
+## Data podle uživatele
+
+Aplikace spuštěná z panelu dostane v `ctx.user_id` Home Assistant uživatele, který
+na ni kliknul. Předej tuto identitu zdroji dat místo čtení globálních entit.
+Vestavěná aplikace `calories` volá `kaloricke_tabulky.get_summary` s kontextem
+`Context(user_id=ctx.user_id)`, takže Kalorické Tabulky najdou vlastní účet
+volajícího a odmítnou cizí účet. Aplikace spuštěné službou nebo automatizací mají
+`ctx.user_id = None`; tento případ ošetři výslovně.
 
 ## Testování
 

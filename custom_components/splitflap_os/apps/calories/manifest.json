@@ -1,0 +1,21 @@
+{
+  "key": "calories",
+  "name": "Calories",
+  "icon": "🔥",
+  "description": "Today's calories from Kaloricke Tabulky",
+  "category": "data",
+  "default_delay": 5.0,
+  "min_rows": 3,
+  "min_cols": 9,
+  "fields": [],
+  "translations": {
+    "cs": {
+      "name": "Kalorie",
+      "description": "Dnešní kalorie z Kalorických Tabulek"
+    },
+    "en": {
+      "name": "Calories",
+      "description": "Today's calories from Kaloricke Tabulky"
+    }
+  }
+}

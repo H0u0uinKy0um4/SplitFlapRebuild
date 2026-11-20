@@ -179,7 +179,9 @@ async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
         hass,
         connection,
         msg,
-        lambda runtime: runtime["engine"].async_start_app(msg["app"], msg.get("mode")),
+        lambda runtime: runtime["engine"].async_start_app(
+            msg["app"], msg.get("mode"), user_id=connection.user_id
+        ),
     )
 
 

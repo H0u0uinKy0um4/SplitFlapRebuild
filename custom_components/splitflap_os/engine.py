@@ -80,6 +80,9 @@ class AppEngine:
         self.mode = "idle"  # idle | playlist | app
         self.active_app: str | None = None
         self.active_app_mode: str | None = None
+        # User who launched the active app. Apps can use it to load per-user
+        # data (for example the Kaloricke Tabulky calories app).
+        self.active_app_user_id: str | None = None
         self._loop_playlist = True
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
@@ -596,6 +599,7 @@ class AppEngine:
         self._loop_playlist = bool(loop)
         self.mode = "playlist"
         self.active_app = None
+        self.active_app_user_id = None
         self._current_page = None
         self._current_page_index = 0
         self._current_page_count = len(self.playlist)
@@ -603,7 +607,12 @@ class AppEngine:
         self._notify()
         self._schedule_save()
 
-    async def async_start_app(self, app_key: str, mode: str | None = None) -> None:
+    async def async_start_app(
+        self,
+        app_key: str,
+        mode: str | None = None,
+        user_id: str | None = None,
+    ) -> None:
         key = str(app_key or "").strip()
         app = self.registry.app(key) if self.registry else None
         if app is None:
@@ -617,6 +626,7 @@ class AppEngine:
         self.mode = "app"
         self.active_app = key
         self.active_app_mode = mode
+        self.active_app_user_id = user_id
         self._current_page = None
         self._current_page_index = 0
         self._current_page_count = 0
@@ -628,6 +638,7 @@ class AppEngine:
         self.mode = "idle"
         self.active_app = None
         self.active_app_mode = None
+        self.active_app_user_id = None
         self._loop_playlist = False
         self._stop_event.set()
         # An explicit stop discards pending interruptions; starting or
@@ -730,7 +741,7 @@ class AppEngine:
             self.active_app = None
             return []
 
-        context = AppContext(self, self.active_app)
+        context = AppContext(self, self.active_app, user_id=self.active_app_user_id)
         try:
             result = await provider(context, datetime.now(self.tz))
         except Exception as err:  # noqa: BLE001 - show an error page

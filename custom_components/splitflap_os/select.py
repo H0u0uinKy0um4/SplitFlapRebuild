@@ -48,4 +48,7 @@ class SplitFlapAppSelect(SplitFlapEntity, SelectEntity):
             return
 
         key = self._by_name.get(option, option)
-        await self.engine.async_start_app(key)
+        context = getattr(self, "_context", None)
+        await self.engine.async_start_app(
+            key, user_id=getattr(context, "user_id", None)
+        )

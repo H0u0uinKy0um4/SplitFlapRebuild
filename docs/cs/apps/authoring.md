@@ -53,6 +53,7 @@ Provider nemůže sahat na MQTT, ukládání, kalibraci ani smyčku displeje. Do
 | `tz` | tzinfo nebo `None` | Nastavené časové pásmo. |
 | `unit_system` | string | `metric` nebo `imperial`. |
 | `active_app_mode` | string nebo `None` | Režim zvolený pro běžící aplikaci. |
+| `user_id` | string nebo `None` | Uživatel Home Assistantu, který aplikaci spustil; `None` při spuštění službou nebo automatizací. Použij ho pro data podle uživatele. |
 | `session` | `aiohttp.ClientSession` | Sdílená HTTP session. |
 | `http_timeout` | timeout | Sdílený HTTP timeout. |
 | `get_setting(key, default=None)` | any | Přečte **lokální** klíč nastavení; jmenný prostor aplikace se použije automaticky. |

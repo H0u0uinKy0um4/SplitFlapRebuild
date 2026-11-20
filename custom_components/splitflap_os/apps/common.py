@@ -86,12 +86,14 @@ class AppContext:
     Providers deliberately receive this object instead of the engine.  They
     can render pages, read their own settings, and make cached HTTP requests,
     but cannot touch MQTT, persistence, calibration, playlists or the display
-    loop.
+    loop.  ``user_id`` is the Home Assistant user who launched the active app;
+    apps that read per-user data must pass it to the data source.
     """
 
-    def __init__(self, engine: Any, app_key: str) -> None:
+    def __init__(self, engine: Any, app_key: str, user_id: str | None = None) -> None:
         self._engine = engine
         self.app_key = app_key
+        self.user_id = user_id
 
     # Read-only engine state -------------------------------------------
     @property
@@ -175,7 +177,7 @@ class AppContext:
         provider = registry.provider(app_key)
         if provider is None:
             raise KeyError(f"App not found: {app_key}")
-        app_ctx = AppContext(self._engine, app_key)
+        app_ctx = AppContext(self._engine, app_key, user_id=self.user_id)
         if now is None:
             now = datetime.now(self.tz) if self.tz else datetime.now()
         result = await provider(app_ctx, now)

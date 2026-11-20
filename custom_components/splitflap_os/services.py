@@ -115,7 +115,9 @@ async def _handle_start_app(call: ServiceCall) -> None:
     runtime = _get_runtime(call.hass)
     if not runtime:
         return
-    await runtime["engine"].async_start_app(call.data["app"])
+    await runtime["engine"].async_start_app(
+        call.data["app"], user_id=getattr(call.context, "user_id", None)
+    )
 
 
 async def _handle_stop_app(call: ServiceCall) -> None:

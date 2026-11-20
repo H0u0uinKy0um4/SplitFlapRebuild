@@ -53,6 +53,7 @@ get a narrow context instead.
 | `tz` | tzinfo or `None` | Configured timezone. |
 | `unit_system` | string | `metric` or `imperial`. |
 | `active_app_mode` | string or `None` | Mode selected for the running app. |
+| `user_id` | string or `None` | Home Assistant user who launched the app; `None` for service/automation launches. Use it for per-user data. |
 | `session` | `aiohttp.ClientSession` | Shared HTTP session. |
 | `http_timeout` | timeout | Shared HTTP timeout. |
 | `get_setting(key, default=None)` | any | Read a **local** setting key; the app namespace is applied automatically. |
