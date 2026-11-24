@@ -51,6 +51,33 @@ def _require_runtime(hass: HomeAssistant, connection, msg) -> dict[str, Any] | N
     return runtime
 
 
+def _connection_user_id(connection, msg: dict[str, Any]) -> str | None:
+    """Return the user behind a WebSocket command across Home Assistant versions.
+
+    Current ``ActiveConnection`` objects expose ``user`` (with an ``id``) and a
+    ``context(msg)`` factory.  Older releases exposed ``user_id`` directly.
+    Per-user apps need this identity, so never assume one spelling.
+    """
+
+    user = getattr(connection, "user", None)
+    user_id = getattr(user, "id", None)
+    if user_id is not None:
+        return str(user_id)
+
+    legacy_user_id = getattr(connection, "user_id", None)
+    if legacy_user_id is not None:
+        return str(legacy_user_id)
+
+    context_factory = getattr(connection, "context", None)
+    if callable(context_factory):
+        try:
+            context = context_factory(msg)
+        except Exception:  # noqa: BLE001 - an unavailable user is not fatal
+            return None
+        return getattr(context, "user_id", None)
+    return None
+
+
 async def _run_action(
     hass: HomeAssistant,
     connection,
@@ -180,7 +207,7 @@ async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
         connection,
         msg,
         lambda runtime: runtime["engine"].async_start_app(
-            msg["app"], msg.get("mode"), user_id=connection.user_id
+            msg["app"], msg.get("mode"), user_id=_connection_user_id(connection, msg)
         ),
     )
 
