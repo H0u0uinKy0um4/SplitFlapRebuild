@@ -82,7 +82,9 @@ Když je zapnuté:
 - kontroly počtu modulů, kapacity a příliš mnoha prázdných buněk se přeskočí;
 - požadavky aplikací na velikost se ignorují, takže lze spustit každou kartu;
 - buňky, pro které neexistuje nalezený modul, se zobrazí v náhledu, ale chybí
-  v odesílaném seznamu modulů a v pořadí odesílání.
+  v odesílaném seznamu modulů a v pořadí odesílání;
+- mřížka modulů v záložce Tuning zobrazí jen moduly, které odpověděly na scan,
+  aby je větší testovací plocha neskryla.
 
 Strukturální chyby nastavení platí dál. Panel po dobu zapnutí zobrazí odznak
 **LADĚNÍ**. Před běžným použitím přepínač vypněte.

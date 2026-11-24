@@ -82,7 +82,9 @@ an incomplete board. When enabled:
 - module-count mismatch, capacity, and blank-cell checks are skipped;
 - app size requirements are ignored, so every app card is startable;
 - cells whose slot has no detected module are rendered in the preview but are
-  omitted from the published module list and send order.
+  omitted from the published module list and send order;
+- the Tuning hardware grid packs only the modules that answered the scan, so
+  the larger test canvas does not hide them.
 
 Structural configuration errors still apply. The panel shows a **DEBUG** badge
 while the switch is on. Disable it before normal use.

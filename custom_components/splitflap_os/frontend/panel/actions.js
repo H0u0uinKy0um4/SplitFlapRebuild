@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.17";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.17";
+import { formatMessage } from "../utils.js?v=1.2.18";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.18";
 
 // The master blocks while a module moves and only then writes/refreshes the
 // position map, so the auto-tune verification frame must not be requested in
@@ -949,10 +949,11 @@ export const PanelMixin = (Base) => class extends Base {
     this._atState.selected.clear();
     const drum = this._atDrum();
     const ch = drum[idx] || " ";
-    const board = this._board();
     const coordinator = this._coordinator();
     const modules = coordinator.modules || [];
-    const count = (board.rows * board.cols) || modules.length || 45;
+    // Auto-tune targets physical modules only. A debug frame may be larger
+    // than the scanned board, so never use its cell count here.
+    const count = Number(coordinator.modules_count) || modules.length || 45;
 
     this._renderAutoTune();
 
@@ -1030,8 +1031,9 @@ export const PanelMixin = (Base) => class extends Base {
 
     // Re-send to verify
     const ch = drum[charIdx] || " ";
-    const board = this._board();
-    const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
+    const coordinator = this._coordinator();
+    const count =
+      Number(coordinator.modules_count) || (coordinator.modules || []).length || 45;
     try {
       await this._send("send_text", {
         text: ch.repeat(count),
@@ -1088,8 +1090,9 @@ export const PanelMixin = (Base) => class extends Base {
 
     // Re-send to verify
     const ch = drum[charIdx] || " ";
-    const board = this._board();
-    const count = (board.rows * board.cols) || (this._coordinator().modules || []).length || 45;
+    const coordinator = this._coordinator();
+    const count =
+      Number(coordinator.modules_count) || (coordinator.modules || []).length || 45;
     try {
       await this._send("send_text", {
         text: ch.repeat(count),

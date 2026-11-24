@@ -823,11 +823,17 @@ class AppEngine:
         layout = self.layout
         module_ids = self.coordinator.module_ids
         if not module_ids:
-            # Before the first scan, assume the stock 1-based ids.  The master
-            # ignores ids that do not answer, so this is harmless.
-            module_ids = [
-                str(index + 1) for index in range(layout.module_count or rows * cols)
-            ]
+            if self.debug_ignore_module_limit:
+                # Debug mode must never invent hardware that has not answered a
+                # scan; virtual frame cells stay preview-only.
+                module_ids = []
+            else:
+                # Before the first scan, assume the stock 1-based ids.  The
+                # master ignores ids that do not answer, so this is harmless.
+                module_ids = [
+                    str(index + 1)
+                    for index in range(layout.module_count or rows * cols)
+                ]
 
         char_by_id: dict[str, str] = {}
         for cell, slot in enumerate(layout.cell_slots):

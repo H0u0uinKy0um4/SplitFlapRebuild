@@ -1,12 +1,52 @@
 /** Tuning tab: module matrix, commands, map, auto-tune, teach and drum. */
 
-import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.17";
+import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.18";
 import {
   escapeAttr,
   escapeHtml,
   formatMessage,
   numberText,
-} from "../../utils.js?v=1.2.17";
+} from "../../utils.js?v=1.2.18";
+
+/**
+ * Build the grid used for physical-module views.
+ *
+ * Debug mode renders a larger virtual canvas, but tuning must keep showing the
+ * modules that actually answered the scan. In that case the detected modules
+ * are packed into a compact grid instead of following the virtual canvas.
+ */
+const moduleGrid = (board, modules) => {
+  const frameCols = Math.max(1, Number(board.cols) || 1);
+  // A debug frame can be much wider than the scanned board. Use a compact
+  // width for hardware views so the real modules stay visible and clickable.
+  const cols = board.debugModuleLimit
+    ? Math.max(1, Math.min(frameCols, modules.length || 1))
+    : frameCols;
+  const rows = board.debugModuleLimit
+    ? Math.max(1, Math.ceil(modules.length / cols))
+    : Math.max(
+        Math.max(1, Number(board.rows) || 1),
+        Math.ceil(modules.length / cols) || 1
+      );
+  const counts = [];
+  let remaining = modules.length;
+  for (let row = 0; row < rows; row += 1) {
+    const configured = Number(board.rowCounts[row]) || 0;
+    const count = board.debugModuleLimit
+      ? Math.min(cols, Math.max(0, remaining))
+      : row < board.rows
+        ? Math.max(0, Math.min(cols, configured))
+        : Math.min(cols, Math.max(0, remaining));
+    counts.push(count);
+    remaining -= count;
+  }
+  return {
+    cols,
+    rows,
+    counts,
+    offsets: counts.map((count) => Math.max(0, Math.floor((cols - count) / 2))),
+  };
+};
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -225,24 +265,13 @@ export const PanelMixin = (Base) =>
       const meta = this.shadowRoot.getElementById("matrixMeta");
 
       if (matrix) {
-        const rows = Math.max(
-          board.rows,
-          Math.ceil(modules.length / board.cols) || 1
-        );
+        const grid = moduleGrid(board, modules);
         let html = "";
         let slotBase = 0;
-        for (let row = 0; row < rows; row += 1) {
-          const inLayout = row < board.rows;
-          const count = inLayout
-            ? Math.max(
-                0,
-                Math.min(board.cols, Number(board.rowCounts[row]) || 0)
-              )
-            : board.cols;
-          const offset = inLayout
-            ? Math.max(0, Number(board.rowOffsets[row]) || 0)
-            : 0;
-          for (let col = 0; col < board.cols; col += 1) {
+        for (let row = 0; row < grid.rows; row += 1) {
+          const count = grid.counts[row];
+          const offset = grid.offsets[row];
+          for (let col = 0; col < grid.cols; col += 1) {
             if (col < offset || col >= offset + count) {
               html += '<div class="mod void"></div>';
               continue;
@@ -272,10 +301,10 @@ export const PanelMixin = (Base) =>
           }
           slotBase += count;
         }
-        matrix.style.setProperty("--cols", String(board.cols));
+        matrix.style.setProperty("--cols", String(grid.cols));
         if (modules.length) {
           const maxCell = this._moduleCell();
-          const width = this._gridMaxWidth(board.cols, maxCell, 4);
+          const width = this._gridMaxWidth(grid.cols, maxCell, 4);
           matrix.style.setProperty("--mod-max", `${maxCell}px`);
           matrix.style.setProperty(
             "--mod-char",
@@ -734,13 +763,11 @@ export const PanelMixin = (Base) =>
 
       let gridHtml = "";
       let slotBase = 0;
-      for (let row = 0; row < board.rows; row += 1) {
-        const count = Math.max(
-          0,
-          Math.min(board.cols, Number(board.rowCounts[row]) || 0)
-        );
-        const offset = Math.max(0, Number(board.rowOffsets[row]) || 0);
-        for (let col = 0; col < board.cols; col += 1) {
+      const grid = moduleGrid(board, modules);
+      for (let row = 0; row < grid.rows; row += 1) {
+        const count = grid.counts[row];
+        const offset = grid.offsets[row];
+        for (let col = 0; col < grid.cols; col += 1) {
           if (col < offset || col >= offset + count) {
             gridHtml += '<div class="mod void"></div>';
             continue;
@@ -786,7 +813,7 @@ export const PanelMixin = (Base) =>
 
         <div class="at-instructions">${instrHtml}</div>
 
-        <div class="at-grid" style="--cols:${board.cols}">${gridHtml}</div>
+        <div class="at-grid" style="--cols:${grid.cols}">${gridHtml}</div>
 
         <div class="row between" style="align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px">
           <div class="actions" style="margin:0;flex-wrap:wrap">

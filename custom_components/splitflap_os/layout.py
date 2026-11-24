@@ -324,7 +324,7 @@ def resolve_layout(
     # Debug mode uses the whole configured frame, not only the detected
     # modules. The send path still drops slots without a real module ID.
     counts = (
-        (cols,) * rows
+        (frame_cols,) * frame_rows
         if ignore_module_limit
         else _filled_row_counts(count, frame_rows, frame_cols)
     )
