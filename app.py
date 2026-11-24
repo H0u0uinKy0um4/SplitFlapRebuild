@@ -37,33 +37,110 @@ is_homed = False
 #  SETTINGS
 # ============================================================
 
+# Display/hardware settings that do not belong to any app.
+DISPLAY_DEFAULTS = {
+    "offsets":       {str(i): 2832 for i in range(45)},
+    "calibrations":  {str(i): 4096 for i in range(45)},
+    "tuned_chars":   {str(i): {} for i in range(45)},
+    "timezone":      "US/Eastern",
+    "auto_home":     True,
+    "saved_playlists": {},
+}
+
+
+def _animation_settings(speed, *, reveal_text=False):
+    """Shared settings for one of the animation apps."""
+
+    values = {"anim_style": "ltr", "anim_speed": speed}
+    if reveal_text:
+        values["anim_text"] = "SPLIT  FLAP  DISPLAY"
+    return values
+
+
+# Each app owns its defaults, refresh delay and cache keys here.  Adding an app
+# no longer means editing load_settings(), the global save-key list, or the
+# cache initialiser: everything the app needs lives in its own entry.  The
+# reference front end mirrors this grouping in APP_SETTINGS_CONFIG.
+APP_SPECS = {
+    'demo':         {'settings': {}, 'delay': 5},
+    'time':         {'settings': {}, 'delay': 5},
+    'date':         {'settings': {}, 'delay': 5},
+    'countdown':    {
+        'settings': {
+            'countdown_event': 'NEW YEAR',
+            'countdown_target': '2027-01-01T00:00:00',
+        },
+        'delay': 1,
+    },
+    'world_clock':  {
+        'settings': {'world_clock_zones': 'US/Eastern,US/Pacific,Europe/London'},
+        'delay': 1,
+    },
+    'weather':      {
+        'settings': {'zip_code': '02118', 'weather_api_key': ''},
+        'delay': 5,
+        'cache': {'weather': None},
+    },
+    'dashboard':    {'settings': {}, 'delay': 5, 'cache': {'weather': None}},
+    'metro':        {
+        'settings': {'mbta_stop': 'place-bbsta', 'mbta_route': 'Orange'},
+        'delay': 5,
+        'cache': {'metro': []},
+    },
+    'stocks':       {
+        'settings': {'stocks_list': 'MSFT,GOOG,NVDA'},
+        'delay': 10,
+        'cache': {'stocks': []},
+    },
+    'sports':       {
+        'settings': {'nhl_teams': 'BOS,DAL'},
+        'delay': 5,
+        'cache': {'sports': []},
+    },
+    'youtube':      {
+        'settings': {'yt_channel_id': 'UC2GJfspFn6o4liy6GaBFtHA'},
+        'delay': 5,
+        'cache': {'youtube': None},
+    },
+    'yt_comments':  {
+        'settings': {'yt_api_key': '', 'yt_video_id': ''},
+        'delay': 5,
+        'cache': {'yt_comments': []},
+    },
+    'crypto':       {
+        'settings': {'crypto_list': 'bitcoin,ethereum,solana'},
+        'delay': 5,
+        'cache': {'crypto': []},
+    },
+    'iss':          {'settings': {}, 'delay': 5, 'cache': {'iss': []}},
+    'livestream':   {
+        'settings': {
+            'livestream_interval': '25',
+            'livestream_comments': '',
+            'yt_channel_id': 'UC2GJfspFn6o4liy6GaBFtHA',
+            'yt_video_id': '',
+            'yt_api_key': '',
+        },
+        'delay': 25,
+        'delay_key': 'livestream_interval',
+        'delay_min': 5,
+        'cache': {'youtube': None, 'livestream_viewers': None},
+    },
+    'anim_rainbow': {'settings': _animation_settings('0.4'), 'delay': 0.4},
+    'anim_sweep':   {'settings': _animation_settings('0.25'), 'delay': 0.25},
+    'anim_twinkle': {'settings': _animation_settings('0.5'), 'delay': 0.5},
+    'anim_checker': {'settings': _animation_settings('0.6'), 'delay': 0.6},
+    'anim_matrix':  {
+        'settings': _animation_settings('0.4', reveal_text=True),
+        'delay': 0.4,
+    },
+}
+
+
 def load_settings():
-    defaults = {
-        "offsets":       {str(i): 2832 for i in range(45)},
-        "calibrations":  {str(i): 4096 for i in range(45)},
-        "tuned_chars":   {str(i): {} for i in range(45)},
-        "zip_code":      "02118",
-        "timezone":      "US/Eastern",
-        "weather_api_key": "",
-        "mbta_stop":     "place-bbsta",
-        "mbta_route":    "Orange",
-        "stocks_list":   "MSFT,GOOG,NVDA",
-        "nhl_teams":     "BOS,DAL",
-        "yt_channel_id": "UC2GJfspFn6o4liy6GaBFtHA",
-        "yt_api_key":    "",
-        "yt_video_id":   "",
-        "auto_home":     True,
-        "countdown_event":   "NEW YEAR",
-        "countdown_target":  "2027-01-01T00:00:00",
-        "world_clock_zones": "US/Eastern,US/Pacific,Europe/London",
-        "crypto_list":   "bitcoin,ethereum,solana",
-        "anim_style":    "ltr",
-        "anim_speed":    "0.4",
-        "anim_text":     "SPLIT  FLAP  DISPLAY",
-        "saved_playlists": {},
-        "livestream_interval": "25",
-        "livestream_comments": "",
-    }
+    defaults = dict(DISPLAY_DEFAULTS)
+    for spec in APP_SPECS.values():
+        defaults.update(spec.get('settings', {}))
     if os.path.exists(CONFIG_PATH):
         try:
             with open(CONFIG_PATH, 'r') as f:
@@ -81,6 +158,30 @@ def save_settings(data):
         json.dump(data, f, indent=4)
 
 settings = load_settings()
+
+
+def app_setting(app_key, key, default=None):
+    """Read a setting owned by ``app_key``, tolerating legacy flat keys."""
+
+    namespaced = f"{app_key}.{key}"
+    if namespaced in settings:
+        return settings[namespaced]
+    fallback = APP_SPECS.get(app_key, {}).get('settings', {}).get(key, default)
+    return settings.get(key, fallback)
+
+
+def app_delay(app_key):
+    """Return the refresh delay declared by an app."""
+
+    spec = APP_SPECS.get(app_key, {})
+    delay = spec.get('delay', 5)
+    key = spec.get('delay_key')
+    if key:
+        try:
+            delay = max(spec.get('delay_min', 0), float(app_setting(app_key, key, delay)))
+        except (TypeError, ValueError):
+            pass
+    return delay
 
 
 # ============================================================
@@ -327,9 +428,9 @@ def run_matrix_animation():
     send order), then the target text revealed in the configured style.
     """
     global last_sent_page, loop_delay
-    target = settings.get('anim_text', 'SPLIT  FLAP  DISPLAY').upper().ljust(45)[:45]
-    speed  = max(0.1, float(settings.get('anim_speed', '0.4')))
-    style  = settings.get('anim_style', 'ltr')
+    target = app_setting('anim_matrix', 'anim_text', 'SPLIT  FLAP  DISPLAY').upper().ljust(45)[:45]
+    speed  = max(0.1, float(app_setting('anim_matrix', 'anim_speed', '0.4')))
+    style  = app_setting('anim_matrix', 'anim_style', 'ltr')
     chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&?%*-+'
 
     frame_plan = [
@@ -520,8 +621,8 @@ def format_lines(l1, l2, l3):
     return l1.center(15)[:15] + l2.center(15)[:15] + l3.center(15)[:15]
 
 def fetch_weather_data():
-    api_key  = settings.get("weather_api_key", "").strip()
-    zip_code = settings.get("zip_code", "02118").strip()
+    api_key  = app_setting('weather', 'weather_api_key', '').strip()
+    zip_code = app_setting('weather', 'zip_code', '02118').strip()
     if not api_key:
         return None
     try:
@@ -540,8 +641,8 @@ def fetch_weather_data():
         return None
 
 def fetch_metro():
-    stop  = settings.get('mbta_stop', 'place-bbsta')
-    route = settings.get('mbta_route', 'Orange')
+    stop  = app_setting('metro', 'mbta_stop', 'place-bbsta')
+    route = app_setting('metro', 'mbta_route', 'Orange')
     url = (f"https://api-v3.mbta.com/predictions"
            f"?filter[stop]={stop}&filter[route]={route}&page[limit]=20&sort=departure_time")
     try:
@@ -570,7 +671,7 @@ def fetch_metro():
         return [format_lines("METRO ERROR", "", "")]
 
 def fetch_stocks():
-    tickers = [t.strip() for t in settings.get('stocks_list', 'MSFT,GOOG,NVDA').split(',') if t.strip()]
+    tickers = [t.strip() for t in app_setting('stocks', 'stocks_list', 'MSFT,GOOG,NVDA').split(',') if t.strip()]
     pages = []
     for chunk in [tickers[i:i+3] for i in range(0, len(tickers), 3)]:
         pl = ["               "] * 3
@@ -590,7 +691,7 @@ def fetch_stocks():
     return pages or [format_lines("NO STOCKS", "CONFIGURED", "")]
 
 def fetch_sports():
-    teams = [t.strip() for t in settings.get('nhl_teams', 'BOS,DAL').split(',') if t.strip()]
+    teams = [t.strip() for t in app_setting('sports', 'nhl_teams', 'BOS,DAL').split(',') if t.strip()]
     pages = []
     try:
         games = requests.get("https://api-web.nhle.com/v1/score/now", timeout=5).json().get('games', [])
@@ -612,7 +713,7 @@ def fetch_sports():
         return [format_lines("SPORTS ERR", "", "")]
 
 def fetch_youtube_data():
-    cid = settings.get("yt_channel_id", "").strip()
+    cid = app_setting('youtube', 'yt_channel_id', '').strip()
     for url in [
         f"https://mixerno.space/api/youtube-channel-counter/user/{cid}",
         f"https://axern.space/api/get?platform=youtube&type=channel&id={cid}",
@@ -630,8 +731,8 @@ def fetch_youtube_data():
     return None
 
 def fetch_youtube_comments():
-    api_key  = settings.get("yt_api_key", "").strip()
-    video_id = settings.get("yt_video_id", "").strip()
+    api_key  = app_setting('yt_comments', 'yt_api_key', '').strip()
+    video_id = app_setting('yt_comments', 'yt_video_id', '').strip()
     if not api_key or not video_id:
         return [format_lines("YT COMMENTS", "MISSING API KEY", "OR VIDEO ID")]
     url = (f"https://www.googleapis.com/youtube/v3/commentThreads"
@@ -653,8 +754,8 @@ def fetch_youtube_comments():
 def fetch_youtube_viewers():
     """Fetch current concurrent viewer count for a YouTube live stream.
     Returns an int viewer count, or None if unavailable / not live."""
-    api_key  = settings.get("yt_api_key", "").strip()
-    video_id = settings.get("yt_video_id", "").strip()
+    api_key  = app_setting('yt_comments', 'yt_api_key', '').strip()
+    video_id = app_setting('yt_comments', 'yt_video_id', '').strip()
     if not api_key or not video_id:
         return None
     url = (f"https://www.googleapis.com/youtube/v3/videos"
@@ -676,7 +777,7 @@ def parse_livestream_comments():
     """Parse user-entered comment blocks into 45-char display pages.
     Blocks are separated by blank lines; within a block each newline
     is one row (up to 3 rows of 15 chars, auto-centered)."""
-    raw = settings.get('livestream_comments', '').strip()
+    raw = app_setting('livestream', 'livestream_comments', '').strip()
     if not raw:
         return []
     raw = raw.replace('\r\n', '\n').replace('\r', '\n')
@@ -742,8 +843,8 @@ def build_livestream_pages():
 # ── New apps ──────────────────────────────────────────────────
 
 def fetch_countdown():
-    event      = settings.get('countdown_event', 'NEW YEAR').upper()[:15]
-    target_str = settings.get('countdown_target', '2027-01-01T00:00:00')
+    event      = app_setting('countdown', 'countdown_event', 'NEW YEAR').upper()[:15]
+    target_str = app_setting('countdown', 'countdown_target', '2027-01-01T00:00:00')
     tz         = pytz.timezone(settings.get('timezone', 'US/Eastern'))
     try:
         try:
@@ -766,7 +867,7 @@ def fetch_countdown():
         return [format_lines("COUNTDOWN", "CONFIG ERROR", "")]
 
 def fetch_world_clock():
-    zones_str = settings.get('world_clock_zones', 'US/Eastern,US/Pacific,Europe/London')
+    zones_str = app_setting('world_clock', 'world_clock_zones', 'US/Eastern,US/Pacific,Europe/London')
     zones = [z.strip() for z in zones_str.split(',') if z.strip()][:3]
     while len(zones) < 3:
         zones.append('UTC')
@@ -791,7 +892,7 @@ def fetch_world_clock():
 
 def fetch_crypto():
     coins = [c.strip().lower() for c in
-             settings.get('crypto_list', 'bitcoin,ethereum,solana').split(',') if c.strip()][:6]
+             app_setting('crypto', 'crypto_list', 'bitcoin,ethereum,solana').split(',') if c.strip()][:6]
     url = (f"https://api.coingecko.com/api/v3/simple/price"
            f"?ids={','.join(coins)}&vs_currencies=usd&include_24hr_change=true")
     try:
@@ -852,16 +953,12 @@ stop_event  = threading.Event()
 last_sent_page = None
 active_app  = None
 
-last_fetches = {
-    'weather': 0, 'metro': 0, 'sports': 0, 'stocks': 0,
-    'youtube': 0, 'yt_comments': 0, 'crypto': 0, 'iss': 0,
-    'livestream_viewers': 0,
-}
-app_caches = {
-    'weather': None, 'metro': [], 'sports': [], 'stocks': [],
-    'youtube': None, 'yt_comments': [], 'crypto': [], 'iss': [],
-    'livestream_viewers': None,
-}
+last_fetches = {name: 0
+                for spec in APP_SPECS.values()
+                for name in spec.get('cache', {})}
+app_caches = {name: initial
+              for spec in APP_SPECS.values()
+              for name, initial in spec.get('cache', {}).items()}
 
 
 def playlist_loop():
@@ -1000,11 +1097,11 @@ def playlist_loop():
         # ── Animation apps ───────────────────────────────────
         elif active_app == 'anim_rainbow':
             display_pages = generate_rainbow_pages()
-            active_order  = get_animation_order(settings.get('anim_style', 'ltr'))
+            active_order  = get_animation_order(app_setting(active_app, 'anim_style', 'ltr'))
 
         elif active_app == 'anim_sweep':
             display_pages = generate_sweep_pages()
-            active_order  = get_animation_order(settings.get('anim_style', 'ltr'))
+            active_order  = get_animation_order(app_setting(active_app, 'anim_style', 'ltr'))
 
         elif active_app == 'anim_twinkle':
             display_pages = generate_twinkle_pages()
@@ -1012,7 +1109,7 @@ def playlist_loop():
 
         elif active_app == 'anim_checker':
             display_pages = generate_checker_pages()
-            active_order  = get_animation_order(settings.get('anim_style', 'ltr'))
+            active_order  = get_animation_order(app_setting(active_app, 'anim_style', 'ltr'))
 
         elif active_app == 'anim_matrix':
             # Runs its own multi-order frame sequence; loop back to top when done
@@ -1030,7 +1127,7 @@ def playlist_loop():
 
         # Effective per-page delay
         if active_app and active_app.startswith('anim_'):
-            eff_delay = max(0.1, float(settings.get('anim_speed', '0.4')))
+            eff_delay = max(0.1, float(app_setting(active_app, 'anim_speed', '0.4')))
         elif active_app in ('countdown', 'world_clock', 'time', 'date'):
             eff_delay = 1.0
         else:
@@ -1097,15 +1194,15 @@ def handle_settings():
         mod_id = str(data.get('id', '0'))
 
         if action == 'save_global':
-            keys = [
-                'zip_code', 'weather_api_key', 'timezone',
-                'mbta_stop', 'mbta_route', 'stocks_list', 'nhl_teams',
-                'yt_channel_id', 'yt_api_key', 'yt_video_id',
-                'countdown_event', 'countdown_target', 'world_clock_zones',
-                'crypto_list', 'anim_style', 'anim_speed', 'anim_text',
-                'livestream_interval', 'livestream_comments',
-            ]
-            settings.update({k: data[k] for k in keys if k in data})
+            # Derived from the app specs, so a new app's settings need no edit
+            # here.  Flat keys are kept for the legacy reference UI; namespaced
+            # keys are accepted for callers that already use them.
+            keys = set(DISPLAY_DEFAULTS)
+            for app_key, spec in APP_SPECS.items():
+                for key in spec.get('settings', {}):
+                    keys.add(key)
+                    keys.add(f"{app_key}.{key}")
+            settings.update({k: v for k, v in data.items() if k in keys})
             save_settings(settings)
             return jsonify(status="Saved")
 
@@ -1232,19 +1329,7 @@ def run_app():
     active_app   = request.json.get('app')
     last_fetches = {k: 0 for k in last_fetches}
 
-    if active_app == 'stocks':
-        loop_delay = 10
-    elif active_app in ('countdown', 'world_clock'):
-        loop_delay = 1
-    elif active_app == 'livestream':
-        try:
-            loop_delay = max(5, int(float(settings.get('livestream_interval', 25))))
-        except (TypeError, ValueError):
-            loop_delay = 25
-    elif active_app and active_app.startswith('anim_'):
-        loop_delay = max(0.1, float(settings.get('anim_speed', '0.4')))
-    else:
-        loop_delay = 5
+    loop_delay = app_delay(active_app)
 
     stop_event.set()
     return jsonify(status=f"App {active_app} started")
