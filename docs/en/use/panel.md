@@ -33,7 +33,8 @@ Each card shows the app name, description, icon, and availability. When an app
 does not fit the layout, the card is disabled and states the requirement; see
 [layout](../protocol/layout.md#app-availability). The gear button opens that
 app's settings; the mode button picks a manifest-declared variant such as the
-clock's `full`, `time`, or `date`.
+clock's `full`, `time`, `date`, or `minutes`. The `minutes` mode shows the
+current two-digit minute of the hour and fits a 1 × 2 frame.
 
 ## Tuning
 

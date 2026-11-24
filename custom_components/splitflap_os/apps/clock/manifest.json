@@ -5,12 +5,13 @@
   "description": "Local time",
   "category": "time",
   "default_delay": 1.0,
-  "min_rows": 3,
-  "min_cols": 9,
+  "min_rows": 1,
+  "min_cols": 2,
   "modes": [
     "full",
     "time",
-    "date"
+    "date",
+    "minutes"
   ],
   "fields": [
     {
@@ -40,7 +41,8 @@
       "modes": {
         "full": "Celé",
         "time": "Jen čas",
-        "date": "Jen datum"
+        "date": "Jen datum",
+        "minutes": "Jen minuty"
       }
     },
     "en": {
@@ -55,7 +57,8 @@
       "modes": {
         "full": "Full",
         "time": "Time only",
-        "date": "Date only"
+        "date": "Date only",
+        "minutes": "Minutes only"
       }
     }
   }

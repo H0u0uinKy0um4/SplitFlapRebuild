@@ -54,12 +54,15 @@ ragged layout such as `3,3,1` (narrowest row 1) disables data apps.
 | App | Minimum frame |
 | --- | --- |
 | Animations | any size |
-| Clock | 3 × 9 |
+| Clock | 1 × 2 |
 | Date | 3 × 11 |
 | Dashboard | 3 × 11 |
 | Weather | 3 × 10 |
 | Stocks | 3 × 7 |
 | Countdown | 3 × 12 |
+
+The clock's `full`, `time`, and `date` modes still need 3 × 9. On a smaller
+frame the clock automatically shows its two-digit `minutes` mode instead.
 
 - Text pages and colour animations work on any valid layout, including one module.
 - If the layout itself is invalid, only apps with both minimums at `1` stay

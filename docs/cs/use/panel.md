@@ -33,7 +33,8 @@ Karta ukazuje název, popis, ikonu a dostupnost aplikace. Když se aplikace neve
 do rozvržení, karta je zakázaná a uvede požadavek; viz
 [rozvržení](../protocol/layout.md#dostupnost-aplikaci). Ozubené kolečko otevírá
 nastavení aplikace, tlačítko režimu volí variantu z manifestu, například u hodin
-`full`, `time` nebo `date`.
+`full`, `time`, `date` nebo `minutes`. Režim `minutes` ukazuje aktuální
+dvoumístné minuty a vejde se do rámu 1 × 2.
 
 ## Tuning
 

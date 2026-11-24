@@ -54,12 +54,15 @@ rozvržení jako `3,3,1` (nejužší řada 1) datové aplikace zakáže.
 | Aplikace | Minimální rám |
 | --- | --- |
 | Animations | jakákoli velikost |
-| Clock | 3 × 9 |
+| Clock | 1 × 2 |
 | Date | 3 × 11 |
 | Dashboard | 3 × 11 |
 | Weather | 3 × 10 |
 | Stocks | 3 × 7 |
 | Countdown | 3 × 12 |
+
+Režimy hodin `full`, `time` a `date` stále potřebují 3 × 9. Na menším rámě hodiny
+automaticky zobrazí dvoumístný režim `minutes`.
 
 - Textové stránky a barevné animace fungují na jakémkoli platném rozvržení, včetně
   jednoho modulu.
