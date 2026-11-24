@@ -47,6 +47,18 @@ DISPLAY_FIELDS = (
         help="Physical frame width. Leave 0 to derive it from the display.",
     ),
     SettingField(
+        key="debug_ignore_module_limit",
+        label="Debug: ignore module limits",
+        type="boolean",
+        default=False,
+        help=(
+            "For development only. Use the configured frame even when fewer "
+            "modules are detected, and allow apps that need a larger board. "
+            "Cells without a physical module are shown in the preview but are "
+            "not sent to the master."
+        ),
+    ),
+    SettingField(
         key="ui_scale",
         label="Preview scale (%)",
         type="number",

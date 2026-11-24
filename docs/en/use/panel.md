@@ -57,11 +57,18 @@ its refresh by 5 seconds, so a module can briefly look offline; that is expected
 | --- | --- |
 | `row_counts` | One comma-separated module count per physical row, for example `3,3,1`. Blank means automatic. |
 | `rows`, `cols` | Frame dimensions. `0` derives them from the detected module count. |
+| `debug_ignore_module_limit` | Debug switch: use the configured frame even when fewer modules are detected, and allow apps that normally need a larger board. Default `false`. |
 | `ui_scale` | Preview scale in percent (`50`–`200`, default `100`). |
 | `theme` | `auto` (follow Home Assistant), `light`, or `dark`. |
 | `timezone` | IANA name such as `Europe/Prague`. Empty uses Home Assistant's timezone. |
 | `units` | `auto`, `imperial`, or `metric`. |
 | `page_delay` | Default page delay in seconds (`0.1`–`120`, default `5`). |
+
+When debug mode is enabled, the status line shows a **DEBUG** badge. The panel
+renders the whole configured canvas and app cards are enabled, but cells without
+a physical module are skipped when commands are published. Turn it off again
+before using the display normally. See
+[debug override](../protocol/layout.md#debug-override).
 
 ### Apps sub-tab
 

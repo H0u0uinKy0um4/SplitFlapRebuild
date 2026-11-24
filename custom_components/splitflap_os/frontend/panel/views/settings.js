@@ -1,7 +1,12 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.16";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.16";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.17";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.17";
+
+const checkedSettingValue = (value) =>
+  value === true ||
+  value === 1 ||
+  ["true", "yes", "on", "1"].includes(String(value).trim().toLowerCase());
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -164,7 +169,11 @@ export const PanelMixin = (Base) =>
       const current = value == null ? "" : String(value);
       let input = "";
 
-      if (type === "select") {
+      if (type === "boolean") {
+        input = `<input type="checkbox" data-setting="${key}"${
+          checkedSettingValue(value) ? " checked" : ""
+        }>`;
+      } else if (type === "select") {
         const options = Array.isArray(field.options) ? field.options.slice() : [];
         if (current !== "" && !options.includes(current)) options.unshift(current);
         input = `<select data-setting="${key}">${options
@@ -316,8 +325,13 @@ export const PanelMixin = (Base) =>
           if (input === active) return;
           const key = input.dataset.setting;
           const value = settings[key];
-          const next = value == null ? "" : String(value);
-          if (input.value !== next) input.value = next;
+          if (input.type === "checkbox") {
+            const next = checkedSettingValue(value);
+            if (input.checked !== next) input.checked = next;
+          } else {
+            const next = value == null ? "" : String(value);
+            if (input.value !== next) input.value = next;
+          }
         });
         this._applyFieldVisibility(node);
       }

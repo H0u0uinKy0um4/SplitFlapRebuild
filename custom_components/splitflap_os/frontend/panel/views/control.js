@@ -1,12 +1,12 @@
 /** Control tab: live display, composer and preview. */
 
-import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.16";
+import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.17";
 import {
   centerLine,
   escapeAttr,
   escapeHtml,
   formatMessage,
-} from "../../utils.js?v=1.2.16";
+} from "../../utils.js?v=1.2.17";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -90,6 +90,7 @@ export const PanelMixin = (Base) =>
         )}`
       );
       if (board.error) parts.push(this._t("layout_error_short"));
+      if (board.debugModuleLimit) parts.push(this._t("debug_badge"));
       const meta = parts.join(" • ");
 
       const node = this.shadowRoot.getElementById("live");

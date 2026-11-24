@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.16";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.16";
-import { PANEL_STYLES } from "../styles.js?v=1.2.16";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.17";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.17";
+import { PANEL_STYLES } from "../styles.js?v=1.2.17";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -293,6 +293,7 @@ export const PanelMixin = (Base) =>
         mode,
       ];
       if (board.error) parts.push(this._t("layout_error_short"));
+      if (board.debugModuleLimit) parts.push(this._t("debug_badge"));
       if (footer) footer.textContent = parts.join(" • ");
 
       const compat = this.shadowRoot.getElementById("compatMeta");

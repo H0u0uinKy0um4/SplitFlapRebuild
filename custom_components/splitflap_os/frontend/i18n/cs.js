@@ -114,6 +114,7 @@ export const PANEL = {
   connecting_subtitle: "Připojování k Home Assistantu…",
   waiting_state: "Čekání na stav…",
   layout_error_short: "CHYBA ROZLOŽENÍ",
+  debug_badge: "LADĚNÍ",
   compose_placeholder: "Napiš zprávu — nové řádky začnou novou řadu",
   apps_help:
     "Kliknutím na aplikaci ji spustíte. Ozubeným kolečkem upravíte nastavení, která aplikace čte.",
@@ -407,6 +408,7 @@ export const SETTINGS = {
     row_counts: "Fyzické rozložení řad (prázdné = auto)",
     rows: "Řádky rámu (0 = auto)",
     cols: "Sloupce rámu (0 = auto)",
+    debug_ignore_module_limit: "Ladění: ignorovat limity modulů",
     ui_scale: "Měřítko náhledu (%)",
     theme: "Motiv panelu",
     timezone: "Časové pásmo",
@@ -418,6 +420,8 @@ export const SETTINGS = {
       "Jedno číslo na fyzickou řadu, shora dolů. ID modulů se přiřazují zleva doprava, pak shora dolů. Kratší řady jsou vycentrované. Prázdné nechá integraci zvolit podle počtu nalezených modulů.",
     rows: "Fyzická výška rámu. Nech 0 pro automatický odhad z displeje.",
     cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
+    debug_ignore_module_limit:
+      "Pouze pro vývoj. Použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace vyžadující větší tabuli. Buňky bez fyzického modulu se zobrazí v náhledu, ale neodesílají se masteru.",
     ui_scale:
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     theme:

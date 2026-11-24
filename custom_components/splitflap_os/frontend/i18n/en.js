@@ -114,6 +114,7 @@ export const PANEL = {
   connecting_subtitle: "Connecting to Home Assistant…",
   waiting_state: "Waiting for state…",
   layout_error_short: "LAYOUT ERROR",
+  debug_badge: "DEBUG",
   compose_placeholder: "Type a message — new lines become rows",
   apps_help:
     "Tap an app to launch it. Use the gear to edit the settings that app reads.",
@@ -406,6 +407,7 @@ export const SETTINGS = {
     row_counts: "Physical row layout (blank = auto)",
     rows: "Frame rows (0 = auto)",
     cols: "Frame columns (0 = auto)",
+    debug_ignore_module_limit: "Debug: ignore module limits",
     ui_scale: "Preview scale (%)",
     theme: "Panel theme",
     timezone: "Timezone",
@@ -417,6 +419,8 @@ export const SETTINGS = {
       "One number per physical row, top to bottom. Module IDs are assigned left to right, then top to bottom. Short rows are centred. Blank lets the integration choose from the detected module count.",
     rows: "Physical frame height. Leave 0 to derive it from the display.",
     cols: "Physical frame width. Leave 0 to derive it from the display.",
+    debug_ignore_module_limit:
+      "For development only. Use the configured frame even when fewer modules are detected, and allow apps that need a larger board. Cells without a physical module are shown in the preview but are not sent to the master.",
     ui_scale:
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     theme:

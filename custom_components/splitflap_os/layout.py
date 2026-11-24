@@ -226,12 +226,19 @@ def resolve_layout(
     rows: int | str | None = 0,
     cols: int | str | None = 0,
     row_counts: object = "",
+    *,
+    ignore_module_limit: bool = False,
 ) -> Layout:
     """Resolve the physical frame and per-cell module mapping.
 
     ``module_count`` may be ``0`` when the bus has not been scanned yet.  In
     that case the structure is still validated, but the detected count is not
     compared with the configured layout.
+
+    With ``ignore_module_limit`` the frame is treated as fully populated even
+    when fewer modules are detected.  Debug sessions can then use the real
+    canvas and app requirements; cells without a module simply produce no MQTT
+    command.  Structural configuration errors are still reported.
     """
 
     try:
@@ -273,7 +280,7 @@ def resolve_layout(
             )
 
         total = sum(counts)
-        if known_count and total != count:
+        if known_count and total != count and not ignore_module_limit:
             errors.append(
                 f"Row layout describes {total} module(s) but {count} were "
                 "detected"
@@ -282,7 +289,7 @@ def resolve_layout(
         blank = frame_rows * frame_cols - total
         if blank < 0:
             errors.append("Row layout does not fit inside the frame")
-        elif blank > frame_cols:
+        elif blank > frame_cols and not ignore_module_limit:
             errors.append(
                 f"Layout leaves {blank} blank cell(s); at most one row "
                 f"({frame_cols}) is allowed"
@@ -308,17 +315,23 @@ def resolve_layout(
 
     capacity = frame_rows * frame_cols
     errors = []
-    if known_count and count > capacity:
+    if known_count and count > capacity and not ignore_module_limit:
         errors.append(
             f"The {frame_rows}×{frame_cols} frame only fits {capacity} of "
             f"{count} detected module(s)"
         )
 
-    counts = _filled_row_counts(count, frame_rows, frame_cols)
+    # Debug mode uses the whole configured frame, not only the detected
+    # modules. The send path still drops slots without a real module ID.
+    counts = (
+        (cols,) * rows
+        if ignore_module_limit
+        else _filled_row_counts(count, frame_rows, frame_cols)
+    )
     blank = capacity - min(count, capacity)
     # With an unscanned bus (count 0) the board is assumed full, so the blank
     # comparison is meaningless until modules are actually detected.
-    if known_count and blank > frame_cols:
+    if known_count and blank > frame_cols and not ignore_module_limit:
         errors.append(
             f"Layout leaves {blank} blank cell(s); at most one row "
             f"({frame_cols}) is allowed. Set a row layout such as 3,3,1."
@@ -336,9 +349,13 @@ def app_fits(
     layout: Layout,
     min_rows: int = 1,
     min_cols: int = 1,
+    *,
+    ignore_module_limit: bool = False,
 ) -> tuple[bool, str]:
     """Return whether an app fits the physical layout, and why not."""
 
+    if ignore_module_limit:
+        return True, ""
     need_rows = max(1, int(min_rows or 1))
     need_cols = max(1, int(min_cols or 1))
     if need_rows == 1 and need_cols == 1:

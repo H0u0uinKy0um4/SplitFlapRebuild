@@ -27,6 +27,7 @@ from homeassistant.helpers.storage import Store
 from .apps import AppContext, AppRegistry, load_apps
 from .const import (
     ANIMATION_ORDERS,
+    CONF_DEBUG_IGNORE_MODULE_LIMIT,
     DOMAIN,
     ENGINE_STORAGE_VERSION,
     STORAGE_SAVE_DELAY,
@@ -49,6 +50,13 @@ from .models import Page
 from .settings import display_group, global_defaults
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
 
 # A notification that is still queued after this long is stale (for example a
 # burst of automations while the display was offline) and is dropped.
@@ -197,17 +205,25 @@ class AppEngine:
         return "metric" if is_metric else "imperial"
 
     @property
+    def debug_ignore_module_limit(self) -> bool:
+        """Whether debug mode lets apps use a frame larger than the hardware."""
+
+        return _as_bool(self.settings.get(CONF_DEBUG_IGNORE_MODULE_LIMIT, False))
+
+    @property
     def layout(self) -> Layout:
         rows = self.settings.get("rows", 0)
         cols = self.settings.get("cols", 0)
         row_counts = self.settings.get("row_counts", "")
-        key = (self.coordinator.modules_count, rows, cols, str(row_counts))
+        debug = self.debug_ignore_module_limit
+        key = (self.coordinator.modules_count, rows, cols, str(row_counts), debug)
         if self._layout_cache_key != key or self._layout_cache is None:
             self._layout_cache = resolve_layout(
                 self.coordinator.modules_count,
                 rows,
                 cols,
                 row_counts,
+                ignore_module_limit=debug,
             )
             self._layout_cache_key = key
         return self._layout_cache
@@ -275,6 +291,8 @@ class AppEngine:
         }
 
     def _app_available(self, app: Any) -> tuple[bool, str]:
+        if self.debug_ignore_module_limit:
+            return True, ""
         if isinstance(app, dict):
             min_rows = int(app.get("min_rows") or 1)
             min_cols = int(app.get("min_cols") or 1)
@@ -311,6 +329,7 @@ class AppEngine:
                 "rows": rows,
                 "cols": cols,
                 "module_count": self.coordinator.modules_count,
+                "debug_module_limit": self.debug_ignore_module_limit,
                 **{
                     key: value
                     for key, value in layout.as_board_dict().items()
@@ -369,6 +388,8 @@ class AppEngine:
                 except ValueError as err:
                     raise ValueError(str(err)) from err
                 cleaned[key] = ",".join(str(count) for count in counts)
+            elif key == CONF_DEBUG_IGNORE_MODULE_LIMIT:
+                cleaned[key] = _as_bool(value)
             elif key == "ui_scale":
                 try:
                     cleaned[key] = max(50, min(200, int(float(value))))
@@ -391,14 +412,16 @@ class AppEngine:
                 cleaned[key] = value
 
         candidate = {**self.settings, **cleaned}
+        debug = _as_bool(candidate.get(CONF_DEBUG_IGNORE_MODULE_LIMIT, False))
         layout_keys = {"rows", "cols", "row_counts"}
         layout = resolve_layout(
             self.coordinator.modules_count,
             candidate.get("rows", 0),
             candidate.get("cols", 0),
             candidate.get("row_counts", ""),
+            ignore_module_limit=debug,
         )
-        if layout.error and layout_keys.intersection(cleaned):
+        if layout.error and not debug and layout_keys.intersection(cleaned):
             raise ValueError(layout.error)
 
         self.settings.update(cleaned)

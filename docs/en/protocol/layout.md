@@ -72,6 +72,21 @@ frame the clock automatically shows its two-digit `minutes` mode instead.
 - If a running app becomes unsupported because the layout changed, the engine
   stops it.
 
+## Debug override
+
+The display setting `debug_ignore_module_limit` is intended for development with
+an incomplete board. When enabled:
+
+- the configured `rows`/`cols` frame (or `row_counts`) is used even if fewer
+  modules are detected;
+- module-count mismatch, capacity, and blank-cell checks are skipped;
+- app size requirements are ignored, so every app card is startable;
+- cells whose slot has no detected module are rendered in the preview but are
+  omitted from the published module list and send order.
+
+Structural configuration errors still apply. The panel shows a **DEBUG** badge
+while the switch is on. Disable it before normal use.
+
 ## Coordinate system and position maps
 
 - The slave counts `pos` from the hall entering edge.

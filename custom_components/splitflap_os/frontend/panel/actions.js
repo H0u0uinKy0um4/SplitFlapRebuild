@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.16";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.16";
+import { formatMessage } from "../utils.js?v=1.2.17";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.17";
 
 // The master blocks while a module moves and only then writes/refreshes the
 // position map, so the auto-tune verification frame must not be requested in
@@ -537,7 +537,9 @@ export const PanelMixin = (Base) => class extends Base {
       const key = input.dataset.setting;
       if (!key) return;
       let value = input.value;
-      if (input.type === "number") {
+      if (input.type === "checkbox") {
+        value = input.checked;
+      } else if (input.type === "number") {
         value = value === "" ? "" : Number(value);
       }
       values[key] = value;

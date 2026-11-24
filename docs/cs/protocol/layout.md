@@ -72,6 +72,21 @@ automaticky zobrazí dvoumístný režim `minutes`.
 - Když se běžící aplikace stane nepodporovanou kvůli změně rozvržení, engine ji
   zastaví.
 
+## Ladící přepínač
+
+Nastavení `debug_ignore_module_limit` je určeno pro vývoj s nekompletní tabulí.
+Když je zapnuté:
+
+- použije se nastavený rám `rows`/`cols` (nebo `row_counts`), i když je nalezeno
+  méně modulů;
+- kontroly počtu modulů, kapacity a příliš mnoha prázdných buněk se přeskočí;
+- požadavky aplikací na velikost se ignorují, takže lze spustit každou kartu;
+- buňky, pro které neexistuje nalezený modul, se zobrazí v náhledu, ale chybí
+  v odesílaném seznamu modulů a v pořadí odesílání.
+
+Strukturální chyby nastavení platí dál. Panel po dobu zapnutí zobrazí odznak
+**LADĚNÍ**. Před běžným použitím přepínač vypněte.
+
 ## Souřadnicový systém a mapy pozic
 
 - Modul počítá `pos` od náběžné hrany hall senzoru.

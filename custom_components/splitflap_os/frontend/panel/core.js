@@ -1,8 +1,8 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.16";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.16";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.16";
+import { DOMAIN, STYLES } from "../constants.js?v=1.2.17";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.17";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.17";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -439,6 +439,7 @@ export const PanelMixin = (Base) => class extends Base {
       rowOffsets,
       minCols: Number(board.min_cols) || 0,
       layoutModuleCount: Number(board.layout_module_count) || 0,
+      debugModuleLimit: Boolean(board.debug_module_limit),
       error: board.error || "",
     };
   }

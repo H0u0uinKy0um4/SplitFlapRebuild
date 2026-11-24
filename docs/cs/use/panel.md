@@ -58,11 +58,17 @@ očekávané.
 | --- | --- |
 | `row_counts` | Počet modulů v každé fyzické řadě oddělený čárkou, například `3,3,1`. Prázdná hodnota znamená automaticky. |
 | `rows`, `cols` | Rozměry rámu. `0` je odvodí z počtu zjištěných modulů. |
+| `debug_ignore_module_limit` | Ladící přepínač: použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace, které obvykle potřebují větší tabuli. Výchozí `false`. |
 | `ui_scale` | Měřítko náhledu v procentech (`50`–`200`, výchozí `100`). |
 | `theme` | `auto` (podle Home Assistantu), `light` nebo `dark`. |
 | `timezone` | IANA název, například `Europe/Prague`. Prázdné použije časové pásmo Home Assistantu. |
 | `units` | `auto`, `imperial` nebo `metric`. |
 | `page_delay` | Výchozí prodleva stránky v sekundách (`0.1`–`120`, výchozí `5`). |
+
+Když je ladění zapnuté, stavový řádek zobrazí odznak **LADĚNÍ**. Panel vykreslí
+celý nastavený rám a karty aplikací jsou povolené, ale buňky bez fyzického modulu
+se při odesílání příkazů přeskočí. Před běžným použitím displeje ladění znovu
+vypněte. Viz [ladící přepínač](../protocol/layout.md#ladici-prepinac).
 
 ### Záložka Apps
 
