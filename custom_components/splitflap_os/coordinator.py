@@ -11,7 +11,6 @@ import asyncio
 import base64
 import json
 import logging
-import re
 import zlib
 from typing import Any
 
@@ -29,7 +28,6 @@ from .const import (
     CONF_TOPIC_PREFIX,
     COORDINATOR_STORAGE_VERSION,
     DEFAULT_DEVICE_NAME,
-    DEFAULT_DRUM,
     DEFAULT_TOPIC_PREFIX,
     DOMAIN,
     MQTT_COMPAT,
@@ -38,363 +36,16 @@ from .const import (
     STORAGE_SAVE_DELAY,
     signal_update,
 )
-from .ota import (
-    OTA_APP_MAX_SIZE,
-    OTA_CHUNK_BYTES,
-    OTA_STATES_ACTIVE,
-    normalize_ota,
+from .module_status import (
+    ModuleStatus,
+    coerce_optional_int,
+    module_payload_id,
+    valid_drum,
 )
-from .positions import POSITION_MAP_UNSET, normalize_position_map
+from .ota import OTA_APP_MAX_SIZE, OTA_CHUNK_BYTES, OTA_STATES_ACTIVE
+from .positions import POSITION_MAP_UNSET
 
 _LOGGER = logging.getLogger(__name__)
-
-_NUMERIC_ID = re.compile(r"^\d+$")
-
-
-def module_sort_key(module_id: Any) -> tuple[int, int | str]:
-    """Return a stable natural sort key for a module id."""
-
-    value = str(module_id).strip()
-    if _NUMERIC_ID.match(value):
-        return (0, int(value))
-    return (1, value.casefold())
-
-
-def module_payload_id(module_id: Any) -> int | str:
-    """Return a module id as a JSON number when possible."""
-
-    value = str(module_id).strip()
-    if _NUMERIC_ID.match(value):
-        return int(value)
-    return value
-
-
-def _coerce_count(value: Any, fallback: int = 0) -> int:
-    try:
-        return max(int(value), 0)
-    except (TypeError, ValueError):
-        return max(fallback, 0)
-
-
-def _coerce_optional_bool(value: Any) -> bool | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return value != 0
-    if isinstance(value, str):
-        text = value.strip().lower()
-        if text in {"1", "true", "yes", "on", "enabled", "online"}:
-            return True
-        if text in {"0", "false", "no", "off", "disabled", "offline"}:
-            return False
-    return bool(value)
-
-
-def _coerce_optional_int(value: Any) -> int | None:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def normalize_flap_list(value: Any) -> list[str] | None:
-    """Normalize a drum sent as a string, list or index map."""
-
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return list(value)
-    if isinstance(value, dict):
-        items = sorted(value.items(), key=lambda item: module_sort_key(item[0]))
-        return ["" if item is None else str(item) for _, item in items]
-    if isinstance(value, (list, tuple)):
-        return ["" if item is None else str(item) for item in value]
-    return [str(value)]
-
-
-def _valid_drum(value: Any) -> bool:
-    """Return True for a full 64-character drum with no line breaks.
-
-    A short drum used to be space-padded, which shifted every flap index. A
-    newline would also terminate the RS485 command that writes it.
-    """
-
-    return (
-        isinstance(value, str)
-        and len(value) == len(DEFAULT_DRUM)
-        and "\r" not in value
-        and "\n" not in value
-    )
-
-
-MODULE_STAT_ALIASES: dict[str, tuple[str, ...]] = {
-    "flap_list": (
-        "flap_list",
-        "flapList",
-        "FlapList",
-        "flaps",
-        "drum",
-        "drum_chars",
-        "drumChars",
-        "characters",
-    ),
-    "current_step": (
-        "current_step",
-        "currentStep",
-        "CurrentStep",
-        "current_step_pos",
-        "currentStepPos",
-        "step",
-        "step_position",
-        "position_step",
-        "pos",
-    ),
-    "auto_homing": (
-        "auto_homing",
-        "autoHoming",
-        "AutoHoming",
-        "auto_home",
-        "autoHome",
-        "autoHomeEnabled",
-        "autohome",
-    ),
-    "home_offset": (
-        "home_offset",
-        "homeOffset",
-        "HomeOffset",
-        "hall_offset",
-        "hallOffset",
-    ),
-    "total_steps": (
-        "total_steps",
-        "totalSteps",
-        "TotalSteps",
-        "total_steps_per_rev",
-        "totalStepsPerRev",
-        "steps_per_rev",
-        "stepsPerRev",
-        "max_steps",
-        "maxSteps",
-    ),
-    "current_index": (
-        "current_index",
-        "currentIndex",
-        "CurrentIndex",
-        "current_flap_index",
-        "currentFlapIndex",
-        "flap_index",
-        "flapIndex",
-        "index",
-    ),
-    "map_of_positions": (
-        "map_of_positions",
-        "mapOfPositions",
-        "MapOfPositions",
-        "position_map",
-        "positionMap",
-        "positions",
-        "map",
-    ),
-    "busy": ("busy", "is_busy", "isBusy", "moving"),
-    "position_known": (
-        "position_known",
-        "positionKnown",
-        "PositionKnown",
-        "position_valid",
-        "positionValid",
-    ),
-    "online": ("online", "is_online", "isOnline", "connected"),
-    "last_seen": ("last_seen", "lastSeen", "last_seen_ms", "lastSeenMs"),
-    "fw_version": (
-        "fw_version",
-        "fwVersion",
-        "firmware_version",
-        "firmwareVersion",
-        "app_version",
-        "appVersion",
-    ),
-}
-
-_MODULE_STAT_CONTAINERS = ("stats", "config", "details", "module_stats")
-_MODULE_STATE_KEYS = ("state", "module_state", "status")
-
-
-def _module_sources(module: dict[str, Any]) -> list[dict[str, Any]]:
-    sources = [module]
-    for key in _MODULE_STAT_CONTAINERS:
-        nested = module.get(key)
-        if isinstance(nested, dict):
-            sources.append(nested)
-    return sources
-
-
-def _first_value(sources: list[dict[str, Any]], aliases: tuple[str, ...]) -> Any:
-    for source in sources:
-        for alias in aliases:
-            if alias in source and source[alias] is not None:
-                return source[alias]
-    return None
-
-
-def module_state(module: dict[str, Any]) -> str:
-    for key in _MODULE_STATE_KEYS:
-        if key in module and module[key] is not None:
-            value = module[key]
-            return str(value) if value != "" else "unknown"
-    return "unknown"
-
-
-def module_stats(module: dict[str, Any]) -> dict[str, Any]:
-    """Extract canonical diagnostics and derive the current flap index."""
-
-    sources = _module_sources(module)
-    stats: dict[str, Any] = {}
-
-    flap_list = normalize_flap_list(
-        _first_value(sources, MODULE_STAT_ALIASES["flap_list"])
-    )
-    if flap_list is not None:
-        stats["flap_list"] = flap_list
-
-    for key in ("current_step", "home_offset", "total_steps", "current_index"):
-        value = _coerce_optional_int(_first_value(sources, MODULE_STAT_ALIASES[key]))
-        if value is not None:
-            stats[key] = value
-
-    auto_homing = _coerce_optional_bool(
-        _first_value(sources, MODULE_STAT_ALIASES["auto_homing"])
-    )
-    if auto_homing is not None:
-        stats["auto_homing"] = auto_homing
-
-    for key in ("busy", "position_known", "online"):
-        value = _coerce_optional_bool(
-            _first_value(sources, MODULE_STAT_ALIASES[key])
-        )
-        if value is not None:
-            stats[key] = value
-
-    last_seen = _first_value(sources, MODULE_STAT_ALIASES["last_seen"])
-    if last_seen is not None:
-        stats["last_seen"] = last_seen
-
-    fw_version = _first_value(sources, MODULE_STAT_ALIASES["fw_version"])
-    if isinstance(fw_version, str):
-        fw_version = fw_version.strip()
-        if fw_version:
-            stats["fw_version"] = fw_version
-
-    positions = normalize_position_map(
-        _first_value(sources, MODULE_STAT_ALIASES["map_of_positions"])
-    )
-    # Always expose a canonical dict: a raw string or sentinel-only map must
-    # never leak into the panel, where it would look like tuned entries.
-    stats["map_of_positions"] = positions or {}
-
-    flap_list = stats.get("flap_list")
-    flap = module.get("flap")
-    if isinstance(flap_list, list) and flap_list and flap not in (None, ""):
-        try:
-            flap_index = flap_list.index(str(flap))
-        except ValueError:
-            flap_index = None
-        if flap_index is not None:
-            stats["flap_index"] = flap_index
-            flap_position = None
-            if isinstance(positions, dict):
-                flap_position = positions.get(str(flap_index))
-            if flap_position is None:
-                total_steps = stats.get("total_steps")
-                if isinstance(total_steps, int) and total_steps > 0:
-                    home_offset = stats.get("home_offset", 0)
-                    if not isinstance(home_offset, int):
-                        home_offset = 0
-                    flap_position = (
-                        home_offset + (flap_index * total_steps + 32) // 64
-                    ) % total_steps
-            if flap_position is not None:
-                stats["flap_position"] = flap_position
-
-    known = {
-        "id",
-        "flap",
-        "flap_index",
-        "flap_position",
-        *_MODULE_STATE_KEYS,
-        *_MODULE_STAT_CONTAINERS,
-    }
-    for aliases in MODULE_STAT_ALIASES.values():
-        known.update(aliases)
-    extra: dict[str, Any] = {}
-    for source in sources:
-        for key, value in source.items():
-            if key not in known and value is not None:
-                extra[key] = value
-    if extra:
-        stats["extra_stats"] = extra
-
-    return stats
-
-
-def normalize_modules(raw_modules: Any) -> dict[str, dict[str, Any]]:
-    """Normalize a status payload's modules into an ``id -> module`` map."""
-
-    modules: dict[str, dict[str, Any]] = {}
-
-    if isinstance(raw_modules, list):
-        for item in raw_modules:
-            if not isinstance(item, dict) or item.get("id") is None:
-                continue
-            modules[str(item["id"])] = dict(item)
-    elif isinstance(raw_modules, dict):
-        for module_id, item in raw_modules.items():
-            if isinstance(item, dict):
-                module = dict(item)
-            else:
-                module = {"id": module_id, "flap": item}
-            module.setdefault("id", module_id)
-            modules[str(module_id)] = module
-
-    for module in modules.values():
-        module.update(module_stats(module))
-        if module.get("flap") is None:
-            flap_list = module.get("flap_list")
-            index = module.get("current_index")
-            if (
-                isinstance(flap_list, list)
-                and isinstance(index, int)
-                and 0 <= index < len(flap_list)
-            ):
-                module["flap"] = flap_list[index]
-
-    return modules
-
-
-def derive_flap_state(
-    module: dict[str, Any], flap: Any
-) -> tuple[int | None, int | None]:
-    """Return ``(flap_index, flap_position)`` for a character."""
-
-    flap_list = module.get("flap_list")
-    if not isinstance(flap_list, list) or not flap_list or flap in (None, ""):
-        return None, None
-    try:
-        index = flap_list.index(str(flap))
-    except ValueError:
-        return None, None
-
-    positions = module.get("map_of_positions")
-    position = positions.get(str(index)) if isinstance(positions, dict) else None
-    if position is None:
-        total_steps = module.get("total_steps")
-        if isinstance(total_steps, int) and total_steps > 0:
-            home_offset = module.get("home_offset", 0)
-            if not isinstance(home_offset, int):
-                home_offset = 0
-            position = (home_offset + (index * total_steps + 32) // 64) % total_steps
-    return index, position if isinstance(position, int) else None
 
 
 class SplitFlapCoordinator:
@@ -413,29 +64,37 @@ class SplitFlapCoordinator:
         )
         self.signal = signal_update(entry.entry_id)
 
+        # Transport-level state stays here; everything derived from the
+        # master's status payload lives in the HA-free ModuleStatus module.
         self.data: dict[str, Any] = {
             "status": "offline",
-            "modules": {},
-            "modules_count": 0,
             "text": "",
             "last_status": None,
             "restored": False,
-            # Master's cross-repo version contract; absent on older firmware.
-            # The bus generation belongs to the slave <-> master side and is
-            # shown for diagnostics; the MQTT generation is the one Home
-            # Assistant checks.
-            "master_version": None,
-            "master_bus_compat": None,
-            "master_mqtt_compat": None,
         }
-        #: Characters the integration has asked the display to show.
-        self.desired_chars: dict[str, str] = {}
+        self.status = ModuleStatus(drum_provider=self._default_drum_setting)
 
         self._mqtt_unsub: CALLBACK_TYPE | None = None
         self._offline_timer: CALLBACK_TYPE | None = None
         self._store: Store[dict[str, Any]] = Store(
             hass, COORDINATOR_STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}"
         )
+
+    def _default_drum_setting(self) -> str | None:
+        """HA-side adapter for the configured fallback drum."""
+
+        try:
+            runtime = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
+            if runtime:
+                engine = runtime.get("engine")
+                if engine is not None:
+                    settings = getattr(engine, "settings", {}) or {}
+                    default = settings.get("default_drum")
+                    if isinstance(default, str):
+                        return default
+        except Exception:  # noqa: BLE001
+            pass
+        return None
 
     # ------------------------------------------------------------------
     # Identity / snapshots
@@ -456,37 +115,38 @@ class SplitFlapCoordinator:
         return str(self.data.get("status", "offline")).lower() == "online"
 
     @property
+    def desired_chars(self) -> dict[str, str]:
+        return self.status.desired_chars
+
+    @property
     def modules(self) -> dict[str, dict[str, Any]]:
-        modules = self.data.get("modules")
-        return modules if isinstance(modules, dict) else {}
+        return self.status.modules
 
     @property
     def module_ids(self) -> list[str]:
-        return sorted(self.modules, key=module_sort_key)
+        return self.status.module_ids
 
     @property
     def modules_count(self) -> int:
-        count = _coerce_count(self.data.get("modules_count"), 0)
-        return count or len(self.modules)
+        return self.status.modules_count
 
     @property
     def master_version(self) -> str | None:
         """Version the master reports, or ``None`` for older firmware."""
 
-        version = self.data.get("master_version")
-        return version if isinstance(version, str) and version else None
+        return self.status.master_version
 
     @property
     def master_bus_compat(self) -> int | None:
         """Bus compatibility generation the master reports, or ``None``."""
 
-        return _coerce_optional_int(self.data.get("master_bus_compat"))
+        return self.status.master_bus_compat
 
     @property
     def master_mqtt_compat(self) -> int | None:
         """MQTT compatibility generation the master reports, or ``None``."""
 
-        return _coerce_optional_int(self.data.get("master_mqtt_compat"))
+        return self.status.master_mqtt_compat
 
     @property
     def master_compat(self) -> int | None:
@@ -502,10 +162,7 @@ class SplitFlapCoordinator:
         predating the version protocol); that is "unknown", not "compatible".
         """
 
-        compat = self.master_mqtt_compat
-        if compat is None:
-            return None
-        return compat == MQTT_COMPAT
+        return self.status.compat_ok(MQTT_COMPAT)
 
     @property
     def compat_ok(self) -> bool | None:
@@ -516,97 +173,29 @@ class SplitFlapCoordinator:
     def flap_list_for(self, module_id: Any) -> list[str] | None:
         """Return the module's reported drum, or ``None`` when unknown."""
 
-        module = self.modules.get(str(module_id)) or {}
-        flap_list = module.get("flap_list")
-        if isinstance(flap_list, list) and flap_list:
-            return flap_list
-        return None
+        return self.status.flap_list_for(module_id)
 
     def drum_for(self, module_id: Any) -> list[str]:
-        return self.get_effective_drum(module_id)
+        return self.status.effective_drum(module_id)
 
     def get_effective_drum(self, module_id: Any) -> list[str]:
-        """Return the effective drum for a module.
+        """Return the effective drum for a module (reported > default > stock)."""
 
-        Priority:
-        1. Module's reported drum (flap_list, read from its EEPROM by the
-           master). This is the single source of truth - to change it, write
-           the module's EEPROM from the Tuning tab.
-        2. Global ``default_drum`` fallback (modules that have not reported).
-        3. Built-in ``DEFAULT_DRUM``.
-        """
-        reported = self.flap_list_for(module_id)
-        if reported:
-            return list(reported)
-
-        # The coordinator does not have direct access to engine settings, so
-        # read them through the runtime stored in hass.data.
-        try:
-            runtime = self.hass.data.get(DOMAIN, {}).get(self.entry.entry_id)
-            if runtime:
-                engine = runtime.get("engine")
-                if engine is not None:
-                    settings = getattr(engine, "settings", {}) or {}
-                    default = settings.get("default_drum")
-                    if _valid_drum(default):
-                        return list(default)
-        except Exception:  # noqa: BLE001
-            pass
-
-        return list(DEFAULT_DRUM)
+        return self.status.effective_drum(module_id)
 
     def module_snapshot(self, module_id: str) -> dict[str, Any]:
-        module = dict(self.modules.get(module_id) or {})
-        stats = module_stats(module)
-        module.update(stats)
-        actual_flap = module.get("flap")
-        desired_flap = self.desired_chars.get(str(module_id))
-        displayed_flap = desired_flap if desired_flap is not None else actual_flap
-        display_index, display_position = derive_flap_state(module, displayed_flap)
-        module.update(
-            {
-                "id": module_payload_id(module_id),
-                "actual_flap": actual_flap,
-                "desired_flap": desired_flap,
-                "displayed_flap": displayed_flap,
-                "display_flap_index": display_index,
-                "display_flap_position": display_position,
-                "effective_drum": self.get_effective_drum(module_id),
-                "flap": actual_flap,
-                "state": module_state(module),
-                "online": bool(module.get("online", True)) and self.online,
-            }
-        )
-        return module
+        return self.status.module_snapshot(module_id, master_online=self.online)
 
     def snapshot(self) -> dict[str, Any]:
-        modules = [self.module_snapshot(module_id) for module_id in self.module_ids]
-        return {
-            "prefix": self.prefix,
-            "online": self.online,
-            "status": self.data.get("status", "offline"),
-            "text": self.data.get("text", ""),
-            "modules": modules,
-            "modules_count": self.modules_count,
-            "desired_chars": dict(self.desired_chars),
-            "last_status": self.data.get("last_status"),
-            "restored": bool(self.data.get("restored", False)),
-            # Cross-repo version contract. mqtt_compat is this integration's
-            # generation; mqtt_compat_ok is None when the master predates the
-            # protocol instead of pretending it is compatible. "compat" and
-            # "compat_ok" remain aliases for older panel builds.
-            "mqtt_compat": MQTT_COMPAT,
-            "master_version": self.master_version,
-            "master_bus_compat": self.master_bus_compat,
-            "master_mqtt_compat": self.master_mqtt_compat,
-            "mqtt_compat_ok": self.mqtt_compat_ok,
-            "compat": MQTT_COMPAT,
-            "master_compat": self.master_mqtt_compat,
-            "compat_ok": self.mqtt_compat_ok,
-            # Slave-module OTA state; "idle" until the master reports a
-            # collection or a flash session.
-            "ota": self.data.get("ota") or {"state": "idle"},
-        }
+        return self.status.snapshot(
+            prefix=self.prefix,
+            online=self.online,
+            status=str(self.data.get("status", "offline")),
+            text=str(self.data.get("text") or ""),
+            last_status=self.data.get("last_status"),
+            restored=bool(self.data.get("restored", False)),
+            mqtt_compat=MQTT_COMPAT,
+        )
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -652,13 +241,10 @@ class SplitFlapCoordinator:
     # State persistence
     # ------------------------------------------------------------------
     def _state_snapshot(self) -> dict[str, Any]:
-        return {
-            "modules": self.modules,
-            "modules_count": self.modules_count,
-            "text": str(self.data.get("text") or ""),
-            "desired_chars": dict(self.desired_chars),
-            "saved_at": dt_util.now(dt_util.UTC).isoformat(),
-        }
+        state = self.status.persisted()
+        state["text"] = str(self.data.get("text") or "")
+        state["saved_at"] = dt_util.now(dt_util.UTC).isoformat()
+        return state
 
     def _schedule_save(self) -> None:
         self._store.async_delay_save(self._state_snapshot, STORAGE_SAVE_DELAY)
@@ -669,24 +255,11 @@ class SplitFlapCoordinator:
         except Exception:  # noqa: BLE001 - restore must never block setup
             _LOGGER.exception("Could not restore Split-Flap state")
             return
-        if not isinstance(stored, dict):
+        if not self.status.restore(stored):
             return
-
-        modules = normalize_modules(stored.get("modules"))
-        count = _coerce_count(stored.get("modules_count"), len(modules))
-        if not modules and not count:
-            return
-
-        desired = stored.get("desired_chars")
-        if isinstance(desired, dict):
-            self.desired_chars = {
-                str(key): str(value) for key, value in desired.items()
-            }
 
         self.data.update(
             {
-                "modules": modules,
-                "modules_count": count or len(modules),
                 "text": str(stored.get("text") or ""),
                 "status": "offline",
                 "restored": True,
@@ -711,42 +284,9 @@ class SplitFlapCoordinator:
         if online and isinstance(payload.get("text"), str):
             data["text"] = payload["text"]
 
-        # Master version contract. Kept across an offline last-will payload
-        # (which never carries it); an older master simply leaves it None.
-        if online:
-            version = payload.get("version")
-            if isinstance(version, str) and version.strip():
-                data["master_version"] = version.strip()
-            bus_compat = _coerce_optional_int(payload.get("bus_compat"))
-            if bus_compat is not None:
-                data["master_bus_compat"] = bus_compat
-            # mqtt_compat is the explicit field; older masters only sent
-            # "compat" as the single shared generation, so accept it as a
-            # fallback.
-            mqtt_compat = _coerce_optional_int(payload.get("mqtt_compat"))
-            if mqtt_compat is None:
-                mqtt_compat = _coerce_optional_int(payload.get("compat"))
-            if mqtt_compat is not None:
-                data["master_mqtt_compat"] = mqtt_compat
-
-        raw_modules = payload.get("modules")
-        if isinstance(raw_modules, (list, dict)):
-            modules = normalize_modules(raw_modules)
-            reported_count = _coerce_count(payload.get("modules_count"), len(modules))
-            # An offline last-will payload contains no modules; keep the last
-            # known snapshot so the panel and sensors survive a reboot.
-            if online or not data.get("modules"):
-                data["modules"] = modules
-                data["modules_count"] = len(modules) if modules else reported_count
-        elif online and "modules_count" in payload:
-            data["modules_count"] = _coerce_count(
-                payload.get("modules_count"), data.get("modules_count", 0)
-            )
-
-        # Slave-module OTA session state (see normalize_ota). Only trusted
-        # while online: the offline last-will payload never carries it.
-        if online and "ota" in payload:
-            data["ota"] = normalize_ota(payload.get("ota"))
+        # Version aliases, module identity, flap derivation, drum priority and
+        # OTA validation all live in the HA-free ModuleStatus module.
+        self.status.ingest(payload, online=online)
 
         data["last_status"] = dt_util.now().isoformat()
         data["restored"] = False if online else bool(data.get("restored", False))
@@ -755,7 +295,9 @@ class SplitFlapCoordinator:
         self._notify()
         self._schedule_save()
         self._reset_offline_timer()
-        _LOGGER.debug("Split-Flap status: %s module(s), %s", self.modules_count, data["status"])
+        _LOGGER.debug(
+            "Split-Flap status: %s module(s), %s", self.modules_count, data["status"]
+        )
 
     @callback
     def _notify(self) -> None:
@@ -868,8 +410,8 @@ class SplitFlapCoordinator:
         cleaned_positions: dict[int, int] = {}
         if isinstance(positions, dict):
             for key, value in positions.items():
-                entry_index = _coerce_optional_int(key)
-                entry_position = _coerce_optional_int(value)
+                entry_index = coerce_optional_int(key)
+                entry_position = coerce_optional_int(value)
                 if (
                     entry_index is not None
                     and 0 <= entry_index < 64
@@ -900,7 +442,7 @@ class SplitFlapCoordinator:
             elif flap:
                 payload["flap"] = str(flap)[0]
         elif action_norm == "step" and steps is not None:
-            step_value = _coerce_optional_int(steps)
+            step_value = coerce_optional_int(steps)
             if step_value is None:
                 raise ValueError("steps must be an integer")
             # The slave `g<pos>` command is an absolute position, while the
@@ -908,8 +450,8 @@ class SplitFlapCoordinator:
             # negative value (for example -32) can never wrap to the end of the
             # drum by accident.
             module = self.modules.get(str(module_id)) or {}
-            current_step = _coerce_optional_int(module.get("current_step"))
-            total_steps = _coerce_optional_int(module.get("total_steps"))
+            current_step = coerce_optional_int(module.get("current_step"))
+            total_steps = coerce_optional_int(module.get("total_steps"))
             if current_step is not None and total_steps and total_steps > 0:
                 payload["steps"] = (current_step + step_value) % total_steps
             else:
@@ -933,7 +475,7 @@ class SplitFlapCoordinator:
                 }
         elif action_norm == "drum_write":
             # All drum-write aliases were normalized to "drum_write" above.
-            if _valid_drum(drum):
+            if valid_drum(drum):
                 payload["action"] = "drum_write"
                 payload["drum"] = drum
             else:
@@ -1016,7 +558,7 @@ class SplitFlapCoordinator:
                 f"the firmware image is {len(image)} bytes, larger than the "
                 f"{OTA_APP_MAX_SIZE}-byte application region"
             )
-        state = (self.data.get("ota") or {}).get("state")
+        state = self.status.ota.get("state")
         if state in OTA_STATES_ACTIVE:
             raise ValueError(f"an OTA session is already running ({state})")
         # A module stuck in its bootloader no longer answers the ASCII scan,
