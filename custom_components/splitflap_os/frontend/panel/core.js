@@ -1,8 +1,9 @@
 /** Panel component logic. */
 
-import { DOMAIN, STYLES } from "../constants.js?v=1.2.18";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.18";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.18";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.19";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.19";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.19";
+import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.19";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -35,6 +36,26 @@ export const PanelMixin = (Base) => class extends Base {
     this._shellRendered = false;
     this._theme = "light";
     this._themePending = null;
+
+    // Every calibration flow behind one interface. The panel only supplies
+    // adapters: snapshot, send, clock, notifications and rendering.
+    this._calibration = createCalibrationFlow({
+      snapshot: () => this._state,
+      selectedModule: () => this._moduleFor(this._selectedModule),
+      send: (type, payload) => this._send(type, payload),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      notify: (key, params, level) =>
+        this._toast(formatMessage(this._t(key), params || {}), level),
+      plural: (key, count) => this._plural(key, count),
+      render: () => {
+        this._renderAutoTune();
+        this._renderTeach();
+        this._renderTuneModal();
+        this._renderMapFlaps(this._moduleFor(this._selectedModule));
+      },
+      colors: COLOR_CODES,
+      stockDrum: DEFAULT_DRUM,
+    });
 
     try {
       const saved = window.localStorage.getItem(`${DOMAIN}_tab`);

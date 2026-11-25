@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.18";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.18";
-import { PANEL_STYLES } from "../styles.js?v=1.2.18";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.19";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.19";
+import { PANEL_STYLES } from "../styles.js?v=1.2.19";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -189,10 +189,15 @@ export const PanelMixin = (Base) =>
       this._renderApps();
       this._renderBanner();
       this._renderCompat();
-      this._renderTuning();
+      this._renderCalibration();
       this._renderSettings();
       this._renderOta();
       this._renderConnectionInfo();
+    }
+
+    /** Render the calibration views from the flow's view model. */
+    _renderCalibration() {
+      this._renderTuning();
       this._renderAutoTune();
       this._renderTeach();
     }

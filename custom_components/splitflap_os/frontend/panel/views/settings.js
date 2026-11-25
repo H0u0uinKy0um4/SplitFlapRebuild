@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.18";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.18";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.19";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.19";
 
 const checkedSettingValue = (value) =>
   value === true ||

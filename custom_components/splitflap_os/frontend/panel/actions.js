@@ -1,13 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.18";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.18";
-
-// The master blocks while a module moves and only then writes/refreshes the
-// position map, so the auto-tune verification frame must not be requested in
-// the same breath as the correction wrote it.
-const AT_SETTLE_MS = 1200;
-
+import { formatMessage } from "../utils.js?v=1.2.19";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.19";
 
 export const PanelMixin = (Base) => class extends Base {
   _onInput(event) {
@@ -761,531 +755,132 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _quickOffset(delta) {
-    const selected = this._moduleFor(this._selectedModule);
-    if (!selected) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    const current = Number(selected.home_offset) || 0;
-    const next = Math.max(0, Math.min(65535, current + Number(delta)));
-    await this._send("calibrate", {
-      module: selected.id,
-      action: "apply",
-      home_offset: next,
-    });
-    selected.home_offset = next;
+    await this._calibration.act("offset_quick", { delta });
+    const module = this._moduleFor(this._selectedModule);
+    if (!module) return;
     const stat = this.shadowRoot.getElementById("statOffset");
-    if (stat) stat.textContent = String(next);
+    if (stat) stat.textContent = String(module.home_offset);
     const input = this.shadowRoot.getElementById("offsetValue");
-    if (input) input.value = String(next);
-    this._toast(formatMessage(this._t("applied_offset"), { offset: next }));
+    if (input) input.value = String(module.home_offset);
   }
 
   _openTuneFlap(index) {
-    this._openTuneModal(index);
+    return this._calibration.act("tune_open", { index });
   }
 
-  _tuneNudge(delta) {
-    if (!this._tuneFlapState) return;
+  async _tuneNudge(delta) {
     const input = this.shadowRoot.getElementById("tuneStepInput");
-    const current = input ? Number(input.value) : this._tuneFlapState.active;
-    const next = Math.max(0, Math.min(65535, current + Number(delta)));
-    this._tuneFlapState.active = next;
-    if (input) input.value = String(next);
-    this._renderTuneModal();
+    await this._calibration.act("tune_nudge", {
+      delta,
+      step: input ? input.value : undefined,
+    });
   }
 
   async _tuneTestGoto() {
-    if (!this._tuneFlapState) return;
-    const { moduleId, index } = this._tuneFlapState;
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "goto",
-      index,
-    });
-    this._toast(formatMessage(this._t("goto_named"), { index }));
+    await this._calibration.act("tune_test");
   }
 
   async _tuneSave() {
-    if (!this._tuneFlapState) return;
     const input = this.shadowRoot.getElementById("tuneStepInput");
-    const active = input ? Number(input.value) : this._tuneFlapState.active;
-    const { moduleId, index } = this._tuneFlapState;
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "apply",
-      positions: { [String(index)]: active },
+    await this._calibration.act("tune_save", {
+      step: input ? input.value : undefined,
     });
-    const module = this._moduleFor(moduleId);
-    if (module) {
-      if (!module.map_of_positions) module.map_of_positions = {};
-      module.map_of_positions[String(index)] = active;
-    }
-    this._tuneFlapState.tuned = active;
-    this._tuneFlapState.active = active;
-    this._toast(
-      formatMessage(this._t("applied_map"), {
-        entries: this._plural("entries", 1),
-      })
-    );
-    this._renderTuneModal();
-    this._renderMapFlaps(module);
   }
 
   async _tuneRevert() {
-    if (!this._tuneFlapState) return;
-    const { moduleId, index, expected } = this._tuneFlapState;
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "apply",
-      positions: { [String(index)]: 0xFFFF },
-    });
-    const module = this._moduleFor(moduleId);
-    if (module && module.map_of_positions) {
-      delete module.map_of_positions[String(index)];
-    }
-    this._tuneFlapState.tuned = null;
-    this._tuneFlapState.active = expected;
-    this._toast(
-      formatMessage(this._t("cleared_eeprom"), { module: moduleId })
-    );
-    this._renderTuneModal();
-    this._renderMapFlaps(module);
-  }
-
-  /** Drum used by the auto-tune wizard.
-   *
-   * The wizard walks one character index at a time on the whole board, so it
-   * needs a single drum. Use the first module that reports one; a custom drum
-   * has to agree with what the master maps, otherwise the shown character and
-   * the measured index would disagree. Falls back to the stock drum before the
-   * first scan reported anything.
-   */
-  _atDrum() {
-    const coordinator = this._coordinator();
-    const modules = (coordinator && coordinator.modules) || [];
-    for (const module of modules) {
-      const drum =
-        module && Array.isArray(module.effective_drum) && module.effective_drum.length
-          ? module.effective_drum
-          : module && Array.isArray(module.flap_list) && module.flap_list.length
-            ? module.flap_list
-            : null;
-      if (drum) return drum.slice(0, 64);
-    }
-    return DEFAULT_DRUM.split("");
-  }
-
-  _atMaxIndex() {
-    return Math.max(1, Math.min(63, this._atDrum().length - 1));
-  }
-
-  /** Absolute step the master uses for one flap index.
-   *
-   * Mirrors ``derive_flap_state`` in coordinator.py:
-   * ``(home_offset + index * total_steps / drum) % total_steps``.  The home
-   * offset is part of the physical mapping, so a map entry written without it
-   * lands ``home_offset`` steps away from the flap that was asked for.
-   */
-  _expectedStep(module, index, drumLen = 64) {
-    const cal = Math.max(1, Number(module && module.total_steps) || 4096);
-    const offset = Number(module && module.home_offset) || 0;
-    const length = Math.max(1, Number(drumLen) || 64);
-    const step = Math.floor((Number(index) * cal + length / 2) / length);
-    return ((offset % cal) + step) % cal;
+    await this._calibration.act("tune_revert");
   }
 
   async _atBegin() {
     const startInput = this.shadowRoot.getElementById("atStartIdx");
     const stepInput = this.shadowRoot.getElementById("atStepSize");
-    const maxIdx = this._atMaxIndex();
-    const startIdx = Math.max(1, Math.min(maxIdx, startInput ? Number(startInput.value) || maxIdx : maxIdx));
-    const stepSize = Math.max(1, Math.min(100, stepInput ? Number(stepInput.value) || 25 : 25));
-
-    this._atState = {
-      running: true,
-      phase: "homing",
-      charIndex: startIdx,
-      stepSize,
-      selected: new Set(),
-      countdown: 12,
-    };
-    this._renderAutoTune();
-
-    // There is no standalone `stop` or `hardware` websocket command. Stop any
-    // running app/playlist first (otherwise it repaints the board while we
-    // home and measure) and then home every module through the real command.
-    try {
-      await this._send("stop_app");
-    } catch (e) {
-      // Nothing was running; the display is already idle.
-    }
-
-    try {
-      await this._send("home_all");
-    } catch (e) {
-      // _send() already reported the failure; do not continue the wizard on a
-      // board that was not homed, every measurement would be meaningless.
-      this._atState = null;
-      this._renderAutoTune();
-      return;
-    }
-
-    for (let c = 12; c > 0; c--) {
-      if (!this._atState || !this._atState.running) return;
-      this._atState.countdown = c;
-      this._renderAutoTune();
-      await new Promise((r) => setTimeout(r, 1000));
-    }
-
-    if (!this._atState || !this._atState.running) return;
-    await this._atGoToChar(startIdx);
+    await this._calibration.act("at_begin", {
+      startIndex: startInput ? startInput.value : undefined,
+      stepSize: stepInput ? stepInput.value : undefined,
+    });
   }
 
-  async _atGoToChar(idx) {
-    if (!this._atState) return;
-    this._atState.charIndex = idx;
-    this._atState.phase = "ahead";
-    this._atState.selected.clear();
-    const drum = this._atDrum();
-    const ch = drum[idx] || " ";
-    const coordinator = this._coordinator();
-    const modules = coordinator.modules || [];
-    // Auto-tune targets physical modules only. A debug frame may be larger
-    // than the scanned board, so never use its cell count here.
-    const count = Number(coordinator.modules_count) || modules.length || 45;
-
-    this._renderAutoTune();
-
-    try {
-      await this._send("send_text", {
-        text: ch.repeat(count),
-        start: 1,
-        style: "ltr",
-        speed: 0,
-        stop: true,
-        raw: true,
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  _atToggleCell(modId) {
-    if (!this._atState || this._atState.phase === "verify") return;
-    if (this._atState.selected.has(modId)) {
-      this._atState.selected.delete(modId);
-    } else {
-      this._atState.selected.add(modId);
-    }
-    this._renderAutoTune();
+  _atToggleCell(id) {
+    return this._calibration.act("at_cell", { id });
   }
 
   async _atApplyAhead() {
-    if (!this._atState || !this._atState.selected.size) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    const stepInput = this.shadowRoot.getElementById("atStepSizeActive");
-    const step = stepInput ? Number(stepInput.value) || 25 : this._atState.stepSize || 25;
-    this._atState.stepSize = step;
-    const charIdx = this._atState.charIndex;
-    const drum = this._atDrum();
-
-    for (const modId of this._atState.selected) {
-      const module = this._moduleFor(modId);
-      if (!module) continue;
-      const cal = Number(module.total_steps) || 4096;
-      const expected = this._expectedStep(module, charIdx, drum.length);
-      const positions = module.map_of_positions || {};
-      const tuned = positions[String(charIdx)];
-      // A sane map entry is within half a flap of the geometric position.
-      // Further away it points at a different flap (old wizard maps that
-      // omitted home_offset), so start from the model instead of moving a
-      // whole revolution in 25-step clicks.
-      const near =
-        tuned !== undefined && Math.abs(Number(tuned) - expected) <= cal / 128;
-      const base = near ? Number(tuned) : expected;
-      const newVal = Math.max(0, Math.min(cal - 1, base - step));
-      await this._send("calibrate", {
-        module: modId,
-        action: "apply",
-        positions: { [String(charIdx)]: newVal },
-      });
-      if (!module.map_of_positions) module.map_of_positions = {};
-      module.map_of_positions[String(charIdx)] = newVal;
-    }
-
-    // The user may have pressed Abort while the calibrate round-trips were in
-    // flight; _atState is null then and the rest of the flow must not run.
-    if (!this._atState) return;
-    this._toast(formatMessage(this._t("at_ahead_apply"), { step, count: this._atState.selected.size }));
-    this._atState.selected.clear();
-    this._atState.phase = "verify";
-    this._renderAutoTune();
-
-    // Master moves are blocking and the map write has to reach EEPROM, so
-    // give the modules a moment before requesting the verification frame.
-    await new Promise((r) => setTimeout(r, AT_SETTLE_MS));
-    if (!this._atState) return;
-
-    // Re-send to verify
-    const ch = drum[charIdx] || " ";
-    const coordinator = this._coordinator();
-    const count =
-      Number(coordinator.modules_count) || (coordinator.modules || []).length || 45;
-    try {
-      await this._send("send_text", {
-        text: ch.repeat(count),
-        start: 1,
-        style: "ltr",
-        speed: 0,
-        stop: true,
-        raw: true,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    const input = this.shadowRoot.getElementById("atStepSizeActive");
+    await this._calibration.act("at_apply", {
+      ahead: true,
+      stepSize: input ? input.value : undefined,
+    });
   }
 
   async _atApplyBehind() {
-    if (!this._atState || !this._atState.selected.size) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    const stepInput = this.shadowRoot.getElementById("atStepSizeActive");
-    const step = stepInput ? Number(stepInput.value) || 25 : this._atState.stepSize || 25;
-    this._atState.stepSize = step;
-    const charIdx = this._atState.charIndex;
-    const drum = this._atDrum();
-
-    for (const modId of this._atState.selected) {
-      const module = this._moduleFor(modId);
-      if (!module) continue;
-      const cal = Number(module.total_steps) || 4096;
-      const expected = this._expectedStep(module, charIdx, drum.length);
-      const positions = module.map_of_positions || {};
-      const tuned = positions[String(charIdx)];
-      const near =
-        tuned !== undefined && Math.abs(Number(tuned) - expected) <= cal / 128;
-      const base = near ? Number(tuned) : expected;
-      const newVal = Math.max(0, Math.min(cal - 1, base + step));
-      await this._send("calibrate", {
-        module: modId,
-        action: "apply",
-        positions: { [String(charIdx)]: newVal },
-      });
-      if (!module.map_of_positions) module.map_of_positions = {};
-      module.map_of_positions[String(charIdx)] = newVal;
-    }
-
-    if (!this._atState) return;
-    this._toast(formatMessage(this._t("at_behind_apply"), { step, count: this._atState.selected.size }));
-    this._atState.selected.clear();
-    this._atState.phase = "verify";
-    this._renderAutoTune();
-
-    await new Promise((r) => setTimeout(r, AT_SETTLE_MS));
-    if (!this._atState) return;
-
-    // Re-send to verify
-    const ch = drum[charIdx] || " ";
-    const coordinator = this._coordinator();
-    const count =
-      Number(coordinator.modules_count) || (coordinator.modules || []).length || 45;
-    try {
-      await this._send("send_text", {
-        text: ch.repeat(count),
-        start: 1,
-        style: "ltr",
-        speed: 0,
-        stop: true,
-        raw: true,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    const input = this.shadowRoot.getElementById("atStepSizeActive");
+    await this._calibration.act("at_apply", {
+      ahead: false,
+      stepSize: input ? input.value : undefined,
+    });
   }
 
   _atSkipAhead() {
-    if (!this._atState) return;
-    this._atState.phase = "behind";
-    this._atState.selected.clear();
-    this._renderAutoTune();
+    return this._calibration.act("at_skip_ahead");
   }
 
   _atRecheckAhead() {
-    if (!this._atState) return;
-    this._atState.phase = "ahead";
-    this._atState.selected.clear();
-    this._renderAutoTune();
+    return this._calibration.act("at_recheck_ahead");
   }
 
   async _atNextChar() {
-    if (!this._atState) return;
-    const next = this._atState.charIndex - 1;
-    if (next < 1) {
-      this._atState.phase = "done";
-      this._renderAutoTune();
-      return;
-    }
-    await this._atGoToChar(next);
+    await this._calibration.act("at_next_char");
   }
 
   async _atJump() {
     const input = this.shadowRoot.getElementById("atJumpIdx");
-    const val = input ? Number(input.value) : 1;
-    const maxIdx = this._atMaxIndex();
-    if (val >= 1 && val <= maxIdx) {
-      await this._atGoToChar(val);
-    }
+    await this._calibration.act("at_jump", {
+      index: input ? input.value : undefined,
+    });
   }
 
   _atAbort() {
-    this._atState = null;
-    this._renderAutoTune();
-    this._toast(this._t("at_abort_btn"));
+    return this._calibration.act("at_abort");
   }
 
   _atRestart() {
-    this._atState = null;
-    this._renderAutoTune();
+    return this._calibration.act("at_restart");
   }
 
   async _teachStart() {
-    const module = this._moduleFor(this._selectedModule);
-    if (!module) {
-      this._toast(this._t("select_module_first"), "warn");
-      return;
-    }
-    const positions = module.map_of_positions || {};
-    const tuned = positions["0"];
-    const active = tuned !== undefined ? Number(tuned) : 0;
-    this._teachState = {
-      running: true,
-      moduleId: module.id,
-      flapIndex: 0,
-      currentStep: active,
-      done: false,
-    };
-    await this._send("calibrate", {
-      module: module.id,
-      action: "goto",
-      index: 0,
-    });
-    this._renderTeach();
+    await this._calibration.act("teach_start");
   }
 
   async _teachNudge(delta) {
-    if (!this._teachState || !this._teachState.running) return;
-    const module = this._moduleFor(this._teachState.moduleId);
-    if (!module) return;
     const input = this.shadowRoot.getElementById("teachStepInput");
-    const current = input ? Number(input.value) : this._teachState.currentStep;
-    const next = Math.max(0, Math.min(65535, current + Number(delta)));
-    this._teachState.currentStep = next;
-    if (input) input.value = String(next);
-    await this._send("calibrate", {
-      module: module.id,
-      action: "step",
-      steps: Number(delta),
+    await this._calibration.act("teach_nudge", {
+      delta,
+      step: input ? input.value : undefined,
     });
-    this._renderTeach();
   }
 
   async _teachRecordNext() {
-    if (!this._teachState || !this._teachState.running) return;
     const input = this.shadowRoot.getElementById("teachStepInput");
-    const step = input ? Number(input.value) : this._teachState.currentStep;
-    const { moduleId, flapIndex } = this._teachState;
-    const module = this._moduleFor(moduleId);
-    if (!module) return;
-
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "apply",
-      positions: { [String(flapIndex)]: step },
+    await this._calibration.act("teach_advance", {
+      record: true,
+      step: input ? input.value : undefined,
     });
-    if (!module.map_of_positions) module.map_of_positions = {};
-    module.map_of_positions[String(flapIndex)] = step;
-
-    const nextFlap = flapIndex + 1;
-    if (nextFlap > 63) {
-      this._teachState.done = true;
-      this._renderTeach();
-      this._toast(this._t("teach_done"));
-      return;
-    }
-
-    const expectedNext = this._expectedStep(module, nextFlap);
-    const tunedNext = module.map_of_positions[String(nextFlap)];
-    this._teachState.flapIndex = nextFlap;
-    this._teachState.currentStep = tunedNext !== undefined ? Number(tunedNext) : expectedNext;
-
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "goto",
-      index: nextFlap,
-    });
-    this._renderTeach();
   }
 
   async _teachSkip() {
-    if (!this._teachState || !this._teachState.running) return;
-    const { moduleId, flapIndex } = this._teachState;
-    const module = this._moduleFor(moduleId);
-    if (!module) return;
-
-    const nextFlap = flapIndex + 1;
-    if (nextFlap > 63) {
-      this._teachState.done = true;
-      this._renderTeach();
-      this._toast(this._t("teach_done"));
-      return;
-    }
-
-    const expectedNext = this._expectedStep(module, nextFlap);
-    const tunedNext = (module.map_of_positions || {})[String(nextFlap)];
-    this._teachState.flapIndex = nextFlap;
-    this._teachState.currentStep = tunedNext !== undefined ? Number(tunedNext) : expectedNext;
-
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "goto",
-      index: nextFlap,
-    });
-    this._renderTeach();
+    await this._calibration.act("teach_advance");
   }
 
   async _teachPrev() {
-    if (!this._teachState || !this._teachState.running || this._teachState.flapIndex <= 0) return;
-    const { moduleId, flapIndex } = this._teachState;
-    const module = this._moduleFor(moduleId);
-    if (!module) return;
-
-    const prevFlap = flapIndex - 1;
-    const expectedPrev = this._expectedStep(module, prevFlap);
-    const tunedPrev = (module.map_of_positions || {})[String(prevFlap)];
-    this._teachState.flapIndex = prevFlap;
-    this._teachState.currentStep = tunedPrev !== undefined ? Number(tunedPrev) : expectedPrev;
-
-    await this._send("calibrate", {
-      module: moduleId,
-      action: "goto",
-      index: prevFlap,
-    });
-    this._renderTeach();
+    await this._calibration.act("teach_prev");
   }
 
   _teachAbort() {
-    this._teachState = null;
-    this._renderTeach();
-    this._toast(this._t("teach_abort"));
+    return this._calibration.act("teach_abort");
   }
 
   _teachRestart() {
-    this._teachState = null;
-    this._renderTeach();
+    return this._calibration.act("teach_restart");
   }
 
   async _cancelFirmware() {

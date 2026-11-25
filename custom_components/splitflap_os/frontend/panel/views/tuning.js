@@ -1,12 +1,12 @@
 /** Tuning tab: module matrix, commands, map, auto-tune, teach and drum. */
 
-import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.18";
+import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.19";
 import {
   escapeAttr,
   escapeHtml,
   formatMessage,
   numberText,
-} from "../../utils.js?v=1.2.18";
+} from "../../utils.js?v=1.2.19";
 
 /**
  * Build the grid used for physical-module views.
@@ -545,34 +545,7 @@ export const PanelMixin = (Base) =>
     }
 
     _openTuneModal(flapIndex) {
-      const module = this._moduleFor(this._selectedModule);
-      if (!module) {
-        this._toast(this._t("select_module_first"), "warn");
-        return;
-      }
-      const drum =
-        Array.isArray(module.effective_drum) && module.effective_drum.length
-          ? module.effective_drum
-          : Array.isArray(module.flap_list) && module.flap_list.length
-            ? module.flap_list
-            : DEFAULT_DRUM.split("");
-      const idx = Number(flapIndex);
-      const char = drum[idx] || " ";
-      const expected = this._expectedStep(module, idx, drum.length);
-      const positions = module.map_of_positions || {};
-      const tuned = positions[String(idx)];
-      const active = tuned !== undefined ? Number(tuned) : expected;
-
-      this._tuneFlapState = {
-        moduleId: module.id,
-        index: idx,
-        char,
-        expected,
-        tuned: tuned !== undefined ? Number(tuned) : null,
-        active,
-      };
-
-      this._renderTuneModal();
+      return this._calibration.act("tune_open", { index: flapIndex });
     }
 
     _renderTuneModal() {
@@ -580,18 +553,26 @@ export const PanelMixin = (Base) =>
       const title = this.shadowRoot.getElementById("tuneModalTitle");
       const body = this.shadowRoot.getElementById("tuneModalBody");
       if (!modal || !title || !body) return;
-      if (!this._tuneFlapState) {
+
+      const {
+        open,
+        moduleId,
+        index,
+        charDisplay,
+        colorKey,
+        expected,
+        tuned,
+        active,
+      } = this._calibration.view().tuneFlap;
+      if (!open) {
         modal.classList.add("hidden");
         return;
       }
 
-      const { moduleId, index, char, expected, tuned, active } =
-        this._tuneFlapState;
-      const isColor = COLOR_CODES.includes(char);
-      const colorSuffix = isColor ? ` (${this._t("color_" + char)})` : "";
+      const colorSuffix = colorKey ? ` (${this._t("color_" + colorKey)})` : "";
       title.textContent = formatMessage(this._t("tune_flap_title"), {
         index,
-        char: (char === " " ? "␣" : char) + colorSuffix,
+        char: charDisplay + colorSuffix,
         id: moduleId,
       });
 
@@ -627,9 +608,7 @@ export const PanelMixin = (Base) =>
     }
 
     _closeTuneModal() {
-      this._tuneFlapState = null;
-      const modal = this.shadowRoot.getElementById("tuneModal");
-      if (modal) modal.classList.add("hidden");
+      return this._calibration.act("tune_close");
     }
 
     _renderAutoTune() {
@@ -637,9 +616,9 @@ export const PanelMixin = (Base) =>
       const meta = this.shadowRoot.getElementById("autoTuneMeta");
       if (!body) return;
 
-      const maxIdx = this._atMaxIndex();
+      const at = this._calibration.view().autoTune;
 
-      if (!this._atState || !this._atState.running) {
+      if (!at.active) {
         if (meta) meta.textContent = "";
         body.innerHTML = `
         <div class="at-stage">
@@ -648,11 +627,11 @@ export const PanelMixin = (Base) =>
           <div class="grid2" style="max-width:360px;margin-top:8px">
             <label class="field">
               <span>${this._t("at_start_idx")}</span>
-              <input id="atStartIdx" type="number" min="1" max="${maxIdx}" value="${this._atState && this._atState.charIndex ? this._atState.charIndex : maxIdx}">
+              <input id="atStartIdx" type="number" min="1" max="${at.maxIndex}" value="${at.charIndex}">
             </label>
             <label class="field">
               <span>${this._t("at_step_size")}</span>
-              <input id="atStepSize" type="number" min="1" max="100" value="${this._atState && this._atState.stepSize ? this._atState.stepSize : 25}">
+              <input id="atStepSize" type="number" min="1" max="100" value="${at.stepSize}">
             </label>
           </div>
           <div class="actions" style="margin-top:8px">
@@ -663,7 +642,6 @@ export const PanelMixin = (Base) =>
         return;
       }
 
-      const at = this._atState;
       if (at.phase === "homing") {
         if (meta) meta.textContent = "";
         body.innerHTML = `
@@ -694,25 +672,12 @@ export const PanelMixin = (Base) =>
         return;
       }
 
-      const coordinator = this._coordinator();
-      const modules = coordinator.modules || [];
+      const modules = ((this._coordinator() || {}).modules) || [];
       const board = this._board();
-      const drum = this._atDrum();
-      const maxCharIdx = Math.max(0, drum.length - 1);
       const curIdx = at.charIndex;
-      const curChar = drum[curIdx] || " ";
-      const prevChar =
-        curIdx > 0 ? (drum[curIdx - 1] === " " ? "␣" : drum[curIdx - 1]) : "?";
-      const nextChar =
-        curIdx < maxCharIdx
-          ? drum[curIdx + 1] === " "
-            ? "␣"
-            : drum[curIdx + 1]
-          : "?";
-      const curCharDisp = curChar === " " ? "␣" : curChar;
-      const isColor = COLOR_CODES.includes(curChar);
-      const colorClass = isColor ? ` color-${curChar}` : "";
-      const colorSuffix = isColor ? ` (${this._t("color_" + curChar)})` : "";
+      const curCharDisp = at.charDisplay;
+      const colorClass = at.colorKey ? ` color-${at.colorKey}` : "";
+      const colorSuffix = at.colorKey ? ` (${this._t("color_" + at.colorKey)})` : "";
       const charTitle = curCharDisp + colorSuffix;
 
       if (meta) {
@@ -724,13 +689,13 @@ export const PanelMixin = (Base) =>
 
       let instrHtml = "";
       let btnHtml = "";
-      const selectedCount = at.selected ? at.selected.size : 0;
-      const stepSize = at.stepSize || 25;
+      const selectedCount = at.selected.length;
+      const stepSize = at.stepSize;
 
       if (at.phase === "ahead") {
         instrHtml = formatMessage(this._t("at_ahead_prompt"), {
           char: curCharDisp,
-          nextChar,
+          nextChar: at.nextChar,
         });
         btnHtml = `
         <button class="btn" style="background:#b71c1c;color:#fff" data-action="at-apply-ahead">
@@ -741,7 +706,7 @@ export const PanelMixin = (Base) =>
       } else if (at.phase === "behind") {
         instrHtml = formatMessage(this._t("at_behind_prompt"), {
           char: curCharDisp,
-          prevChar,
+          prevChar: at.prevChar,
         });
         btnHtml = `
         <button class="btn" style="background:#2e7d32;color:#fff" data-action="at-apply-behind">
@@ -763,6 +728,7 @@ export const PanelMixin = (Base) =>
 
       let gridHtml = "";
       let slotBase = 0;
+      const chosen = new Set(at.selected.map(String));
       const grid = moduleGrid(board, modules);
       for (let row = 0; row < grid.rows; row += 1) {
         const count = grid.counts[row];
@@ -778,9 +744,9 @@ export const PanelMixin = (Base) =>
             continue;
           }
           const modId = module.id;
-          const isSelected = at.selected && at.selected.has(modId);
+          const isSelected = chosen.has(String(modId));
           const positions = module.map_of_positions || {};
-          const isTuned = positions[String(curIdx)] !== undefined;
+          const isTuned = positions[String(at.charIndex)] !== undefined;
           let selClass = "";
           if (isSelected) {
             selClass = at.phase === "ahead" ? " sel-ahead" : " sel-behind";
@@ -821,7 +787,7 @@ export const PanelMixin = (Base) =>
           </div>
           <div class="row" style="align-items:center;gap:6px">
             <span class="muted" style="font-size:.82rem">${this._t("at_jump_to")}</span>
-            <input id="atJumpIdx" type="number" min="1" max="${maxIdx}" value="${curIdx}" style="width:65px">
+            <input id="atJumpIdx" type="number" min="1" max="${at.maxIndex}" value="${curIdx}" style="width:65px">
             <button class="btn secondary mini" data-action="at-jump">${this._t("at_jump_btn")}</button>
             <button class="btn danger mini" data-action="at-abort">${this._t("at_abort_btn")}</button>
           </div>
@@ -836,8 +802,8 @@ export const PanelMixin = (Base) =>
       const empty = this.shadowRoot.getElementById("teachEmpty");
       if (!body) return;
 
-      const module = this._moduleFor(this._selectedModule);
-      if (!module) {
+      const teach = this._calibration.view().teach;
+      if (!teach.available) {
         if (empty) empty.classList.remove("hidden");
         if (meta) meta.textContent = "";
         body.innerHTML = "";
@@ -847,11 +813,23 @@ export const PanelMixin = (Base) =>
 
       if (meta) {
         meta.textContent = formatMessage(this._t("module_named"), {
-          id: module.id,
+          id: teach.moduleId,
         });
       }
 
-      if (!this._teachState || !this._teachState.running) {
+      if (teach.done) {
+        body.innerHTML = `
+        <div class="at-stage" style="text-align:center;padding:30px 10px">
+          <h3 style="margin:0">${escapeHtml(this._t("teach_done"))}</h3>
+          <div class="actions" style="justify-content:center;margin-top:16px">
+            <button class="btn" data-action="teach-restart">${this._t("refresh")}</button>
+          </div>
+        </div>
+      `;
+        return;
+      }
+
+      if (!teach.active) {
         body.innerHTML = `
         <div class="at-stage">
           <h3 style="margin:0">${escapeHtml(this._t("teach_title"))}</h3>
@@ -864,34 +842,13 @@ export const PanelMixin = (Base) =>
         return;
       }
 
-      const state = this._teachState;
-      if (state.done) {
-        body.innerHTML = `
-        <div class="at-stage" style="text-align:center;padding:30px 10px">
-          <h3 style="margin:0">${escapeHtml(this._t("teach_done"))}</h3>
-          <div class="actions" style="justify-content:center;margin-top:16px">
-            <button class="btn" data-action="teach-restart">${this._t("refresh")}</button>
-          </div>
-        </div>
-      `;
-        return;
-      }
-
-      const drum =
-        Array.isArray(module.effective_drum) && module.effective_drum.length
-          ? module.effective_drum
-          : Array.isArray(module.flap_list) && module.flap_list.length
-            ? module.flap_list
-            : DEFAULT_DRUM.split("");
-      const curIdx = state.flapIndex;
-      const curChar = drum[curIdx] || " ";
-      const curCharDisp = curChar === " " ? "␣" : curChar;
-      const isColor = COLOR_CODES.includes(curChar);
-      const colorClass = isColor ? ` color-${curChar}` : "";
-      const colorSuffix = isColor ? ` (${this._t("color_" + curChar)})` : "";
+      const curIdx = teach.flapIndex;
+      const curCharDisp = teach.charDisplay;
+      const colorClass = teach.colorKey ? ` color-${teach.colorKey}` : "";
+      const colorSuffix = teach.colorKey ? ` (${this._t("color_" + teach.colorKey)})` : "";
       const charTitle = curCharDisp + colorSuffix;
-      const expected = this._expectedStep(module, curIdx, drum.length);
-      const activeStep = state.currentStep != null ? state.currentStep : expected;
+      const expected = teach.expectedStep;
+      const activeStep = teach.currentStep != null ? teach.currentStep : expected;
 
       body.innerHTML = `
       <div class="at-stage">

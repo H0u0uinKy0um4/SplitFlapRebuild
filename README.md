@@ -60,7 +60,7 @@ Home Assistant                         ESP32 master                 Slaves
 | --- | --- | --- | --- |
 | Slave | `<bus>.<release>` | `1.0.1` | RS485 bus |
 | Master | `<bus>.<mqtt>.<release>` | `1.1.0.0` | bus + MQTT |
-| Home Assistant | `<mqtt>.<release>` | `1.2.18` | MQTT |
+| Home Assistant | `<mqtt>.<release>` | `1.2.19` | MQTT |
 
 A mismatch in `mqtt_compat` shows a warning but does not stop display traffic.
 Details: [versioning](docs/en/protocol/versioning.md).
