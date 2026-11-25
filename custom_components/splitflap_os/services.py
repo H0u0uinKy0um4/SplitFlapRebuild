@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
@@ -13,7 +12,6 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from .commands import execute_command
 from .const import DOMAIN
 from .identity import resolve_user_id
-from .positions import normalize_position_map
 from .runtime import get_runtime
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,77 +63,37 @@ async def _run_command_service(
     data: dict[str, Any] | None = None,
     *,
     user_id: str | None = None,
+    warn_if_missing: bool = False,
 ) -> None:
     """Run a shared command; services report failure by propagating it."""
 
     runtime = _get_runtime(hass)
     if runtime is None:
+        if warn_if_missing:
+            _LOGGER.warning("Split-Flap OS is not configured")
         return
     outcome = await execute_command(name, data or {}, runtime, user_id=user_id)
     if not outcome.ok:
         raise outcome.exception or ValueError(outcome.message)
 
 
-def _pages_from_value(value: Any) -> list[Any]:
-    """Accept a real list or a JSON-encoded list from the service UI."""
-
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        try:
-            parsed = json.loads(value)
-        except json.JSONDecodeError as err:
-            raise ValueError("pages must be a JSON array") from err
-        if isinstance(parsed, list):
-            return parsed
-    raise ValueError("pages must be a JSON array")
-
-
 async def _handle_send_text(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if not runtime:
-        _LOGGER.warning("Split-Flap OS is not configured")
-        return
-    await runtime["engine"].async_send_text(
-        call.data["text"],
-        start=call.data.get("start", 1),
-        style=call.data.get("style", "ltr"),
-        speed=call.data.get("speed", 15),
-        stop=call.data.get("stop", True),
-        raw=call.data.get("raw", False),
+    await _run_command_service(
+        call.hass, "send_text", call.data, warn_if_missing=True
     )
 
 
 async def _handle_notify(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if not runtime:
-        _LOGGER.warning("Split-Flap OS is not configured")
-        return
-    await runtime["engine"].async_notify(
-        call.data["text"],
-        seconds=call.data.get("seconds", 10),
-        style=call.data.get("style", "ltr"),
-        priority=call.data.get("priority", 0),
-    )
+    await _run_command_service(call.hass, "notify", call.data, warn_if_missing=True)
 
 
 async def _handle_play_playlist(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if not runtime:
-        return
-    await runtime["engine"].async_play_playlist(
-        _pages_from_value(call.data.get("pages", [])),
-        call.data.get("delay", 5),
-        loop=call.data.get("loop", True),
-    )
+    await _run_command_service(call.hass, "play_playlist", call.data)
 
 
 async def _handle_start_app(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if not runtime:
-        return
-    await runtime["engine"].async_start_app(
-        call.data["app"], user_id=resolve_user_id(call.context)
+    await _run_command_service(
+        call.hass, "start_app", call.data, user_id=resolve_user_id(call.context)
     )
 
 
@@ -156,23 +114,7 @@ async def _handle_update(call: ServiceCall) -> None:
 
 
 async def _handle_calibrate(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if not runtime:
-        return
-    positions = call.data.get("positions")
-    if isinstance(positions, str):
-        positions = normalize_position_map(positions)
-    await runtime["coordinator"].async_calibrate(
-        module_id=call.data["module"],
-        action=call.data["action"],
-        index=call.data.get("index"),
-        flap=call.data.get("flap"),
-        home_offset=call.data.get("home_offset"),
-        positions=positions if isinstance(positions, dict) else None,
-        clear_map=call.data.get("clear_map", False),
-        steps=call.data.get("steps"),
-        drum=call.data.get("drum"),
-    )
+    await _run_command_service(call.hass, "calibrate", call.data)
 
 
 async def _handle_home_all(call: ServiceCall) -> None:
@@ -184,13 +126,7 @@ async def _handle_record_all(call: ServiceCall) -> None:
 
 
 async def _handle_save_playlist(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["engine"].async_save_playlist(
-            call.data["name"],
-            _pages_from_value(call.data.get("pages", [])),
-            call.data.get("delay", 5),
-        )
+    await _run_command_service(call.hass, "save_playlist", call.data)
 
 
 async def _handle_delete_playlist(call: ServiceCall) -> None:

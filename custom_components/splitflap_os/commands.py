@@ -6,8 +6,16 @@ identity, so the whole command interface is testable under plain Python.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Mapping
+
+try:  # package import (Home Assistant)
+    from .firmware import image_from_hex
+    from .positions import normalize_position_map
+except ImportError:  # direct import in the host tests (component dir on sys.path)
+    from firmware import image_from_hex
+    from positions import normalize_position_map
 
 INVALID_REQUEST = "invalid_request"
 COMMAND_FAILED = "command_failed"
@@ -36,7 +44,7 @@ class Field:
     """One field of a command's interface, including defaults and coercion."""
 
     name: str
-    kind: str = "str"  # str | int | float | dict
+    kind: str = "str"
     default: Any = _MISSING
 
     @property
@@ -52,21 +60,50 @@ class Command:
     run: Runner
 
 
-def _coerce(value: Any, kind: str, name: str) -> Any:
+def _coerce(value: Any, field: Field) -> Any:
+    if value is None:
+        return None
+
+    kind = field.kind
     if kind == "str":
         if not isinstance(value, str):
-            raise ValueError(f"{name} must be a string")
+            raise ValueError(f"{field.name} must be a string")
         return value
     if kind == "dict":
         if not isinstance(value, dict):
-            raise ValueError(f"{name} must be a mapping")
+            raise ValueError(f"{field.name} must be a mapping")
+        return value
+    if kind == "bool":
+        if not isinstance(value, bool):
+            raise ValueError(f"{field.name} must be a boolean")
         return value
     if kind in ("int", "float"):
         caster = int if kind == "int" else float
         try:
             return caster(value)
         except (TypeError, ValueError) as err:
-            raise ValueError(f"{name} must be a {kind}") from err
+            raise ValueError(f"{field.name} must be a {kind}") from err
+    if kind == "module":
+        if not isinstance(value, (int, str)):
+            raise ValueError(f"{field.name} must be a module id")
+        return value
+    if kind == "pages":
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError as err:
+                raise ValueError("pages must be a JSON array") from err
+            if isinstance(parsed, list):
+                return parsed
+        raise ValueError("pages must be a JSON array")
+    if kind == "positions":
+        if isinstance(value, str):
+            return normalize_position_map(value)
+        if isinstance(value, dict):
+            return value
+        return None
     raise ValueError(f"unsupported field kind: {kind}")
 
 
@@ -79,7 +116,7 @@ def _arguments(fields: tuple[Field, ...], data: Mapping[str, Any]) -> dict[str, 
             raise ValueError(f"missing required field: {field.name}")
         else:
             value = field.default
-        args[field.name] = _coerce(value, field.kind, field.name)
+        args[field.name] = _coerce(value, field)
     return args
 
 
@@ -91,13 +128,105 @@ def _call(target: str, method: str, *names: str) -> Runner:
     return run
 
 
-# First increment: the shared commands whose semantics already match in both
-# adapters. Divergent and panel-only commands stay in their adapters for now.
+async def _send_text(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["engine"].async_send_text(
+        args["text"],
+        start=args["start"],
+        style=args["style"],
+        speed=args["speed"],
+        stop=args["stop"],
+        raw=args["raw"],
+    )
+
+
+async def _notify(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["engine"].async_notify(
+        args["text"],
+        seconds=args["seconds"],
+        style=args["style"],
+        priority=args["priority"],
+    )
+
+
+async def _play_playlist(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["engine"].async_play_playlist(
+        args["pages"], args["delay"], loop=args["loop"]
+    )
+
+
+async def _start_app(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["engine"].async_start_app(
+        args["app"], args.get("mode"), user_id=args.get("user_id")
+    )
+
+
+async def _save_playlist(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["engine"].async_save_playlist(
+        args["name"], args["pages"], args["delay"]
+    )
+
+
+async def _calibrate(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    return await runtime["coordinator"].async_calibrate(
+        module_id=args["module"],
+        action=args["action"],
+        index=args.get("index"),
+        flap=args.get("flap"),
+        home_offset=args.get("home_offset"),
+        positions=args.get("positions"),
+        clear_map=args.get("clear_map", False),
+        steps=args.get("steps"),
+        drum=args.get("drum"),
+    )
+
+
+async def _flash_firmware(args: dict[str, Any], runtime: Mapping[str, Any]) -> Any:
+    image = image_from_hex(args["hex"])
+    return await runtime["coordinator"].async_flash_image(args["module"], image)
+
+
 COMMANDS: dict[str, Command] = {
+    "send_text": Command(
+        (
+            Field("text", "str"),
+            Field("start", "int", 1),
+            Field("style", "str", "ltr"),
+            Field("speed", "int", 15),
+            Field("stop", "bool", True),
+            Field("raw", "bool", False),
+        ),
+        _send_text,
+    ),
+    "notify": Command(
+        (
+            Field("text", "str"),
+            Field("seconds", "float", 10),
+            Field("style", "str", "ltr"),
+            Field("priority", "int", 0),
+        ),
+        _notify,
+    ),
+    "play_playlist": Command(
+        (
+            Field("pages", "pages"),
+            Field("delay", "float", 5),
+            Field("loop", "bool", True),
+        ),
+        _play_playlist,
+    ),
+    "start_app": Command((Field("app", "str"), Field("mode", "str", None)), _start_app),
     "stop_app": Command((), _call("engine", "async_stop")),
     "set_settings": Command(
         (Field("settings", "dict"),),
         _call("engine", "async_set_settings", "settings"),
+    ),
+    "save_playlist": Command(
+        (
+            Field("name", "str"),
+            Field("pages", "pages"),
+            Field("delay", "float", 5),
+        ),
+        _save_playlist,
     ),
     "delete_playlist": Command(
         (Field("name", "str"),),
@@ -107,6 +236,28 @@ COMMANDS: dict[str, Command] = {
         (Field("name", "str"),),
         _call("engine", "async_run_saved_playlist", "name"),
     ),
+    "save_drum": Command(
+        (Field("name", "str"), Field("drum", "str")),
+        _call("engine", "async_save_drum", "name", "drum"),
+    ),
+    "delete_drum": Command(
+        (Field("name", "str"),),
+        _call("engine", "async_delete_drum", "name"),
+    ),
+    "calibrate": Command(
+        (
+            Field("module", "module"),
+            Field("action", "str"),
+            Field("index", "int", None),
+            Field("flap", "str", None),
+            Field("home_offset", "int", None),
+            Field("positions", "positions", None),
+            Field("clear_map", "bool", False),
+            Field("steps", "int", None),
+            Field("drum", "str", None),
+        ),
+        _calibrate,
+    ),
     "scan": Command((), _call("coordinator", "async_scan")),
     "sync": Command((), _call("coordinator", "async_sync")),
     "update": Command((), _call("coordinator", "async_update")),
@@ -114,6 +265,20 @@ COMMANDS: dict[str, Command] = {
     "record_all": Command(
         (Field("index", "int"),),
         _call("coordinator", "async_record_all", "index"),
+    ),
+    "backup": Command((), _call("engine", "async_backup")),
+    "restore": Command(
+        (Field("data", "dict"),),
+        _call("engine", "async_restore", "data"),
+    ),
+    "flash_firmware": Command(
+        (Field("module", "int"), Field("hex", "str")),
+        _flash_firmware,
+    ),
+    "cancel_firmware": Command((), _call("coordinator", "async_firmware_cancel")),
+    "reset_firmware": Command(
+        (Field("module", "int"),),
+        _call("coordinator", "async_firmware_reset", "module"),
     ),
 }
 

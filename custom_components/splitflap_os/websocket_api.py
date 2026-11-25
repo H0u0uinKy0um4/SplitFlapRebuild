@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 import voluptuous as vol
 
@@ -13,14 +13,11 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .commands import COMMAND_FAILED, execute_command
 from .const import DOMAIN, MQTT_COMPAT, VERSION
-from .firmware import MAX_HEX_CHARS, FirmwareImageError, image_from_hex
+from .firmware import MAX_HEX_CHARS
 from .identity import resolve_user_id
-from .positions import normalize_position_map
 from .runtime import get_runtime
 
 _LOGGER = logging.getLogger(__name__)
-
-RuntimeAction = Callable[[dict[str, Any]], Awaitable[Any]]
 
 
 def _state(hass: HomeAssistant) -> dict[str, Any] | None:
@@ -51,29 +48,6 @@ def _require_runtime(hass: HomeAssistant, connection, msg) -> dict[str, Any] | N
             "Split-Flap OS has no configured display",
         )
     return runtime
-
-
-async def _run_action(
-    hass: HomeAssistant,
-    connection,
-    msg,
-    action: RuntimeAction,
-) -> None:
-    runtime = _require_runtime(hass, connection, msg)
-    if runtime is None:
-        return
-
-    try:
-        result = await action(runtime)
-    except ValueError as err:
-        connection.send_error(msg["id"], "invalid_request", str(err))
-        return
-    except Exception as err:  # noqa: BLE001 - report failures to the panel
-        _LOGGER.exception("Split-Flap OS WebSocket action %s failed", msg["type"])
-        connection.send_error(msg["id"], "command_failed", str(err))
-        return
-
-    connection.send_result(msg["id"], result if result is not None else {})
 
 
 def _send_outcome(connection, msg, outcome) -> None:
@@ -163,19 +137,7 @@ def websocket_subscribe(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_send_text(hass: HomeAssistant, connection, msg) -> None:
     """Display a block of text."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_send_text(
-            msg["text"],
-            start=msg["start"],
-            style=msg["style"],
-            speed=msg["speed"],
-            stop=msg["stop"],
-            raw=msg["raw"],
-        ),
-    )
+    await _run_command(hass, connection, msg, "send_text")
 
 
 @websocket_api.websocket_command(
@@ -190,14 +152,7 @@ async def websocket_send_text(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_play_playlist(hass: HomeAssistant, connection, msg) -> None:
     """Start a playlist immediately."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_play_playlist(
-            msg["pages"], msg["delay"], loop=msg["loop"]
-        ),
-    )
+    await _run_command(hass, connection, msg, "play_playlist")
 
 
 @websocket_api.websocket_command(
@@ -211,13 +166,12 @@ async def websocket_play_playlist(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
     """Activate a data app."""
 
-    await _run_action(
+    await _run_command(
         hass,
         connection,
         msg,
-        lambda runtime: runtime["engine"].async_start_app(
-            msg["app"], msg.get("mode"), user_id=resolve_user_id(connection, msg)
-        ),
+        "start_app",
+        user_id=resolve_user_id(connection, msg),
     )
 
 
@@ -256,14 +210,7 @@ async def websocket_set_settings(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_save_playlist(hass: HomeAssistant, connection, msg) -> None:
     """Save a named playlist."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_save_playlist(
-            msg["name"], msg["pages"], msg["delay"]
-        ),
-    )
+    await _run_command(hass, connection, msg, "save_playlist")
 
 
 @websocket_api.websocket_command(
@@ -290,14 +237,7 @@ async def websocket_delete_playlist(hass: HomeAssistant, connection, msg) -> Non
 async def websocket_save_drum(hass: HomeAssistant, connection, msg) -> None:
     """Save a named drum (64 characters, one per flap)."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_save_drum(
-            msg["name"], msg["drum"]
-        ),
-    )
+    await _run_command(hass, connection, msg, "save_drum")
 
 
 @websocket_api.websocket_command(
@@ -310,12 +250,7 @@ async def websocket_save_drum(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_delete_drum(hass: HomeAssistant, connection, msg) -> None:
     """Delete a saved drum."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_delete_drum(msg["name"]),
-    )
+    await _run_command(hass, connection, msg, "delete_drum")
 
 
 @websocket_api.websocket_command(
@@ -351,26 +286,7 @@ async def websocket_run_saved_playlist(
 async def websocket_calibrate(hass: HomeAssistant, connection, msg) -> None:
     """Send one calibration command to the master."""
 
-    positions = msg.get("positions")
-    if isinstance(positions, str):
-        positions = normalize_position_map(positions)
-
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_calibrate(
-            module_id=msg["module"],
-            action=msg["action"],
-            index=msg.get("index"),
-            flap=msg.get("flap"),
-            home_offset=msg.get("home_offset"),
-            positions=positions if isinstance(positions, dict) else None,
-            clear_map=msg.get("clear_map", False),
-            steps=msg.get("steps"),
-            drum=msg.get("drum"),
-        ),
-    )
+    await _run_command(hass, connection, msg, "calibrate")
 
 
 @websocket_api.websocket_command(
@@ -433,9 +349,7 @@ async def websocket_record_all(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_backup(hass: HomeAssistant, connection, msg) -> None:
     """Export settings, playlists and the last module snapshot."""
 
-    await _run_action(
-        hass, connection, msg, lambda runtime: runtime["engine"].async_backup()
-    )
+    await _run_command(hass, connection, msg, "backup")
 
 
 @websocket_api.websocket_command(
@@ -448,12 +362,7 @@ async def websocket_backup(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_restore(hass: HomeAssistant, connection, msg) -> None:
     """Restore settings and playlists from a backup object."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_restore(msg["data"]),
-    )
+    await _run_command(hass, connection, msg, "restore")
 
 
 @websocket_api.websocket_command(
@@ -473,20 +382,7 @@ async def websocket_flash_firmware(hass: HomeAssistant, connection, msg) -> None
     Progress then arrives through the ``ota`` status object.
     """
 
-    if _require_runtime(hass, connection, msg) is None:
-        return
-    try:
-        image = image_from_hex(msg["hex"])
-    except FirmwareImageError as err:
-        connection.send_error(msg["id"], "invalid_request", str(err))
-        return
-
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_flash_image(msg["module"], image),
-    )
+    await _run_command(hass, connection, msg, "flash_firmware")
 
 
 @websocket_api.websocket_command(
@@ -496,12 +392,7 @@ async def websocket_flash_firmware(hass: HomeAssistant, connection, msg) -> None
 async def websocket_cancel_firmware(hass: HomeAssistant, connection, msg) -> None:
     """Abort a running flash session or discard a collected image."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_firmware_cancel(),
-    )
+    await _run_command(hass, connection, msg, "cancel_firmware")
 
 
 @websocket_api.websocket_command(
@@ -520,12 +411,7 @@ async def websocket_reset_firmware(hass: HomeAssistant, connection, msg) -> None
     being collected or a flash session is running.
     """
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_firmware_reset(msg["module"]),
-    )
+    await _run_command(hass, connection, msg, "reset_firmware")
 
 
 COMMANDS = (
