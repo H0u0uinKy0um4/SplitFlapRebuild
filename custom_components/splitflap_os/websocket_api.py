@@ -11,8 +11,10 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
+from .commands import COMMAND_FAILED, execute_command
 from .const import DOMAIN, MQTT_COMPAT, VERSION
 from .firmware import MAX_HEX_CHARS, FirmwareImageError, image_from_hex
+from .identity import resolve_user_id
 from .positions import normalize_position_map
 from .runtime import get_runtime
 
@@ -51,33 +53,6 @@ def _require_runtime(hass: HomeAssistant, connection, msg) -> dict[str, Any] | N
     return runtime
 
 
-def _connection_user_id(connection, msg: dict[str, Any]) -> str | None:
-    """Return the user behind a WebSocket command across Home Assistant versions.
-
-    Current ``ActiveConnection`` objects expose ``user`` (with an ``id``) and a
-    ``context(msg)`` factory.  Older releases exposed ``user_id`` directly.
-    Per-user apps need this identity, so never assume one spelling.
-    """
-
-    user = getattr(connection, "user", None)
-    user_id = getattr(user, "id", None)
-    if user_id is not None:
-        return str(user_id)
-
-    legacy_user_id = getattr(connection, "user_id", None)
-    if legacy_user_id is not None:
-        return str(legacy_user_id)
-
-    context_factory = getattr(connection, "context", None)
-    if callable(context_factory):
-        try:
-            context = context_factory(msg)
-        except Exception:  # noqa: BLE001 - an unavailable user is not fatal
-            return None
-        return getattr(context, "user_id", None)
-    return None
-
-
 async def _run_action(
     hass: HomeAssistant,
     connection,
@@ -99,6 +74,40 @@ async def _run_action(
         return
 
     connection.send_result(msg["id"], result if result is not None else {})
+
+
+def _send_outcome(connection, msg, outcome) -> None:
+    """Map the shared outcome onto the panel's error and result messages."""
+
+    if outcome.ok:
+        result = outcome.result if outcome.result is not None else {}
+        connection.send_result(msg["id"], result)
+    elif outcome.error == COMMAND_FAILED:
+        _LOGGER.error(
+            "Split-Flap OS WebSocket command %s failed",
+            msg["type"],
+            exc_info=outcome.exception,
+        )
+        connection.send_error(msg["id"], COMMAND_FAILED, outcome.message)
+    else:
+        connection.send_error(msg["id"], "invalid_request", outcome.message)
+
+
+async def _run_command(
+    hass: HomeAssistant,
+    connection,
+    msg,
+    name: str,
+    *,
+    user_id: str | None = None,
+) -> None:
+    """Run a shared command after the panel's runtime check."""
+
+    runtime = _require_runtime(hass, connection, msg)
+    if runtime is None:
+        return
+    outcome = await execute_command(name, msg, runtime, user_id=user_id)
+    _send_outcome(connection, msg, outcome)
 
 
 @websocket_api.websocket_command(
@@ -207,7 +216,7 @@ async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
         connection,
         msg,
         lambda runtime: runtime["engine"].async_start_app(
-            msg["app"], msg.get("mode"), user_id=_connection_user_id(connection, msg)
+            msg["app"], msg.get("mode"), user_id=resolve_user_id(connection, msg)
         ),
     )
 
@@ -219,9 +228,7 @@ async def websocket_start_app(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_stop_app(hass: HomeAssistant, connection, msg) -> None:
     """Stop the active app or playlist and return to idle."""
 
-    await _run_action(
-        hass, connection, msg, lambda runtime: runtime["engine"].async_stop()
-    )
+    await _run_command(hass, connection, msg, "stop_app")
 
 
 @websocket_api.websocket_command(
@@ -234,12 +241,7 @@ async def websocket_stop_app(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_set_settings(hass: HomeAssistant, connection, msg) -> None:
     """Merge settings and persist them."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_set_settings(msg["settings"]),
-    )
+    await _run_command(hass, connection, msg, "set_settings")
 
 
 @websocket_api.websocket_command(
@@ -274,12 +276,7 @@ async def websocket_save_playlist(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_delete_playlist(hass: HomeAssistant, connection, msg) -> None:
     """Delete a saved playlist."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_delete_playlist(msg["name"]),
-    )
+    await _run_command(hass, connection, msg, "delete_playlist")
 
 
 @websocket_api.websocket_command(
@@ -333,12 +330,7 @@ async def websocket_run_saved_playlist(
 ) -> None:
     """Run a saved playlist in a loop."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["engine"].async_run_saved_playlist(msg["name"]),
-    )
+    await _run_command(hass, connection, msg, "run_saved_playlist")
 
 
 @websocket_api.websocket_command(
@@ -388,9 +380,7 @@ async def websocket_calibrate(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_scan(hass: HomeAssistant, connection, msg) -> None:
     """Ask the master to run a full RS485 bus scan."""
 
-    await _run_action(
-        hass, connection, msg, lambda runtime: runtime["coordinator"].async_scan()
-    )
+    await _run_command(hass, connection, msg, "scan")
 
 
 @websocket_api.websocket_command(
@@ -400,9 +390,7 @@ async def websocket_scan(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_sync(hass: HomeAssistant, connection, msg) -> None:
     """Ask the master to republish its state."""
 
-    await _run_action(
-        hass, connection, msg, lambda runtime: runtime["coordinator"].async_sync()
-    )
+    await _run_command(hass, connection, msg, "sync")
 
 
 @websocket_api.websocket_command(
@@ -412,9 +400,7 @@ async def websocket_sync(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_update(hass: HomeAssistant, connection, msg) -> None:
     """Ask the master to refresh known modules."""
 
-    await _run_action(
-        hass, connection, msg, lambda runtime: runtime["coordinator"].async_update()
-    )
+    await _run_command(hass, connection, msg, "update")
 
 
 @websocket_api.websocket_command(
@@ -424,12 +410,7 @@ async def websocket_update(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_home_all(hass: HomeAssistant, connection, msg) -> None:
     """Home every known module."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_home_all(),
-    )
+    await _run_command(hass, connection, msg, "home_all")
 
 
 @websocket_api.websocket_command(
@@ -442,12 +423,7 @@ async def websocket_home_all(hass: HomeAssistant, connection, msg) -> None:
 async def websocket_record_all(hass: HomeAssistant, connection, msg) -> None:
     """Record one character index on every module."""
 
-    await _run_action(
-        hass,
-        connection,
-        msg,
-        lambda runtime: runtime["coordinator"].async_record_all(msg["index"]),
-    )
+    await _run_command(hass, connection, msg, "record_all")
 
 
 @websocket_api.websocket_command(

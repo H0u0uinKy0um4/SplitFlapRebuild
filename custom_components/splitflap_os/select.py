@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import SplitFlapEntity
+from .identity import resolve_user_id
 
 
 async def async_setup_entry(
@@ -48,7 +49,6 @@ class SplitFlapAppSelect(SplitFlapEntity, SelectEntity):
             return
 
         key = self._by_name.get(option, option)
-        context = getattr(self, "_context", None)
         await self.engine.async_start_app(
-            key, user_id=getattr(context, "user_id", None)
+            key, user_id=resolve_user_id(getattr(self, "_context", None))
         )

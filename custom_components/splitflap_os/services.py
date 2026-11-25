@@ -10,7 +10,9 @@ import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall
 
+from .commands import execute_command
 from .const import DOMAIN
+from .identity import resolve_user_id
 from .positions import normalize_position_map
 from .runtime import get_runtime
 
@@ -55,6 +57,23 @@ def _get_runtime(hass: HomeAssistant) -> dict[str, Any] | None:
     """Return the single integration runtime, if configured."""
 
     return get_runtime(hass)
+
+
+async def _run_command_service(
+    hass: HomeAssistant,
+    name: str,
+    data: dict[str, Any] | None = None,
+    *,
+    user_id: str | None = None,
+) -> None:
+    """Run a shared command; services report failure by propagating it."""
+
+    runtime = _get_runtime(hass)
+    if runtime is None:
+        return
+    outcome = await execute_command(name, data or {}, runtime, user_id=user_id)
+    if not outcome.ok:
+        raise outcome.exception or ValueError(outcome.message)
 
 
 def _pages_from_value(value: Any) -> list[Any]:
@@ -116,32 +135,24 @@ async def _handle_start_app(call: ServiceCall) -> None:
     if not runtime:
         return
     await runtime["engine"].async_start_app(
-        call.data["app"], user_id=getattr(call.context, "user_id", None)
+        call.data["app"], user_id=resolve_user_id(call.context)
     )
 
 
 async def _handle_stop_app(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["engine"].async_stop()
+    await _run_command_service(call.hass, "stop_app")
 
 
 async def _handle_sync(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["coordinator"].async_sync()
+    await _run_command_service(call.hass, "sync")
 
 
 async def _handle_scan(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["coordinator"].async_scan()
+    await _run_command_service(call.hass, "scan")
 
 
 async def _handle_update(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["coordinator"].async_update()
+    await _run_command_service(call.hass, "update")
 
 
 async def _handle_calibrate(call: ServiceCall) -> None:
@@ -165,15 +176,11 @@ async def _handle_calibrate(call: ServiceCall) -> None:
 
 
 async def _handle_home_all(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["coordinator"].async_home_all()
+    await _run_command_service(call.hass, "home_all")
 
 
 async def _handle_record_all(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["coordinator"].async_record_all(call.data["index"])
+    await _run_command_service(call.hass, "record_all", call.data)
 
 
 async def _handle_save_playlist(call: ServiceCall) -> None:
@@ -187,21 +194,15 @@ async def _handle_save_playlist(call: ServiceCall) -> None:
 
 
 async def _handle_delete_playlist(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["engine"].async_delete_playlist(call.data["name"])
+    await _run_command_service(call.hass, "delete_playlist", call.data)
 
 
 async def _handle_run_saved_playlist(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["engine"].async_run_saved_playlist(call.data["name"])
+    await _run_command_service(call.hass, "run_saved_playlist", call.data)
 
 
 async def _handle_set_settings(call: ServiceCall) -> None:
-    runtime = _get_runtime(call.hass)
-    if runtime:
-        await runtime["engine"].async_set_settings(call.data.get("settings", {}))
+    await _run_command_service(call.hass, "set_settings", call.data)
 
 
 SEND_TEXT_SCHEMA = vol.Schema(
