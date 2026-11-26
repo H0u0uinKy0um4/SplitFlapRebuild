@@ -1,7 +1,7 @@
 /** Stateful 3D split-flap preview rendering. */
 
-import { COLOR_CODES } from "../constants.js?v=2.0.0";
-import { escapeHtml } from "../utils.js?v=2.0.0";
+import { COLOR_CODES } from "../constants.js?v=2.0.1";
+import { escapeHtml } from "../utils.js?v=2.0.1";
 
 /**
  * Owns the per-board flap memory used to decide which flaps should animate.

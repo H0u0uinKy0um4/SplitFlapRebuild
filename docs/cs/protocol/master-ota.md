@@ -8,7 +8,7 @@ aktualizace modulů běží přes RS485 bootloader. Home Assistant nikdy nemluv�
 RS485 a nepoužívá ruční ArduinoOTA port.
 
 Aktualizace masteru vyžaduje firmware masteru s `mqtt_compat` 2 (například
-`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.0`). Starší mastery dál
+`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.1`). Starší mastery dál
 normálně zobrazují a aktualizují moduly; karta OTA masteru se zobrazí, ale
 kompatibilita může varovat nebo zápis zablokovat.
 
@@ -41,8 +41,10 @@ Publikují se na `<prefix>/command/master_firmware` jako JSON (ne retained):
 | `cancel` | `{"action": "cancel"}` | Zruší přijímání obrazu. Přijímá se jen během shromažďování. |
 
 Akce `reset` neexistuje: při neúspěšném startu se master vrátí na předchozí
-oddíl a ruční obnovení vede přes ArduinoOTA (níže). Home Assistant odmítne
-obraz větší než **1 MiB** a obraz, jehož kontrolní součet neodpovídá.
+oddíl a ruční obnovení vede přes ArduinoOTA (níže). Home Assistant přijme
+aplikaci do velikosti **1,875 MiB** (1 966 080 bajtů, jeden OTA oddíl masteru)
+a odmítne obraz, jehož kontrolní součet neodpovídá. Publikovaný obraz
+`mqtt-compat-2` má 1 477 664 bajtů, takže se bez problémů vejde.
 
 ## Stavový objekt
 

@@ -1,16 +1,16 @@
 /** Panel component logic. */
 
-import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=2.0.0";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=2.0.0";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.0";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=2.0.1";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=2.0.1";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.1";
 import {
   normalizeBoard,
   normalizeLayoutError,
   normalizeSnapshot,
-} from "../snapshot-adapter.js?v=2.0.0";
-import { createCalibrationFlow } from "./calibration-flow.js?v=2.0.0";
-import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=2.0.0";
-import { createMasterOtaFlow } from "./master-ota-flow.js?v=2.0.0";
+} from "../snapshot-adapter.js?v=2.0.1";
+import { createCalibrationFlow } from "./calibration-flow.js?v=2.0.1";
+import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=2.0.1";
+import { createMasterOtaFlow } from "./master-ota-flow.js?v=2.0.1";
 
 
 export const PanelMixin = (Base) => class extends Base {

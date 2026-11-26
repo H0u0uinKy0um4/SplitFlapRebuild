@@ -8,7 +8,7 @@ module updates travel over the RS485 bootloader. Home Assistant never speaks
 RS485 and does not use the manual ArduinoOTA port.
 
 Master self-update requires master firmware with `mqtt_compat` 2 (for example
-`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.0`). Older masters keep
+`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.1`). Older masters keep
 handling display and slave OTA normally; the Master OTA card still appears but
 the compatibility gate warns or blocks a flash.
 
@@ -43,8 +43,10 @@ Published to `<prefix>/command/master_firmware` as JSON (not retained):
 | `cancel` | `{"action": "cancel"}` | Discard a staged image. Accepted only while collecting. |
 
 There is no `reset` action: a failed boot rolls back to the previous partition,
-and manual recovery uses ArduinoOTA (below). Home Assistant refuses an image
-larger than **1 MiB** and drops an image whose checksum does not match.
+and manual recovery uses ArduinoOTA (below). Home Assistant accepts an app-only
+image up to **1.875 MiB** (1,966,080 bytes, one master OTA slot) and drops an
+image whose checksum does not match. The published `mqtt-compat-2` image is
+1,477,664 bytes, so it fits comfortably.
 
 ## Status object
 

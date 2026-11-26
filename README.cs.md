@@ -66,7 +66,7 @@ Home Assistant                         ESP32 master                 Moduly
 | --- | --- | --- | --- |
 | Modul | `<bus>.<vydání>` | `1.0.1` | RS485 sběrnice |
 | Master | `<bus>.<mqtt>.<vydání>` | `1.2.0.0` | sběrnice + MQTT |
-| Home Assistant | `<mqtt>.<vydání>` | `2.0.0` | MQTT |
+| Home Assistant | `<mqtt>.<vydání>` | `2.0.1` | MQTT |
 
 Neshoda v `mqtt_compat` zobrazí upozornění, ale nezastaví zobrazování. Aktualizace
 masteru navíc vyžaduje, aby generace MQTT integrace i připojeného masteru

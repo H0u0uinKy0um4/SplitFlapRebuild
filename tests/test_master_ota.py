@@ -85,7 +85,9 @@ class NormalizeTests(unittest.TestCase):
 class ContractTests(unittest.TestCase):
     def test_transport_limits_are_stable(self) -> None:
         self.assertEqual(master_ota.MASTER_OTA_CHUNK_BYTES, 768)
-        self.assertEqual(master_ota.MASTER_OTA_MAX_SIZE, 1024 * 1024)
+        self.assertEqual(master_ota.MASTER_OTA_MAX_SIZE, 0x1E0000)
+        # The published mqtt-compat-2 master image must fit in one app slot.
+        self.assertGreater(master_ota.MASTER_OTA_MAX_SIZE, 1_477_664)
         self.assertEqual(master_ota.MASTER_OTA_REBOOT_TIMEOUT_SECONDS, 300)
 
     def test_actions_match_the_master_topic(self) -> None:

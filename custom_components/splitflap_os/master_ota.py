@@ -47,9 +47,10 @@ MASTER_FIRMWARE_ACTION_CHUNK: Final = "chunk"
 MASTER_FIRMWARE_ACTION_FLASH: Final = "flash"
 MASTER_FIRMWARE_ACTION_CANCEL: Final = "cancel"
 
-#: Upper bound for an app-only ESP32 image. The exact partition size is a
-#: master-side property; this is the largest image Home Assistant will ship.
-MASTER_OTA_MAX_SIZE: Final = 1024 * 1024
+#: Upper bound for an app-only ESP32 image. The master uses two 1.875 MiB app
+#: slots (min_spiffs.csv), so this is the largest image Home Assistant will
+#: ship. The published mqtt-compat-2 image is 1,477,664 bytes and must fit.
+MASTER_OTA_MAX_SIZE: Final = 0x1E0000  # 1,966,080 bytes (one app slot)
 
 #: Reuse the proven chunk size: 768 bytes -> 1024 base64 characters.
 MASTER_OTA_CHUNK_BYTES: Final = 768

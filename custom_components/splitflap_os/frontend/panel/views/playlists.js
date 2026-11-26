@@ -1,6 +1,6 @@
 /** Playlists tab: builder and saved playlists. */
 
-import { escapeAttr, escapeHtml } from "../../utils.js?v=2.0.0";
+import { escapeAttr, escapeHtml } from "../../utils.js?v=2.0.1";
 
 export const PanelMixin = (Base) =>
   class extends Base {

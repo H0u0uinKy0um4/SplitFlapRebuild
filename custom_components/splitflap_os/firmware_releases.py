@@ -650,7 +650,7 @@ class ReleaseCatalog:
         if isinstance(release, MasterFirmwareRelease):
             if self._fetch_bytes is None:
                 raise FirmwareReleaseError(
-                    "firmware_release_image_invalid", "binary fetch is unavailable"
+                    "master_firmware_image_invalid", "binary fetch is unavailable"
                 )
             try:
                 image = await self._fetch_bytes(release.image_url)
@@ -664,7 +664,7 @@ class ReleaseCatalog:
             if digest != release.sha256:
                 raise FirmwareReleaseError("firmware_release_checksum_mismatch")
             if not image or len(image) > MASTER_OTA_MAX_SIZE:
-                raise FirmwareReleaseError("firmware_release_image_invalid")
+                raise FirmwareReleaseError("master_firmware_image_invalid")
             return image
 
         try:

@@ -402,6 +402,52 @@ class MasterCatalogTests(IsolatedAsyncioTestCase):
             caught.exception.code, "firmware_release_checksum_mismatch"
         )
 
+    async def test_master_image_size_matches_the_published_release(self) -> None:
+        """A real-sized master image passes; an oversized one is rejected."""
+
+        image = b"\xe9" * 1_477_664  # mqtt-compat-2 firmware.bin
+        document = master_manifest(sha256=hashlib.sha256(image).hexdigest())
+
+        async def fetch_text(_url: str) -> str:
+            return json.dumps(document)
+
+        async def fetch_bytes(_url: str) -> bytes:
+            return image
+
+        async def fetch_json(_url: str):
+            return [github_master_release(document)]
+
+        catalog = firmware_releases.ReleaseCatalog(
+            fetch_json,
+            fetch_text,
+            fetch_bytes,
+            kind=firmware_releases.MASTER_MANIFEST_KIND,
+        )
+        release = await catalog.get("v1.2.0.0")
+        self.assertEqual(await catalog.fetch_image(release), image)
+
+        oversized = b"\xe9" * (firmware_releases.MASTER_OTA_MAX_SIZE + 1)
+
+        async def fetch_oversized(_url: str) -> bytes:
+            return oversized
+
+        big_release = firmware_releases.parse_master_manifest(
+            master_manifest(sha256=hashlib.sha256(oversized).hexdigest()),
+            tag="v1.2.0.0",
+            published_at="",
+            image_url=MASTER_IMAGE_URL,
+            manifest_url=MASTER_MANIFEST_URL,
+        )
+        big_catalog = firmware_releases.ReleaseCatalog(
+            fetch_json,
+            fetch_text,
+            fetch_oversized,
+            kind=firmware_releases.MASTER_MANIFEST_KIND,
+        )
+        with self.assertRaises(firmware_releases.FirmwareReleaseError) as caught:
+            await big_catalog.fetch_image(big_release)
+        self.assertEqual(caught.exception.code, "master_firmware_image_invalid")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
