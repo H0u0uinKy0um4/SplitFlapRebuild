@@ -91,9 +91,18 @@ Notes:
   (`MOVE_SETTLE_MS`); do not query a module immediately after
   `goto`/`home`/`step`/`apply` or it may look offline.
 
+## master_firmware
+
+Updates the ESP32 master itself; only firmware with MQTT compatibility 2 listens
+on this topic. The actions are `begin` (with `version`, `sha256`, `size`), `chunk`
+(with base64 `data`), `flash`, and `cancel`. There is no `reset`: a failed boot
+rolls back automatically. The full contract, status fields, and compatibility
+gate are in [master OTA](master-ota.md).
+
 ## See also
 
 - [Protocol overview](overview.md)
 - [Text composition](text.md)
 - [Slave OTA](ota.md)
+- [Master OTA](master-ota.md)
 - [Layout and geometry](layout.md)

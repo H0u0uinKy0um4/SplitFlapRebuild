@@ -14,10 +14,12 @@ from typing import Any, Callable
 
 try:  # package import (Home Assistant)
     from .layout import DEFAULT_DRUM
+    from .master_ota import empty_master_ota, normalize_master_ota
     from .ota import OTA_STATE_IDLE, normalize_ota
     from .positions import normalize_position_map
 except ImportError:  # direct import in the host tests (component dir on sys.path)
     from layout import DEFAULT_DRUM
+    from master_ota import empty_master_ota, normalize_master_ota
     from ota import OTA_STATE_IDLE, normalize_ota
     from positions import normalize_position_map
 
@@ -311,6 +313,8 @@ class ModuleStatus:
         self._modules: dict[str, dict[str, Any]] = {}
         self._modules_count = 0
         self._ota: dict[str, Any] = {"state": OTA_STATE_IDLE}
+        self._master_ota: dict[str, Any] = empty_master_ota()
+        self._master_ip: str | None = None
         self._master_version: str | None = None
         self._master_bus_compat: int | None = None
         self._master_mqtt_compat: int | None = None
@@ -335,6 +339,16 @@ class ModuleStatus:
     @property
     def ota(self) -> dict[str, Any]:
         return self._ota
+
+    @property
+    def master_ota(self) -> dict[str, Any]:
+        return self._master_ota
+
+    @property
+    def master_ip(self) -> str | None:
+        """Last address reported for manual ArduinoOTA recovery."""
+
+        return self._master_ip
 
     @property
     def master_version(self) -> str | None:
@@ -423,6 +437,9 @@ class ModuleStatus:
                 compat = coerce_optional_int(payload.get("compat"))
             if compat is not None:
                 self._master_mqtt_compat = compat
+            ip = payload.get("ip")
+            if isinstance(ip, str) and ip.strip():
+                self._master_ip = ip.strip()
 
         raw_modules = payload.get("modules")
         if isinstance(raw_modules, (list, dict)):
@@ -441,6 +458,8 @@ class ModuleStatus:
         # The offline last-will payload never carries OTA, so never trust one.
         if online and "ota" in payload:
             self._ota = normalize_ota(payload.get("ota"))
+        if online and "master_ota" in payload:
+            self._master_ota = normalize_master_ota(payload.get("master_ota"))
 
     def restore(self, stored: Any) -> bool:
         """Load persisted normalized state; return False when there is none."""
@@ -500,6 +519,7 @@ class ModuleStatus:
             # remain aliases for older panel builds.
             "mqtt_compat": mqtt_compat,
             "master_version": self._master_version,
+            "master_ip": self._master_ip,
             "master_bus_compat": self._master_bus_compat,
             "master_mqtt_compat": self._master_mqtt_compat,
             "mqtt_compat_ok": compat_ok,
@@ -507,4 +527,5 @@ class ModuleStatus:
             "master_compat": self._master_mqtt_compat,
             "compat_ok": compat_ok,
             "ota": dict(self._ota) or {"state": OTA_STATE_IDLE},
+            "master_ota": dict(self._master_ota),
         }

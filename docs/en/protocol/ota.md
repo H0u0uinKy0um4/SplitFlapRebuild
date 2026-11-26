@@ -91,4 +91,5 @@ themselves. The topic is documented here because it is part of the MQTT contract
 
 - [Protocol overview](overview.md)
 - [Commands](commands.md)
+- [Master OTA](master-ota.md)
 - [Versioning](versioning.md)

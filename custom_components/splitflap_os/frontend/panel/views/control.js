@@ -1,12 +1,12 @@
 /** Control tab: live display, composer and preview. */
 
-import { COLOR_MAP, PALETTE } from "../../constants.js?v=1.2.24";
+import { COLOR_MAP, PALETTE } from "../../constants.js?v=2.0.0";
 import {
   centerLine,
   escapeAttr,
   escapeHtml,
   formatMessage,
-} from "../../utils.js?v=1.2.24";
+} from "../../utils.js?v=2.0.0";
 
 export const PanelMixin = (Base) =>
   class extends Base {

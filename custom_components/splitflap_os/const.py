@@ -17,8 +17,8 @@ NAME: Final = "Split-Flap OS"
 # speaks directly. MQTT_COMPAT repeats the leading number of VERSION explicitly
 # so the coordinator can compare it with the master's payload without parsing
 # the string.
-MQTT_COMPAT: Final = 1
-VERSION: Final = "1.2.24"
+MQTT_COMPAT: Final = 2
+VERSION: Final = "2.0.0"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
@@ -61,6 +61,10 @@ COMMAND_TOPICS: Final = {
     # master owns the binary framing to the modules; this side only ships
     # base64 image chunks.
     "firmware": "command/firmware",
+    # Master self-update: begin/chunk/flash/cancel JSON actions. Unlike slave
+    # OTA this replaces the MQTT peer itself, so success is only known after
+    # the master reconnects. See the master repo's MQTT command documentation.
+    "master_firmware": "command/master_firmware",
 }
 
 # After this many seconds without a status payload the master is considered

@@ -15,9 +15,13 @@ from .commands import COMMAND_FAILED, execute_command
 from .const import DOMAIN, MQTT_COMPAT, VERSION
 from .firmware import MAX_HEX_CHARS
 from .identity import resolve_user_id
+from .master_ota import MASTER_OTA_MAX_SIZE
 from .runtime import get_runtime
 
 _LOGGER = logging.getLogger(__name__)
+
+# One extra encoded block plus slack for base64 padding.
+MAX_MASTER_BASE64_CHARS: int = ((MASTER_OTA_MAX_SIZE + 2) // 3) * 4 + 16
 
 
 def _state(hass: HomeAssistant) -> dict[str, Any] | None:
@@ -445,6 +449,68 @@ async def websocket_reset_firmware(hass: HomeAssistant, connection, msg) -> None
     await _run_command(hass, connection, msg, "reset_firmware")
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/list_master_firmware_releases",
+        vol.Optional("refresh", default=False): bool,
+    }
+)
+@websocket_api.async_response
+async def websocket_list_master_firmware_releases(
+    hass: HomeAssistant, connection, msg
+) -> None:
+    """List validated Master firmware releases from public GitHub Releases."""
+
+    await _run_command(hass, connection, msg, "list_master_firmware_releases")
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/flash_master_firmware",
+        vol.Required("base64"): vol.All(
+            str, vol.Length(min=1, max=MAX_MASTER_BASE64_CHARS)
+        ),
+        vol.Optional("version", default=""): str,
+        vol.Optional("sha256"): vol.All(str, vol.Length(min=64, max=64)),
+    }
+)
+@websocket_api.async_response
+async def websocket_flash_master_firmware(hass: HomeAssistant, connection, msg) -> None:
+    """Ship a local app-only master image over MQTT.
+
+    The panel sends base64 of the ``firmware.bin``; the integration decodes,
+    verifies compatibility and starts the self-update. Success is only known
+    later, when the master reconnects with the expected version.
+    """
+
+    await _run_command(hass, connection, msg, "flash_master_firmware")
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/flash_master_firmware_release",
+        vol.Required("release"): vol.All(str, vol.Length(min=1, max=128)),
+    }
+)
+@websocket_api.async_response
+async def websocket_flash_master_firmware_release(
+    hass: HomeAssistant, connection, msg
+) -> None:
+    """Download, verify and start one published Master firmware release."""
+
+    await _run_command(hass, connection, msg, "flash_master_firmware_release")
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/cancel_master_firmware"}
+)
+@websocket_api.async_response
+async def websocket_cancel_master_firmware(hass: HomeAssistant, connection, msg) -> None:
+    """Discard a staged master image while it is still being collected."""
+
+    await _run_command(hass, connection, msg, "cancel_master_firmware")
+
+
 COMMANDS = (
     websocket_get_state,
     websocket_subscribe,
@@ -471,6 +537,10 @@ COMMANDS = (
     websocket_flash_firmware_release,
     websocket_cancel_firmware,
     websocket_reset_firmware,
+    websocket_list_master_firmware_releases,
+    websocket_flash_master_firmware,
+    websocket_flash_master_firmware_release,
+    websocket_cancel_master_firmware,
 )
 
 

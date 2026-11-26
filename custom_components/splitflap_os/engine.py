@@ -360,6 +360,8 @@ class AppEngine:
             "current_page": self._current_page,
             "current_page_index": self._current_page_index,
             "current_page_count": self._current_page_count,
+            # Master self-update progress, consumed by Settings -> Master OTA.
+            "master_ota": dict(self.coordinator.master_ota),
         }
 
     def _settings_for_ui(self) -> dict[str, Any]:

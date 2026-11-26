@@ -22,7 +22,7 @@ Home Assistant                         ESP32 master                 Slaves
 | **Setup** | [Installation](docs/en/setup/install.md), [Development](docs/en/setup/development.md) |
 | **Using the display** | [Panel and settings](docs/en/use/panel.md), [Entities](docs/en/use/entities.md), [Services](docs/en/use/services.md) |
 | **Automation** | [YAML examples](docs/en/automation/examples.md), [Calibration](docs/en/automation/calibration.md), [Scripts and templates](docs/en/automation/scripts.md), [Troubleshooting](docs/en/automation/troubleshooting.md) |
-| **Protocol** | [Overview](docs/en/protocol/overview.md), [Commands](docs/en/protocol/commands.md), [Text](docs/en/protocol/text.md), [OTA](docs/en/protocol/ota.md), [Layout](docs/en/protocol/layout.md), [Versioning](docs/en/protocol/versioning.md) |
+| **Protocol** | [Overview](docs/en/protocol/overview.md), [Commands](docs/en/protocol/commands.md), [Text](docs/en/protocol/text.md), [Slave OTA](docs/en/protocol/ota.md), [Master OTA](docs/en/protocol/master-ota.md), [Layout](docs/en/protocol/layout.md), [Versioning](docs/en/protocol/versioning.md) |
 | **Apps** | [Manifest](docs/en/apps/manifest.md), [Writing an app](docs/en/apps/authoring.md), [Examples](docs/en/apps/examples.md) |
 
 ## Requirements
@@ -30,7 +30,9 @@ Home Assistant                         ESP32 master                 Slaves
 - Home Assistant 2024.11 or newer.
 - The MQTT integration connected to the broker used by the master.
 - SplitFlap Master firmware publishing `<prefix>/status` and listening on
-  `<prefix>/command/{display,sync,scan,update,calibrate,firmware}`.
+  `<prefix>/command/{display,sync,scan,update,calibrate,firmware,master_firmware}`.
+  Master self-update (`master_firmware`) needs master firmware with MQTT
+  compatibility 2; older masters keep working for display and slave OTA.
 
 ## Quick start
 
@@ -52,6 +54,8 @@ Home Assistant                         ESP32 master                 Slaves
 - Playlists with per-page text, delay, send order, and looping.
 - Entities and services for automations, including interrupting notifications.
 - Slave-module OTA over MQTT; the master owns the RS485 bootloader.
+- ESP32 master self-update from published releases or a local `firmware.bin`,
+  with dual OTA partitions, automatic rollback, and reconnect confirmation.
 - Character validation against each module's drum before anything is sent.
 
 ## Versions
@@ -59,11 +63,14 @@ Home Assistant                         ESP32 master                 Slaves
 | Part | Format | Example | Axis |
 | --- | --- | --- | --- |
 | Slave | `<bus>.<release>` | `1.0.1` | RS485 bus |
-| Master | `<bus>.<mqtt>.<release>` | `1.1.0.1` | bus + MQTT |
-| Home Assistant | `<mqtt>.<release>` | `1.2.24` | MQTT |
+| Master | `<bus>.<mqtt>.<release>` | `1.2.0.0` | bus + MQTT |
+| Home Assistant | `<mqtt>.<release>` | `2.0.0` | MQTT |
 
 A mismatch in `mqtt_compat` shows a warning but does not stop display traffic.
-Details: [versioning](docs/en/protocol/versioning.md).
+Master self-update additionally requires both the integration's and the
+connected master's MQTT generation to match the release; the debug override is
+the only bypass. Details: [versioning](docs/en/protocol/versioning.md) and
+[master OTA](docs/en/protocol/master-ota.md).
 
 ## Credits and licence
 

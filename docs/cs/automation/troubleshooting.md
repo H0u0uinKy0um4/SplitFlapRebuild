@@ -31,6 +31,20 @@
 | Upozornění na verzi | `mqtt_compat` masteru se liší od `MQTT_COMPAT`. Viz [verze](../protocol/versioning.md). |
 | Modul se po pohybu jeví offline | Očekávané: pohyby blokují sběrnici a obnovení se odkládá o 5 s. |
 
+## Problémy s OTA masteru
+
+| Příznak | Co zkontrolovat |
+| --- | --- |
+| Seznam verzí masteru je prázdný | Firmware masteru musí hlásit `mqtt_compat` 2; v GitHub Releases hledejte manifest `master-app` se souborem `firmware.bin`. |
+| Zápis blokuje kompatibilita | `mqtt_compat` verze musí odpovídat integraci (2) i připojenému masteru. Jen ladící přepínač sníží známou neshodu na upozornění. |
+| Master se znovu nepřipojí | Počkejte až pět minut na očekávanou verzi. Master se po špatném obrazu sám vrátí; pokud dál neodpovídá, použijte ruční ArduinoOTA na hostiteli `SplFlp_Master`, port 3232, heslo z `OTA_PASSWORD`. |
+| Místní BIN upozorní na verzi | Nebyla zadaná očekávaná verze, takže se potvrzuje jen znovupřipojení. Zadejte verzi pro úplnou kontrolu. |
+| Zápis do masteru je odmítnut během OTA modulu | OTA masteru a OTA modulů sdílejí jedno místo. Počkejte na dokončení relace modulu. |
+| Zrušení nic nedělá | Zrušení se přijímá jen během shromažďování obrazu. Po `flash` se master sám restartuje; akce reset neexistuje. |
+
+Panel se nikdy nepřipojuje na IP masteru ani na port ArduinoOTA; celý kontrakt
+je v [OTA masteru](../protocol/master-ota.md).
+
 ## Debug logování
 
 ```yaml
@@ -69,10 +83,13 @@ sběrnice).
 - **Control** — pošlete text a sledujte náhled.
 - **Apps** — karty ukážou, proč je aplikace nedostupná.
 - **Tuning → Commands** — stav modulu, home, goto, kroky.
-- **Settings → System** — informace o připojení, verze, záloha/obnova.
+- **Settings → System → OTA modulů** — verze modulů, zápis, průběh.
+- **Settings → System → OTA masteru** — verze masteru, místní BIN, odpočet znovupřipojení.
+- **Settings → System → Připojení a záloha** — informace o připojení, verze, záloha/obnova.
 
 ## Viz také
 
 - [Služby](../use/services.md)
 - [Přehled protokolu](../protocol/overview.md#diagnostika)
+- [OTA masteru](../protocol/master-ota.md)
 - [YAML příklady](examples.md)

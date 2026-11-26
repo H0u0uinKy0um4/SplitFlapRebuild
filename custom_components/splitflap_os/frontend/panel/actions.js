@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.24";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.24";
+import { formatMessage } from "../utils.js?v=2.0.0";
+import { DEFAULT_DRUM } from "../constants.js?v=2.0.0";
 
 export const PanelMixin = (Base) => class extends Base {
   _onInput(event) {
@@ -55,6 +55,9 @@ export const PanelMixin = (Base) => class extends Base {
     if (target.id === "firmwareRelease") {
       this._renderFirmwareReleaseInfo();
     }
+    if (target.id === "masterFirmwareRelease") {
+      this._renderMasterFirmwareReleaseInfo();
+    }
     if (target.dataset && target.dataset.setting) {
       this._applyFieldVisibility(
         target.closest(".settings-groups, #modalFields")
@@ -75,6 +78,10 @@ export const PanelMixin = (Base) => class extends Base {
         this._setSubtab(target.dataset.group, target.dataset.sub);
         if (target.dataset.group === "settings" && target.dataset.sub === "system") {
           void this._loadFirmwareReleases();
+          void this._loadMasterFirmwareReleases();
+        }
+        if (target.dataset.group === "system" && target.dataset.sub === "master") {
+          void this._loadMasterFirmwareReleases();
         }
         break;
       case "refresh":
@@ -179,6 +186,18 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "cancel-firmware":
         await this._cancelFirmware();
+        break;
+      case "refresh-master-firmware-releases":
+        await this._loadMasterFirmwareReleases(true);
+        break;
+      case "flash-master-firmware-release":
+        await this._flashMasterFirmwareRelease();
+        break;
+      case "flash-master-firmware":
+        await this._flashMasterFirmwareLocal();
+        break;
+      case "cancel-master-firmware":
+        await this._cancelMasterFirmware();
         break;
       case "save-settings":
         await this._saveSettings();
@@ -909,6 +928,10 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _flashFirmware() {
+    if (this._masterSlotBusy()) {
+      this._toast(this._t("firmware_release_session_active"), "warn");
+      return;
+    }
     const fileNode = this.shadowRoot.getElementById("otaFile");
     const file = fileNode && fileNode.files ? fileNode.files[0] : null;
     if (!file) {
@@ -987,6 +1010,163 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
+  async _loadMasterFirmwareReleases(refresh = false) {
+    if (this._masterReleasesLoading && !refresh) return;
+    this._masterReleasesLoading = true;
+    this._renderMasterFirmwareReleaseInfo();
+    try {
+      this._masterFirmwareReleases = await this._send(
+        "list_master_firmware_releases",
+        { refresh: Boolean(refresh) }
+      );
+      this._masterReleasesLoaded = true;
+    } catch (err) {
+      /* _send already reported the error. */
+      if (!this._masterReleasesLoaded) {
+        this._masterFirmwareReleases = { releases: [] };
+      }
+    } finally {
+      this._masterReleasesLoading = false;
+      this._renderMasterFirmwareReleases();
+    }
+  }
+
+  /** True while either OTA channel owns the master. */
+  _masterSlotBusy() {
+    const view = this._masterOta ? this._masterOta.view() : null;
+    if (
+      view &&
+      (view.running || ["collecting", "applying", "rebooting"].includes(view.phase))
+    ) {
+      return true;
+    }
+    const ota = ((this._coordinator() || {}).ota || {});
+    return ["collecting", "entering", "flashing", "verifying"].includes(
+      String(ota.state || "idle")
+    );
+  }
+
+  _masterActResult(result) {
+    if (!result || result.ok) return Boolean(result && result.ok);
+    // Errors from an in-flight send were already reported by _send/notify.
+    // Only local refusals need a toast here.
+    const local = new Set([
+      "master_ota_running",
+      "firmware_release_session_active",
+      "master_ota_select_release",
+      "master_ota_no_file",
+      "master_ota_cancel_not_allowed",
+      "invalid_request",
+    ]);
+    if (local.has(result.code)) this._toast(this._t(result.code), "warn");
+    return false;
+  }
+
+  _masterFlashableRelease() {
+    const release = this._selectedMasterFirmwareRelease();
+    if (!release) {
+      this._toast(this._t("master_ota_select_release"), "warn");
+      return null;
+    }
+    if (this._masterFirmwareReleases && this._masterFirmwareReleases.stale) {
+      this._toast(this._t("firmware_release_stale_blocked"), "warn");
+      return null;
+    }
+    const compat = release.compatibility || {};
+    if (compat.level === "block") {
+      this._toast(this._t("firmware_release_blocked"), "warn");
+      return null;
+    }
+    return release;
+  }
+
+  async _flashMasterFirmwareRelease() {
+    const release = this._masterFlashableRelease();
+    if (!release) return;
+    const confirmText = formatMessage(this._t("master_ota_release_confirm"), {
+      version: release.version || "—",
+    });
+    if (!window.confirm(confirmText)) return;
+    const result = await this._masterOta.act("flash_release", {
+      tag: release.tag,
+      version: release.version || "",
+    });
+    this._masterActResult(result);
+  }
+
+  _masterBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const block = 0x8000;
+    let binary = "";
+    for (let offset = 0; offset < bytes.length; offset += block) {
+      binary += String.fromCharCode.apply(
+        null,
+        bytes.subarray(offset, offset + block)
+      );
+    }
+    return btoa(binary);
+  }
+
+  async _flashMasterFirmwareLocal() {
+    const fileNode = this.shadowRoot.getElementById("masterOtaFile");
+    const file = fileNode && fileNode.files ? fileNode.files[0] : null;
+    if (!file) {
+      this._toast(this._t("master_ota_no_file"), "warn");
+      return;
+    }
+    if (!/\.bin$/i.test(file.name)) {
+      this._toast(this._t("master_ota_not_bin"), "warn");
+      return;
+    }
+    const versionNode = this.shadowRoot.getElementById("masterOtaExpectedVersion");
+    const expected = String((versionNode && versionNode.value) || "").trim();
+    const confirmText = formatMessage(this._t("master_ota_local_confirm"), {
+      version: expected || this._t("unknown"),
+    });
+    if (!window.confirm(confirmText)) return;
+
+    let buffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (err) {
+      this._toast(
+        formatMessage(this._t("master_ota_read_failed"), {
+          error: err.message || err,
+        }),
+        "error"
+      );
+      return;
+    }
+    if (!buffer || !buffer.byteLength) {
+      this._toast(this._t("master_ota_no_file"), "warn");
+      return;
+    }
+
+    let sha256 = null;
+    try {
+      if (globalThis.crypto && globalThis.crypto.subtle) {
+        const digest = await globalThis.crypto.subtle.digest("SHA-256", buffer);
+        sha256 = Array.from(new Uint8Array(digest))
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("");
+      }
+    } catch (err) {
+      /* SHA-256 is optional for a local image; the backend computes it too. */
+    }
+
+    const result = await this._masterOta.act("flash_local", {
+      base64: this._masterBase64(buffer),
+      version: expected,
+      sha256,
+    });
+    this._masterActResult(result);
+  }
+
+  async _cancelMasterFirmware() {
+    const result = await this._masterOta.act("cancel");
+    this._masterActResult(result);
+  }
+
   /** Shared release validation for single and bus-wide flashing. */
   _flashableRelease() {
     const release = this._selectedFirmwareRelease();
@@ -1007,6 +1187,10 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _flashReleaseFirmware() {
+    if (this._masterSlotBusy()) {
+      this._toast(this._t("firmware_release_session_active"), "warn");
+      return;
+    }
     const release = this._flashableRelease();
     if (!release) return;
     const moduleId = this._otaModuleId();
@@ -1044,6 +1228,10 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _flashReleaseFirmwareAll() {
+    if (this._masterSlotBusy()) {
+      this._toast(this._t("firmware_release_session_active"), "warn");
+      return;
+    }
     const release = this._flashableRelease();
     if (!release) return;
     const ids = this._bulkOta ? this._bulkOta.targets() : [];

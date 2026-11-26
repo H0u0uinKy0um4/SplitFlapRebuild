@@ -16,6 +16,9 @@ export const PANEL = {
   subtab_display: "DISPLAY",
   subtab_apps: "APPS",
   subtab_system: "SYSTEM",
+  subtab_module_ota: "MODULE OTA",
+  subtab_master_ota: "MASTER OTA",
+  subtab_connection_backup: "CONNECTION & BACKUP",
   stop: "STOP",
   clear: "CLEAR",
   save: "SAVE",
@@ -254,6 +257,69 @@ export const PANEL = {
   firmware_release_flash_timeout: "Timed out waiting for the module flash session.",
   firmware_release_bulk_error: "The bulk OTA job could not continue.",
   firmware_release_no_modules: "No modules detected. Run a bus scan first.",
+
+  // Master (ESP32) self-update — Settings -> System -> Master OTA.
+  master_ota_title: "ESP32 MASTER FIRMWARE",
+  master_ota_installed: "Installed master: {version} (MQTT compat {compat})",
+  master_ota_installed_unknown: "Installed master version: unknown",
+  master_ota_state_idle: "No master update session.",
+  master_ota_state_uploading: "Uploading the master image…",
+  master_ota_state_collecting: "Master is collecting the image",
+  master_ota_state_applying: "Master is applying the new image",
+  master_ota_state_rebooting: "Master is rebooting",
+  master_ota_state_done: "Master reconnected after the update",
+  master_ota_state_failed: "Master update failed",
+  master_ota_state_cancelled: "Master update cancelled",
+  master_ota_uploading: "Uploading the master image…",
+  master_ota_remaining: "reconnect window: {seconds}s left",
+  master_ota_local_title: "Local BIN (advanced)",
+  master_ota_local_help:
+    "Use a locally built app-only firmware.bin. Without an expected version the panel warns and only confirms that the master reconnected.",
+  master_ota_expected_version: "Expected version",
+  master_ota_flash_local: "FLASH MASTER",
+  master_ota_recovery_hint:
+    "If the master stops answering, use manual ArduinoOTA recovery on port 3232 (host SplFlp_Master). The panel never uses that port.",
+  master_ota_release_confirm:
+    "Update the master to {version}? It will reboot and reconnect automatically; do not power it off.",
+  master_ota_local_confirm:
+    "Flash this firmware.bin to the master (expected version: {version})? It will reboot and reconnect automatically.",
+  master_ota_success: "Master reconnected with version {version}.",
+  master_ota_version_unknown:
+    "No expected version was supplied; only the reconnect was confirmed.",
+  master_ota_version_mismatch:
+    "The master reconnected with {actual}, but {expected} was expected.",
+  master_ota_reconnect_timeout:
+    "The master did not reconnect within five minutes. Use ArduinoOTA recovery.",
+  master_ota_failed: "The master reported a failed update: {error}",
+  master_ota_cancelled: "Master update cancelled; no image was applied.",
+  master_ota_cancel_requested: "Master update cancel requested.",
+  master_ota_cancel_not_allowed:
+    "Cancel is only available while the master is collecting the image.",
+  master_ota_running: "A master update is already running.",
+  master_ota_select_release: "Choose a published master release.",
+  master_ota_no_file: "Choose a firmware.bin first.",
+  master_ota_not_bin: "Use an app-only firmware.bin image.",
+  master_ota_read_failed: "Could not read the file: {error}",
+  master_release_option: "{version} · {channel}",
+  master_release_summary:
+    "{version} · MQTT compat {mqtt} · bus compat {bus}",
+  master_release_notes: "Notes: {notes}",
+  master_release_mqtt_mismatch:
+    "The release MQTT compatibility does not match this integration.",
+  master_release_master_mqtt_unknown:
+    "The master does not report MQTT compatibility; compatibility was not confirmed.",
+  master_release_master_mqtt_mismatch:
+    "The release MQTT compatibility does not match the connected master.",
+  master_release_blocked: "A compatibility mismatch blocks the master update.",
+  master_release_local_compat_unknown:
+    "This integration does not report its MQTT compatibility.",
+  master_release_version_invalid:
+    "The expected version must look like 1.2.0.0.",
+  master_release_version_unknown: "No expected version was supplied.",
+  master_firmware_image_invalid: "The master image is empty or too large.",
+  master_firmware_checksum_mismatch:
+    "The master image checksum does not match.",
+
   compose_message_first: "Compose a message first",
   enter_drum_index: "Enter a drum index",
   drum_length_error: "The drum must be exactly 64 characters and contain no line breaks",

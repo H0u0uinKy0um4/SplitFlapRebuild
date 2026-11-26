@@ -89,4 +89,5 @@ zde zdokumentovaný, protože je součástí MQTT kontraktu.
 
 - [Přehled protokolu](overview.md)
 - [Příkazy](commands.md)
+- [OTA masteru](master-ota.md)
 - [Verze](versioning.md)

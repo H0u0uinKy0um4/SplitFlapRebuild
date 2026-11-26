@@ -12,7 +12,7 @@ There is no build step and no Lovelace resource to add.
 | **Control** | Live preview, multi-line compose box, colour flap buttons, start column, send order, speed, playlist builder, and saved playlists. |
 | **Apps** | App cards with availability, a gear button for that app's settings, a mode button, and start/stop. |
 | **Tuning** | Commands, Map, Auto-tune, Teach, and Drum sub-tabs. |
-| **Settings** | Display, Apps, Drums, and System sub-tabs. |
+| **Settings** | Display, Apps, Drums, and System sub-tabs. System nests Module OTA, Master OTA, and Connection & Backup. |
 
 ## Control
 
@@ -95,12 +95,17 @@ pick the stock one.
 
 ### System sub-tab
 
-A single grouped panel holds module OTA, backup/restore, and connection/bus
-details. The OTA group uses a target-module field, a release selector with a
-compact refresh action, and flash/cancel actions. Connection data is shown as
-key/value tiles for master state, MQTT prefix, hardware and engine, with version
-and compatibility notes. The backup covers settings, playlists, and the last
-module snapshot.
+System has its own nested sub-tabs, defaulting to **Module OTA**:
+
+| Nested sub-tab | Contents |
+| --- | --- |
+| **Module OTA** | Target module, published slave releases, local HEX upload, flash all, progress, and cancel. |
+| **Master OTA** | Published master releases, local BIN upload, version/compatibility summary, progress, and cancel. |
+| **Connection & Backup** | Connection and bus key/value tiles plus settings, playlist, and snapshot backup/restore. |
+
+Only one nested page is rendered at a time, and progress stays local to its
+sub-tab; there is no global OTA badge. The connection tiles show master state,
+MQTT prefix, hardware and engine, with version and compatibility notes.
 
 ## Slave-module OTA
 
@@ -122,12 +127,36 @@ cancelled module stops the queue, and **Cancel** aborts the whole job. The
 progress line shows the current module and completed count. The wire details are
 in [slave OTA](../protocol/ota.md).
 
+## Master OTA
+
+**Settings → System → Master OTA** updates the ESP32 master itself over a
+separate MQTT topic. The release picker lists published `master-app` builds,
+stable first and then the latest `dev` build. Home Assistant downloads the
+`.bin` only when you flash it, checks its SHA-256, and checks the release's
+`mqtt_compat` against both this integration and the connected master. A known
+mismatch blocks the flash; the debug switch is the only bypass.
+
+After confirmation the master collects the image, verifies it, writes it to the
+inactive OTA partition, reboots, and publishes its new version. The panel
+considers the update successful only after that reconnect, within five minutes.
+Cancel is available while collecting; after `flash` the master reboots on its
+own and there is no reset button. If it does not come back, use manual
+ArduinoOTA recovery (host `SplFlp_Master`, port 3232, password from
+`OTA_PASSWORD`); the panel never uses that port. See the
+[protocol contract](../protocol/master-ota.md).
+
+**Local BIN (advanced)** accepts a locally built app-only `firmware.bin`. An
+expected version is optional; without it the panel warns and only confirms the
+reconnect. With an expected version, a mismatch with either MQTT generation is
+refused; without one, the compatibility check is skipped and only the warning
+is shown. Slave OTA and master OTA cannot run at the same time.
+
 ## Behaviour notes
 
 - Static inputs are not re-rendered while focused, so typing is not interrupted
   by status updates.
-- The selected tab, settings sub-tab, and preview scale persist in
-  `localStorage`; they are per-browser, not per-installation.
+- The selected tab, settings sub-tab, nested System sub-tab, and preview scale
+  persist in `localStorage`; they are per-browser, not per-installation.
 - Language switching covers panel strings, settings labels, app manifests, and
   service/entity names.
 
@@ -135,4 +164,5 @@ in [slave OTA](../protocol/ota.md).
 
 - [Entities](../use/entities.md)
 - [Services](../use/services.md)
+- [Master OTA protocol](../protocol/master-ota.md)
 - [YAML examples](../automation/examples.md)

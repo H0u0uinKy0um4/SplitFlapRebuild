@@ -1,15 +1,16 @@
 /** Panel component logic. */
 
-import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.24";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.24";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.24";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=2.0.0";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=2.0.0";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.0";
 import {
   normalizeBoard,
   normalizeLayoutError,
   normalizeSnapshot,
-} from "../snapshot-adapter.js?v=1.2.24";
-import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.24";
-import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=1.2.24";
+} from "../snapshot-adapter.js?v=2.0.0";
+import { createCalibrationFlow } from "./calibration-flow.js?v=2.0.0";
+import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=2.0.0";
+import { createMasterOtaFlow } from "./master-ota-flow.js?v=2.0.0";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -25,7 +26,11 @@ export const PanelMixin = (Base) => class extends Base {
     this._retryTimer = null;
 
     this._tab = "control";
-    this._subtabs = { tuning: "commands", settings: "display" };
+    this._subtabs = {
+      tuning: "commands",
+      settings: "display",
+      system: "module",
+    };
     this._appSettingsKey = null;
     this._composeText = "";
     this._playDelay = 5;
@@ -38,6 +43,9 @@ export const PanelMixin = (Base) => class extends Base {
     this._firmwareReleases = null;
     this._releasesLoaded = false;
     this._releasesLoading = false;
+    this._masterFirmwareReleases = null;
+    this._masterReleasesLoaded = false;
+    this._masterReleasesLoading = false;
     this._settingsBuilt = false;
     this._settingsDirty = false;
     this._modalApp = null;
@@ -76,6 +84,20 @@ export const PanelMixin = (Base) => class extends Base {
       render: () => this._renderOta(),
     });
 
+    // Master self-update owns the same panel surface but a different MQTT
+    // channel. Rendering is restricted to this sub-tab's progress nodes.
+    this._masterOta = createMasterOtaFlow({
+      snapshot: () => this._state,
+      send: (type, payload) => this._send(type, payload),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      notify: (key, params, level) =>
+        this._toast(formatMessage(this._t(key), params || {}), level),
+      render: () => {
+        this._renderMasterOta();
+        this._renderMasterFirmwareReleases();
+      },
+    });
+
     try {
       const saved = window.localStorage.getItem(`${DOMAIN}_tab`);
       if (saved) this._tab = saved;
@@ -88,6 +110,7 @@ export const PanelMixin = (Base) => class extends Base {
       const known = {
         tuning: ["commands", "map", "autotune", "teach", "drum"],
         settings: ["display", "apps", "drum", "system"],
+        system: ["module", "master", "connection"],
       };
       for (const [group, subs] of Object.entries(known)) {
         const savedSub = window.localStorage.getItem(

@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.24";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.24";
-import { PANEL_STYLES } from "../styles.js?v=1.2.24";
+import { DOMAIN, VERSION } from "../constants.js?v=2.0.0";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.0";
+import { PANEL_STYLES } from "../styles.js?v=2.0.0";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -203,12 +203,21 @@ export const PanelMixin = (Base) =>
       this._renderSettings();
       this._renderOta();
       this._renderFirmwareReleases();
+      this._renderMasterOta();
+      this._renderMasterFirmwareReleases();
       if (
         this._subtabs.settings === "system" &&
         !this._releasesLoaded &&
         !this._releasesLoading
       ) {
         void this._loadFirmwareReleases();
+      }
+      if (
+        this._subtabs.settings === "system" &&
+        !this._masterReleasesLoaded &&
+        !this._masterReleasesLoading
+      ) {
+        void this._loadMasterFirmwareReleases();
       }
       this._renderConnectionInfo();
     }

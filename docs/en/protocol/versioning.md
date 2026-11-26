@@ -21,9 +21,13 @@ either compatibility axis.
 
 ```text
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
-master   <bus>.<mqtt>.<release>       1.1.0.1    bus 1, mqtt 1, release 0.1
-HA       <mqtt>.<release>             1.2.24     mqtt 1, release 2.24
+master   <bus>.<mqtt>.<release>       1.2.0.0    bus 1, mqtt 2, release 0.0
+HA       <mqtt>.<release>             2.0.0      mqtt 2, release 0.0
 ```
+
+The MQTT generation 2 release is coordinated across the three repositories
+with the tag `mqtt-compat-2`. The master release is `1.2.0.0`; Home Assistant is
+`2.0.0`. Slave firmware does not carry an MQTT generation.
 
 ## Checks
 
@@ -33,6 +37,11 @@ HA       <mqtt>.<release>             1.2.24     mqtt 1, release 2.24
   `compat` alias) with its own `MQTT_COMPAT`.
 - A mismatch shows a warning banner but does not block display traffic, OTA
   cancellation, or a module reset.
+- [Master OTA](master-ota.md) is stricter: the release's `mqtt_compat` must match
+  both this integration and the connected master. A known mismatch blocks the
+  flash; an unknown master generation warns. The
+  `Debug: allow incompatible firmware` switch is the only bypass, and turns a
+  known mismatch into a warning rather than forcing compatibility.
 - If the master predates the version protocol, the panel reports the version as
   unknown instead of assuming compatibility.
 - The master's bus generation is diagnostic only for display traffic; Home
@@ -68,3 +77,4 @@ The file list and validation commands are in [development](../setup/development.
 
 - [Development](../setup/development.md)
 - [Protocol overview](overview.md)
+- [Master OTA](master-ota.md)

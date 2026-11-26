@@ -455,6 +455,16 @@ export const PANEL_STYLES = `
   border-radius: 2px 2px 0 0;
   background: var(--sf-accent);
 }
+
+/* Settings -> System nests three independent sub-tabs inside the page. They
+   share the underline style but sit one level deeper and stay compact. */
+.subtabs.nested {
+  gap: 20px;
+  padding: 0 12px;
+}
+.subtabs.nested .subtab { padding: 12px 2px; }
+.subpage.nested.active { animation: pageIn 0.18s ease-out; }
+
 .settings-save {
   margin-left: auto;
   flex: 0 0 auto;

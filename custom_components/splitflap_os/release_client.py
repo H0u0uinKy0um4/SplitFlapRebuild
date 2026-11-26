@@ -1,4 +1,4 @@
-"""Home Assistant adapter for the public Slave firmware release catalog."""
+"""Home Assistant adapter for the public firmware release catalogs."""
 
 from __future__ import annotations
 
@@ -8,7 +8,12 @@ import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .firmware_releases import FetchJson, FetchText, ReleaseCatalog
+from .firmware_releases import (
+    MASTER_MANIFEST_KIND,
+    FetchJson,
+    FetchText,
+    ReleaseCatalog,
+)
 
 _API_HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -21,8 +26,8 @@ _DOWNLOAD_HEADERS = {
 }
 
 
-def create_release_catalog(hass: HomeAssistant) -> ReleaseCatalog:
-    """Build one catalog backed by Home Assistant's shared HTTP session."""
+def _fetchers(hass: HomeAssistant):
+    """Build the three HTTP adapters shared by both release catalogs."""
 
     session = async_get_clientsession(hass)
 
@@ -40,7 +45,32 @@ def create_release_catalog(hass: HomeAssistant) -> ReleaseCatalog:
             response.raise_for_status()
             return await response.text()
 
-    return ReleaseCatalog(fetch_json, fetch_text)
+    async def fetch_bytes(url: str) -> bytes:
+        async with session.get(
+            url, headers=_DOWNLOAD_HEADERS, timeout=aiohttp.ClientTimeout(total=30)
+        ) as response:
+            response.raise_for_status()
+            return await response.read()
+
+    return fetch_json, fetch_text, fetch_bytes
 
 
-__all__ = ["FetchJson", "FetchText", "ReleaseCatalog", "create_release_catalog"]
+def create_release_catalog(hass: HomeAssistant) -> ReleaseCatalog:
+    """Build the slave release catalog on the shared HTTP session."""
+
+    return ReleaseCatalog(*_fetchers(hass))
+
+
+def create_master_release_catalog(hass: HomeAssistant) -> ReleaseCatalog:
+    """Build the master release catalog on the shared HTTP session."""
+
+    return ReleaseCatalog(*_fetchers(hass), kind=MASTER_MANIFEST_KIND)
+
+
+__all__ = [
+    "FetchJson",
+    "FetchText",
+    "ReleaseCatalog",
+    "create_master_release_catalog",
+    "create_release_catalog",
+]

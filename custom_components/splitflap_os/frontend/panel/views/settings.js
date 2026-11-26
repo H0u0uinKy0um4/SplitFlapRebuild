@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.24";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.24";
+import { DOMAIN, VERSION } from "../../constants.js?v=2.0.0";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=2.0.0";
 
 const checkedSettingValue = (value) =>
   value === true ||
@@ -103,87 +103,142 @@ export const PanelMixin = (Base) =>
           </div>
 
           <div class="subpage" data-subpage="settings" data-sub="system">
-            <div class="card system-card">
-              <div class="system-group">
-                <div class="system-group-head">
-                  <h3 class="system-group-title">${this._t('system_group_ota')}</h3>
-                  <span class="status-badge" id="otaInstalled">${this._t('firmware_installed_unknown')}</span>
+            <nav class="subtabs nested">
+              <button class="subtab active" data-action="subtab" data-group="system" data-sub="module">${this._t('subtab_module_ota')}</button>
+              <button class="subtab" data-action="subtab" data-group="system" data-sub="master">${this._t('subtab_master_ota')}</button>
+              <button class="subtab" data-action="subtab" data-group="system" data-sub="connection">${this._t('subtab_connection_backup')}</button>
+            </nav>
+
+            <div class="subpage nested active" data-subpage="system" data-sub="module">
+              <div class="card system-card">
+                <div class="system-group">
+                  <div class="system-group-head">
+                    <h3 class="system-group-title">${this._t('system_group_ota')}</h3>
+                    <span class="status-badge" id="otaInstalled">${this._t('firmware_installed_unknown')}</span>
+                  </div>
+                  <div class="ota-grid">
+                    <label class="field">
+                      <span>${this._t('firmware_target_module')}</span>
+                      <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
+                      <datalist id="otaModuleList"></datalist>
+                    </label>
+                    <label class="field">
+                      <span>${this._t('firmware_release_select')}</span>
+                      <span class="inline-field">
+                        <select id="firmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
+                        <button type="button" class="icon-action" data-action="refresh-firmware-releases" title="${escapeAttr(this._t('firmware_release_refresh'))}" aria-label="${escapeAttr(this._t('firmware_release_refresh'))}">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                            <polyline points="21 3 21 9 15 9"></polyline>
+                          </svg>
+                        </button>
+                      </span>
+                      <span class="ota-meta" id="firmwareReleaseInfo">${this._t('firmware_release_loading')}</span>
+                    </label>
+                  </div>
+                  <div class="actions">
+                    <button class="btn" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
+                    <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
+                    <button class="btn cancel" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
+                  </div>
+                  <div class="muted" id="otaBulkStatus"></div>
+                  <div class="ota-progress"><span id="otaBar"></span></div>
+                  <div class="muted" id="otaStatus">${this._t('ota_state_idle')}</div>
+                  <details>
+                    <summary>${this._t('firmware_release_local_title')}</summary>
+                    <div class="advanced-box">
+                      <input id="otaFile" type="file" accept=".hex,text/plain">
+                      <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                      <span class="muted">${this._t('firmware_release_local_help')}</span>
+                    </div>
+                  </details>
                 </div>
-                <div class="ota-grid">
-                  <label class="field">
-                    <span>${this._t('firmware_target_module')}</span>
-                    <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
-                    <datalist id="otaModuleList"></datalist>
-                  </label>
+              </div>
+            </div>
+
+            <div class="subpage nested" data-subpage="system" data-sub="master">
+              <div class="card system-card">
+                <div class="system-group">
+                  <div class="system-group-head">
+                    <h3 class="system-group-title">${this._t('master_ota_title')}</h3>
+                    <span class="status-badge" id="masterOtaInstalled">${this._t('master_version')}: ${this._t('unknown')}</span>
+                  </div>
                   <label class="field">
                     <span>${this._t('firmware_release_select')}</span>
                     <span class="inline-field">
-                      <select id="firmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
-                      <button type="button" class="icon-action" data-action="refresh-firmware-releases" title="${escapeAttr(this._t('firmware_release_refresh'))}" aria-label="${escapeAttr(this._t('firmware_release_refresh'))}">
+                      <select id="masterFirmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
+                      <button type="button" class="icon-action" data-action="refresh-master-firmware-releases" title="${escapeAttr(this._t('firmware_release_refresh'))}" aria-label="${escapeAttr(this._t('firmware_release_refresh'))}">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                           <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
                           <polyline points="21 3 21 9 15 9"></polyline>
                         </svg>
                       </button>
                     </span>
-                    <span class="ota-meta" id="firmwareReleaseInfo">${this._t('firmware_release_loading')}</span>
+                    <span class="ota-meta" id="masterFirmwareReleaseInfo">${this._t('firmware_release_loading')}</span>
                   </label>
-                </div>
-                <div class="actions">
-                  <button class="btn" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
-                  <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
-                  <button class="btn cancel" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
-                </div>
-                <div class="muted" id="otaBulkStatus"></div>
-                <div class="ota-progress"><span id="otaBar"></span></div>
-                <div class="muted" id="otaStatus">${this._t('ota_state_idle')}</div>
-                <details>
-                  <summary>${this._t('firmware_release_local_title')}</summary>
-                  <div class="advanced-box">
-                    <input id="otaFile" type="file" accept=".hex,text/plain">
-                    <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
-                    <span class="muted">${this._t('firmware_release_local_help')}</span>
+                  <div class="actions">
+                    <button class="btn" data-action="flash-master-firmware-release">${this._t('firmware_release_flash')}</button>
+                    <button class="btn cancel" data-action="cancel-master-firmware" disabled>${this._t('cancel')}</button>
                   </div>
-                </details>
+                  <div class="ota-progress hidden"><span id="masterOtaBar"></span></div>
+                  <div class="muted" id="masterOtaStatus">${this._t('master_ota_state_idle')}</div>
+                  <details>
+                    <summary>${this._t('master_ota_local_title')}</summary>
+                    <div class="advanced-box">
+                      <input id="masterOtaFile" type="file" accept=".bin,application/octet-stream">
+                      <label class="field">
+                        <span>${this._t('master_ota_expected_version')}</span>
+                        <input id="masterOtaExpectedVersion" type="text" placeholder="1.2.0.0">
+                      </label>
+                      <button class="btn secondary" data-action="flash-master-firmware">${this._t('master_ota_flash_local')}</button>
+                      <span class="muted">${this._t('master_ota_local_help')}</span>
+                    </div>
+                  </details>
+                  <small class="muted">${this._t('master_ota_recovery_hint')}</small>
+                </div>
               </div>
+            </div>
 
-              <div class="system-group">
-                <div class="system-group-head">
-                  <h3 class="system-group-title">${this._t('system_group_backup')}</h3>
-                  <span class="system-group-hint">${this._t('system_hint_backup')}</span>
+            <div class="subpage nested" data-subpage="system" data-sub="connection">
+              <div class="card system-card">
+                <div class="system-group">
+                  <div class="system-group-head">
+                    <h3 class="system-group-title">${this._t('system_group_backup')}</h3>
+                    <span class="system-group-hint">${this._t('system_hint_backup')}</span>
+                  </div>
+                  <div class="actions">
+                    <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
+                    <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
+                    <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+                  </div>
+                  <div class="muted" id="backupStatus"></div>
                 </div>
-                <div class="actions">
-                  <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
-                  <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
-                  <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
-                </div>
-                <div class="muted" id="backupStatus"></div>
-              </div>
 
-              <div class="system-group">
-                <div class="system-group-head">
-                  <h3 class="system-group-title">${this._t('system_group_connection')}</h3>
-                </div>
-                <div class="kv-grid">
-                  <div class="kv">
-                    <span class="kv-label">${this._t('master')}</span>
-                    <span class="kv-value" id="connMaster">${this._t('waiting_state')}</span>
-                    <span class="kv-note" id="connMasterNote"></span>
+                <div class="system-group">
+                  <div class="system-group-head">
+                    <h3 class="system-group-title">${this._t('system_group_connection')}</h3>
                   </div>
-                  <div class="kv">
-                    <span class="kv-label">${this._t('mqtt_prefix')}</span>
-                    <span class="kv-value" id="connMqtt">—</span>
-                    <span class="kv-note" id="connMqttNote"></span>
-                  </div>
-                  <div class="kv">
-                    <span class="kv-label">${this._t('hardware')}</span>
-                    <span class="kv-value" id="connHardware">—</span>
-                    <span class="kv-note" id="connHardwareNote"></span>
-                  </div>
-                  <div class="kv">
-                    <span class="kv-label">${this._t('engine')}</span>
-                    <span class="kv-value" id="connEngine">—</span>
-                    <span class="kv-note" id="connEngineNote"></span>
+                  <div class="kv-grid">
+                    <div class="kv">
+                      <span class="kv-label">${this._t('master')}</span>
+                      <span class="kv-value" id="connMaster">${this._t('waiting_state')}</span>
+                      <span class="kv-note" id="connMasterNote"></span>
+                    </div>
+                    <div class="kv">
+                      <span class="kv-label">${this._t('mqtt_prefix')}</span>
+                      <span class="kv-value" id="connMqtt">—</span>
+                      <span class="kv-note" id="connMqttNote"></span>
+                    </div>
+                    <div class="kv">
+                      <span class="kv-label">${this._t('hardware')}</span>
+                      <span class="kv-value" id="connHardware">—</span>
+                      <span class="kv-note" id="connHardwareNote"></span>
+                    </div>
+                    <div class="kv">
+                      <span class="kv-label">${this._t('engine')}</span>
+                      <span class="kv-value" id="connEngine">—</span>
+                      <span class="kv-note" id="connEngineNote"></span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -711,7 +766,9 @@ export const PanelMixin = (Base) =>
         state
       );
       const bulk = this._bulkOta ? this._bulkOta.view() : { running: false };
-      const busy = active || this._otaBusy || bulk.running;
+      const masterBusy =
+        typeof this._masterSlotBusy === "function" && this._masterSlotBusy();
+      const busy = active || this._otaBusy || bulk.running || masterBusy;
       const cancelBtn = this.shadowRoot.querySelector(
         '[data-action="cancel-firmware"]'
       );
@@ -797,6 +854,162 @@ export const PanelMixin = (Base) =>
       if (percent != null) parts.push(`${percent}%`);
       let text = parts.join(" — ");
       if (ota.error) text += ` — ${ota.error}`;
+      status.textContent = text;
+    }
+
+    _renderMasterOtaInstalled() {
+      const node = this.shadowRoot.getElementById("masterOtaInstalled");
+      if (!node) return;
+      const coordinator = this._coordinator() || {};
+      const version = coordinator.master_version;
+      if (!version) {
+        node.textContent = this._t("master_ota_installed_unknown");
+        return;
+      }
+      const compat = this._compat().masterMqtt;
+      node.textContent = formatMessage(this._t("master_ota_installed"), {
+        version,
+        compat: compat == null ? this._t("unknown") : compat,
+      });
+    }
+
+    _selectedMasterFirmwareRelease() {
+      const select = this.shadowRoot.getElementById("masterFirmwareRelease");
+      if (!select) return null;
+      const releases = (this._masterFirmwareReleases || {}).releases || [];
+      return releases.find((release) => release.tag === select.value) || null;
+    }
+
+    _renderMasterFirmwareReleaseInfo() {
+      const node = this.shadowRoot.getElementById("masterFirmwareReleaseInfo");
+      if (!node) return;
+      const data = this._masterFirmwareReleases;
+      if (!data || !Array.isArray(data.releases)) {
+        node.textContent = this._t("firmware_release_loading");
+        return;
+      }
+      if (!data.releases.length) {
+        node.textContent = this._t("firmware_release_none");
+        return;
+      }
+      const release = this._selectedMasterFirmwareRelease();
+      if (!release) {
+        node.textContent = this._t("master_ota_select_release");
+        return;
+      }
+      const parts = [
+        formatMessage(this._t("master_release_summary"), {
+          version: release.version || "—",
+          mqtt: release.mqtt_compat == null ? this._t("unknown") : release.mqtt_compat,
+          bus: release.bus_compat == null ? this._t("unknown") : release.bus_compat,
+        }),
+      ];
+      if (release.notes) {
+        parts.push(
+          formatMessage(this._t("master_release_notes"), { notes: release.notes })
+        );
+      }
+      if (data.stale) parts.push(this._t("firmware_release_stale"));
+      const compat = release.compatibility || {};
+      if (compat.level) {
+        parts.push(this._t(`firmware_release_compat_${compat.level}`));
+      }
+      for (const code of compat.codes || []) {
+        parts.push(this._t(code));
+      }
+      node.textContent = parts.join(" — ");
+    }
+
+    _renderMasterFirmwareReleases() {
+      const select = this.shadowRoot.getElementById("masterFirmwareRelease");
+      if (!select) return;
+      const data = this._masterFirmwareReleases;
+      const releases = (data && data.releases) || [];
+      const signature = [
+        data && data.stale ? "stale" : "fresh",
+        ...releases.map(
+          (release) =>
+            `${release.tag}:${release.version}:${release.published_at}:${release.compatibility?.level}`
+        ),
+      ].join("|");
+      if (select.dataset.signature !== signature) {
+        const previous = select.value;
+        select.innerHTML = releases.length
+          ? releases
+              .map(
+                (release) =>
+                  `<option value="${escapeAttr(release.tag)}">${escapeHtml(
+                    formatMessage(this._t("master_release_option"), {
+                      version: release.version || "—",
+                      channel: this._t(
+                        `firmware_release_channel_${release.channel || "stable"}`
+                      ),
+                    })
+                  )}</option>`
+              )
+              .join("")
+          : `<option value="">${escapeHtml(
+              this._t("firmware_release_none")
+            )}</option>`;
+        select.dataset.signature = signature;
+        if (releases.some((release) => release.tag === previous)) {
+          select.value = previous;
+        } else {
+          const preferred =
+            releases.find((release) => release.channel === "stable") ||
+            releases[0];
+          if (preferred) select.value = preferred.tag;
+        }
+      }
+      this._renderMasterFirmwareReleaseInfo();
+    }
+
+    _renderMasterOta() {
+      const flow = this._masterOta ? this._masterOta.view() : null;
+      this._renderMasterOtaInstalled();
+      if (!flow) return;
+
+      const state = flow.state;
+      const phase = flow.phase || "idle";
+      const active = ["collecting", "applying", "rebooting"].includes(phase);
+      const busy = state === "running" || active;
+
+      const cancelBtn = this.shadowRoot.querySelector(
+        '[data-action="cancel-master-firmware"]'
+      );
+      if (cancelBtn) cancelBtn.disabled = phase !== "collecting";
+      for (const action of [
+        "flash-master-firmware-release",
+        "flash-master-firmware",
+      ]) {
+        const button = this.shadowRoot.querySelector(`[data-action="${action}"]`);
+        if (button) button.disabled = busy;
+      }
+
+      const bar = this.shadowRoot.getElementById("masterOtaBar");
+      if (bar) {
+        const track = bar.parentElement;
+        if (track) track.classList.toggle("hidden", !busy);
+        bar.style.width = busy && flow.progress != null ? `${flow.progress}%` : "0%";
+      }
+
+      const status = this.shadowRoot.getElementById("masterOtaStatus");
+      if (!status) return;
+      let text = this._t(`master_ota_state_${phase}`);
+      if (state === "running" && phase === "uploading") {
+        text = this._t("master_ota_uploading");
+      } else if (state === "running" && flow.remainingSeconds != null) {
+        text = `${text} — ${formatMessage(this._t("master_ota_remaining"), {
+          seconds: flow.remainingSeconds,
+        })}`;
+      }
+      if (flow.error) {
+        text += ` — ${
+          flow.error.startsWith("master_ota_") || flow.error.startsWith("master_")
+            ? this._t(flow.error)
+            : flow.error
+        }`;
+      }
       status.textContent = text;
     }
 

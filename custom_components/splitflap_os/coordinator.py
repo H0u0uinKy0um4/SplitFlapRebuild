@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import logging
 import zlib
@@ -35,6 +36,11 @@ from .const import (
     PANEL_URL_PATH,
     STORAGE_SAVE_DELAY,
     signal_update,
+)
+from .master_ota import (
+    MASTER_OTA_CHUNK_BYTES,
+    MASTER_OTA_MAX_SIZE,
+    MASTER_OTA_STATES_ACTIVE,
 )
 from .module_status import (
     ModuleStatus,
@@ -129,6 +135,18 @@ class SplitFlapCoordinator:
     @property
     def modules_count(self) -> int:
         return self.status.modules_count
+
+    @property
+    def master_ota(self) -> dict[str, Any]:
+        """Normalized ESP32 self-update status (always present)."""
+
+        return self.status.master_ota
+
+    @property
+    def master_ip(self) -> str | None:
+        """Last address reported for manual ArduinoOTA recovery."""
+
+        return self.status.master_ip
 
     @property
     def master_version(self) -> str | None:
@@ -551,6 +569,11 @@ class SplitFlapCoordinator:
             raise ValueError("module id must be a number between 1 and 255")
         if not self.online:
             raise ValueError("the split-flap master is offline")
+        master_state = str(self.status.master_ota.get("state") or "idle")
+        if master_state in MASTER_OTA_STATES_ACTIVE:
+            raise ValueError(
+                f"a master firmware session is already running ({master_state})"
+            )
         if not image:
             raise ValueError("the firmware image is empty")
         if len(image) > OTA_APP_MAX_SIZE:
@@ -575,6 +598,100 @@ class SplitFlapCoordinator:
             "size": len(image),
             "chunks": (len(image) + OTA_CHUNK_BYTES - 1) // OTA_CHUNK_BYTES,
             "crc32": f"{zlib.crc32(image) & 0xFFFFFFFF:08X}",
+        }
+
+    # ------------------------------------------------------------------
+    # Master self-update (MQTT, independent of the slave RS485 chain)
+    # ------------------------------------------------------------------
+
+    def _assert_firmware_slot_free(self) -> None:
+        """Only one firmware operation may own the master at a time."""
+
+        if not self.online:
+            raise ValueError("the split-flap master is offline")
+        slave_state = str(self.status.ota.get("state") or "idle")
+        if slave_state in OTA_STATES_ACTIVE:
+            raise ValueError(f"a module OTA session is already running ({slave_state})")
+        master_state = str(self.status.master_ota.get("state") or "idle")
+        if master_state in MASTER_OTA_STATES_ACTIVE:
+            raise ValueError(
+                f"a master firmware session is already running ({master_state})"
+            )
+
+    async def async_master_firmware_begin(
+        self, *, version: str, sha256: str, size: int
+    ) -> None:
+        """Start a master self-update collection."""
+
+        await self._publish(
+            "master_firmware",
+            {
+                "action": "begin",
+                "version": str(version or ""),
+                "sha256": str(sha256),
+                "size": int(size),
+            },
+        )
+
+    async def async_master_firmware_chunk(self, data: bytes | str) -> None:
+        """Append one base64 image slice to the master's staging file."""
+
+        encoded = data if isinstance(data, str) else base64.b64encode(data).decode("ascii")
+        await self._publish("master_firmware", {"action": "chunk", "data": encoded})
+
+    async def async_master_firmware_flash(self) -> None:
+        """Apply the staged image; the master reboots automatically."""
+
+        await self._publish("master_firmware", {"action": "flash"})
+
+    async def async_master_firmware_cancel(self) -> None:
+        """Discard a staged image; ignored once the flash has started."""
+
+        await self._publish("master_firmware", {"action": "cancel"})
+
+    async def async_flash_master_image(
+        self,
+        image: bytes,
+        *,
+        version: str | None = None,
+        sha256: str | None = None,
+    ) -> dict[str, Any]:
+        """Ship an app-only ESP32 image and start the master self-update.
+
+        ``sha256`` is checked against the local image before publishing so a
+        corrupt download never reaches the master. Success here only means the
+        commands were sent; callers confirm the new version after reboot.
+        """
+
+        if not image:
+            raise ValueError("the firmware image is empty")
+        if len(image) > MASTER_OTA_MAX_SIZE:
+            raise ValueError(
+                f"the firmware image is {len(image)} bytes, larger than the "
+                f"{MASTER_OTA_MAX_SIZE}-byte master application limit"
+            )
+        digest = hashlib.sha256(image).hexdigest()
+        if sha256 and str(sha256).lower() != digest:
+            raise ValueError("master_firmware_checksum_mismatch")
+        self._assert_firmware_slot_free()
+
+        await self.async_master_firmware_begin(
+            version=version or "", sha256=digest, size=len(image)
+        )
+        for offset in range(0, len(image), MASTER_OTA_CHUNK_BYTES):
+            await self.async_master_firmware_chunk(
+                image[offset : offset + MASTER_OTA_CHUNK_BYTES]
+            )
+        await self.async_master_firmware_flash()
+
+        return {
+            "ok": True,
+            "size": len(image),
+            "chunks": (
+                (len(image) + MASTER_OTA_CHUNK_BYTES - 1) // MASTER_OTA_CHUNK_BYTES
+            ),
+            "sha256": digest,
+            "version": version or None,
         }
 
     async def _wait_for_drum(

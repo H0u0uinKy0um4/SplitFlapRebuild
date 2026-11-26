@@ -20,9 +20,13 @@ Master obě strany propojuje, takže nese obě čísla. Protokol bootloaderu OTA
 
 ```text
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
-master   <bus>.<mqtt>.<vydání>        1.1.0.1    bus 1, mqtt 1, vydání 0.1
-HA       <mqtt>.<vydání>              1.2.24     mqtt 1, vydání 2.24
+master   <bus>.<mqtt>.<vydání>        1.2.0.0    bus 1, mqtt 2, vydání 0.0
+HA       <mqtt>.<vydání>              2.0.0      mqtt 2, vydání 0.0
 ```
+
+Verzi s MQTT generací 2 koordinují všechny tři repozitáře pod značkou
+`mqtt-compat-2`. Verze masteru je `1.2.0.0`, Home Assistant `2.0.0`. Firmware
+modulu MQTT generaci nenese.
 
 ## Kontroly
 
@@ -32,6 +36,11 @@ HA       <mqtt>.<vydání>              1.2.24     mqtt 1, vydání 2.24
   `compat`) s vlastním `MQTT_COMPAT`.
 - Neshoda zobrazí upozornění, ale nezablokuje zobrazení, zrušení OTA ani reset
   modulu.
+- [OTA masteru](master-ota.md) je přísnější: `mqtt_compat` verze musí odpovídat
+  integraci i připojenému masteru. Známá neshoda zápis zablokuje, neznámá
+  generace masteru upozorní. Jedinou výjimkou je přepínač
+  `Debug: allow incompatible firmware`, který známou neshodu převede na
+  upozornění, ne na vyhovující kompatibilitu.
 - Pokud master verzi vůbec nehlásí, panel ji označí jako neznámou a nebude
   předpokládat kompatibilitu.
 - Generace sběrnice masteru je pro běžný provoz jen diagnostická; Home Assistant
@@ -66,3 +75,4 @@ Seznam souborů a validační příkazy jsou ve [vývoji](../setup/development.m
 
 - [Vývoj](../setup/development.md)
 - [Přehled protokolu](overview.md)
+- [OTA masteru](master-ota.md)

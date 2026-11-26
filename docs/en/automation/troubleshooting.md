@@ -31,6 +31,20 @@
 | Version warning | The master's `mqtt_compat` differs from `MQTT_COMPAT`. See [versioning](../protocol/versioning.md). |
 | Module looks offline right after a move | Expected: moves block the bus and the refresh is deferred by 5 s. |
 
+## Master OTA problems
+
+| Symptom | Check |
+| --- | --- |
+| Master release list is empty | Master firmware must publish `mqtt_compat` 2; check GitHub Releases for a `master-app` manifest with `firmware.bin`. |
+| Flash is blocked by compatibility | The release `mqtt_compat` must match both this integration (2) and the connected master. Only the debug switch downgrades a known mismatch to a warning. |
+| Master does not reconnect | Wait up to five minutes for the expected version. The master rolls back a bad image automatically; if it still does not answer, use manual ArduinoOTA at host `SplFlp_Master`, port 3232, password from `OTA_PASSWORD`. |
+| Local BIN upload warns about the version | No expected version was supplied, so only the reconnect is confirmed. Provide the version for a full check. |
+| Master flash is refused while flashing a module | Master OTA and slave OTA share one slot. Wait for the module session to finish. |
+| Cancel does nothing | Cancel is accepted only while the master is collecting. After `flash` it reboots automatically; there is no reset action. |
+
+The panel never connects to the master's IP or the ArduinoOTA port; see
+[master OTA](../protocol/master-ota.md) for the full contract.
+
 ## Debug logging
 
 ```yaml
@@ -69,10 +83,13 @@ session, bus).
 - **Control** — send text and watch the preview.
 - **Apps** — cards show why an app is unavailable.
 - **Tuning → Commands** — module online state, home, goto, steps.
-- **Settings → System** — connection details, versions, backup/restore.
+- **Settings → System → Module OTA** — slave releases, flash, progress.
+- **Settings → System → Master OTA** — master releases, local BIN, reconnect countdown.
+- **Settings → System → Connection & Backup** — connection details, versions, backup/restore.
 
 ## See also
 
 - [Services](../use/services.md)
 - [Protocol overview](../protocol/overview.md#diagnostics)
+- [Master OTA](../protocol/master-ota.md)
 - [YAML examples](examples.md)

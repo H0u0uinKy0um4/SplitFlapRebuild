@@ -23,17 +23,22 @@ from typing import Any, Awaitable, Callable, Mapping
 
 try:  # package import (Home Assistant)
     from .firmware import FirmwareImageError, image_from_hex
+    from .master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from .ota import OTA_PROTOCOL_VERSION
 except ImportError:  # direct import in the host tests (component dir on sys.path)
     from firmware import FirmwareImageError, image_from_hex
+    from master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from ota import OTA_PROTOCOL_VERSION
 
 DEFAULT_REPOSITORY: str = "H0u0uinKy0um4/SplFlp_Slave_Attiny"
+MASTER_DEFAULT_REPOSITORY: str = "H0u0uinKy0um4/SplFlp_Master"
 GITHUB_API_ROOT: str = "https://api.github.com"
 MANIFEST_SCHEMA: int = 1
 MANIFEST_KIND: str = "slave-app"
+MASTER_MANIFEST_KIND: str = "master-app"
 MANIFEST_NAME: str = "firmware.json"
 IMAGE_NAME: str = "firmware.hex"
+MASTER_IMAGE_NAME: str = "firmware.bin"
 RELEASE_LIMIT: int = 12
 DEFAULT_TTL_SECONDS: int = 600
 
@@ -42,6 +47,7 @@ _CHANNELS = frozenset({"dev", "stable"})
 
 FetchJson = Callable[[str], Awaitable[Any]]
 FetchText = Callable[[str], Awaitable[str]]
+FetchBytes = Callable[[str], Awaitable[bytes]]
 Clock = Callable[[], datetime]
 
 
@@ -106,6 +112,36 @@ class FirmwareRelease:
             "bootloader_version": self.bootloader_version,
             "source_commit": self.source_commit,
             "built_at": self.built_at,
+            "published_at": self.published_at,
+        }
+        if compatibility is not None:
+            result["compatibility"] = compatibility.as_dict()
+        return result
+
+
+@dataclass(frozen=True)
+class MasterFirmwareRelease:
+    """One validated master ``firmware.json`` plus its app-only image URL."""
+
+    tag: str
+    published_at: str
+    channel: str
+    version: str
+    mqtt_compat: int
+    bus_compat: int
+    sha256: str
+    notes: str
+    image_url: str
+    manifest_url: str
+
+    def as_dict(self, compatibility: Compatibility | None = None) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "tag": self.tag,
+            "channel": self.channel,
+            "version": self.version,
+            "mqtt_compat": self.mqtt_compat,
+            "bus_compat": self.bus_compat,
+            "notes": self.notes,
             "published_at": self.published_at,
         }
         if compatibility is not None:
@@ -193,6 +229,89 @@ def parse_manifest(
     )
 
 
+def _manifest_text(payload: Mapping[str, Any], key: str) -> str:
+    """A required string field which may carry an empty release note."""
+
+    value = payload.get(key)
+    if not isinstance(value, str):
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", f"{key} must be a string"
+        )
+    return value.strip()
+
+
+def parse_master_manifest(
+    payload: Any,
+    *,
+    tag: str,
+    published_at: str,
+    image_url: str,
+    manifest_url: str,
+) -> MasterFirmwareRelease:
+    """Validate one master ``firmware.json`` document.
+
+    The master image is a raw app-only ``.bin``. Its MQTT compat generation is
+    a gate; the bus generation is diagnostic only, because Home Assistant
+    never speaks RS485.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "manifest is not an object"
+        )
+    if payload.get("schema") != MANIFEST_SCHEMA:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "unsupported manifest schema"
+        )
+    if payload.get("kind") != MASTER_MANIFEST_KIND:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "unsupported manifest kind"
+        )
+    if payload.get("image") != MASTER_IMAGE_NAME:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "unexpected master image asset name"
+        )
+
+    channel = _required_text(payload, "channel")
+    if channel not in _CHANNELS:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "unknown release channel"
+        )
+
+    version = _required_text(payload, "version")
+    if master_mqtt_from_version(version) is None:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid",
+            "master version must be <bus>.<mqtt>.<release>",
+        )
+    mqtt_compat = _optional_int(payload, "mqtt_compat")
+    bus_compat = _optional_int(payload, "bus_compat")
+    if mqtt_compat is None or bus_compat is None:
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid",
+            "mqtt_compat and bus_compat are required",
+        )
+
+    sha256 = _required_text(payload, "sha256")
+    if not _SHA256_PATTERN.fullmatch(sha256):
+        raise FirmwareReleaseError(
+            "firmware_release_manifest_invalid", "sha256 is not a hex digest"
+        )
+
+    return MasterFirmwareRelease(
+        tag=tag,
+        published_at=published_at,
+        channel=channel,
+        version=version,
+        mqtt_compat=mqtt_compat,
+        bus_compat=bus_compat,
+        sha256=sha256.lower(),
+        notes=_manifest_text(payload, "notes"),
+        image_url=image_url,
+        manifest_url=manifest_url,
+    )
+
+
 def releases_url(repository: str) -> str:
     """Return the GitHub Releases API URL for ``owner/repo``."""
 
@@ -214,20 +333,30 @@ def _asset_url(assets: Any, name: str) -> str | None:
 async def releases_from_payload(
     payload: Any,
     fetch_text: FetchText,
-) -> list[FirmwareRelease]:
-    """Build validated releases from a GitHub Releases API response."""
+    *,
+    kind: str = MANIFEST_KIND,
+) -> list[FirmwareRelease | MasterFirmwareRelease]:
+    """Build validated releases from a GitHub Releases API response.
+
+    The requested ``kind`` selects both the image asset and the manifest
+    parser; a release is never chosen by repository name.
+    """
 
     if not isinstance(payload, list):
         raise FirmwareReleaseError(
             "firmware_release_unavailable", "GitHub returned an unexpected payload"
         )
+    image_name = (
+        MASTER_IMAGE_NAME if kind == MASTER_MANIFEST_KIND else IMAGE_NAME
+    )
+    parse = parse_master_manifest if kind == MASTER_MANIFEST_KIND else parse_manifest
 
-    releases: list[FirmwareRelease] = []
+    releases: list[FirmwareRelease | MasterFirmwareRelease] = []
     for raw in payload:
         if not isinstance(raw, Mapping):
             continue
         tag = raw.get("tag_name")
-        image_url = _asset_url(raw.get("assets"), IMAGE_NAME)
+        image_url = _asset_url(raw.get("assets"), image_name)
         manifest_url = _asset_url(raw.get("assets"), MANIFEST_NAME)
         if not isinstance(tag, str) or not tag:
             continue
@@ -241,7 +370,7 @@ async def releases_from_payload(
             manifest = await fetch_text(manifest_url)
             document = json.loads(manifest)
             releases.append(
-                parse_manifest(
+                parse(
                     document,
                     tag=tag,
                     published_at=published_at,
@@ -327,6 +456,70 @@ def check_compatibility(
     return Compatibility(level=level, codes=tuple(codes), details=details)
 
 
+def check_master_versions(
+    *,
+    image_mqtt: int,
+    mqtt_compat: int,
+    master_mqtt_compat: int | None = None,
+    allow_incompatible: bool = False,
+    image_bus: int | None = None,
+) -> Compatibility:
+    """Gate a master image against both MQTT compat generations.
+
+    The bus generation is copied into ``details`` for diagnostics only: Home
+    Assistant never speaks RS485, so it cannot gate on it.
+    """
+
+    codes: list[str] = []
+    blocking: list[str] = []
+    details: dict[str, Any] = {
+        "image_mqtt": image_mqtt,
+        "local_mqtt": mqtt_compat,
+        "master_mqtt": master_mqtt_compat,
+        "image_bus": image_bus,
+    }
+
+    if image_mqtt != mqtt_compat:
+        blocking.append("master_release_mqtt_mismatch")
+    if master_mqtt_compat is None:
+        codes.append("master_release_master_mqtt_unknown")
+    elif image_mqtt != master_mqtt_compat:
+        blocking.append("master_release_master_mqtt_mismatch")
+
+    codes = blocking + [code for code in codes if code not in blocking]
+    if blocking:
+        codes.append("master_release_blocked")
+        if allow_incompatible:
+            codes.append("firmware_release_override_used")
+            level = "warn"
+        else:
+            level = "block"
+    elif codes:
+        level = "warn"
+    else:
+        level = "ok"
+
+    return Compatibility(level=level, codes=tuple(codes), details=details)
+
+
+def check_master_compatibility(
+    release: MasterFirmwareRelease,
+    *,
+    mqtt_compat: int,
+    master_mqtt_compat: int | None = None,
+    allow_incompatible: bool = False,
+) -> Compatibility:
+    """Gate one master manifest with :func:`check_master_versions`."""
+
+    return check_master_versions(
+        image_mqtt=release.mqtt_compat,
+        mqtt_compat=mqtt_compat,
+        master_mqtt_compat=master_mqtt_compat,
+        allow_incompatible=allow_incompatible,
+        image_bus=release.bus_compat,
+    )
+
+
 class ReleaseCatalog:
     """Small in-memory catalog over the public GitHub Releases API."""
 
@@ -334,17 +527,28 @@ class ReleaseCatalog:
         self,
         fetch_json: FetchJson,
         fetch_text: FetchText,
+        fetch_bytes: FetchBytes | None = None,
         *,
-        repository: str = DEFAULT_REPOSITORY,
+        repository: str | None = None,
+        kind: str = MANIFEST_KIND,
         ttl_seconds: int = DEFAULT_TTL_SECONDS,
         clock: Clock | None = None,
     ) -> None:
         self._fetch_json = fetch_json
         self._fetch_text = fetch_text
-        self._url = releases_url(repository)
+        self._fetch_bytes = fetch_bytes
+        self._kind = kind
+        default_repository = (
+            MASTER_DEFAULT_REPOSITORY
+            if kind == MASTER_MANIFEST_KIND
+            else DEFAULT_REPOSITORY
+        )
+        self._url = releases_url(repository or default_repository)
         self._ttl_seconds = max(0, ttl_seconds)
         self._clock = clock or (lambda: datetime.now(timezone.utc))
-        self._releases: tuple[FirmwareRelease, ...] | None = None
+        self._releases: tuple[FirmwareRelease | MasterFirmwareRelease, ...] | None = (
+            None
+        )
         self._fetched_at: datetime | None = None
 
     def _fresh(self) -> bool:
@@ -353,14 +557,18 @@ class ReleaseCatalog:
         age = (self._clock() - self._fetched_at).total_seconds()
         return 0 <= age < self._ttl_seconds
 
-    async def _refresh(self) -> tuple[FirmwareRelease, ...]:
+    async def _refresh(self) -> tuple[FirmwareRelease | MasterFirmwareRelease, ...]:
         payload = await self._fetch_json(self._url)
-        releases = await releases_from_payload(payload, self._fetch_text)
+        releases = await releases_from_payload(
+            payload, self._fetch_text, kind=self._kind
+        )
         self._releases = tuple(releases)
         self._fetched_at = self._clock()
         return self._releases
 
-    async def _load(self, *, refresh: bool = False) -> tuple[tuple[FirmwareRelease, ...], bool, datetime | None]:
+    async def _load(
+        self, *, refresh: bool = False
+    ) -> tuple[tuple[FirmwareRelease | MasterFirmwareRelease, ...], bool, datetime | None]:
         if not refresh and self._fresh():
             assert self._releases is not None
             return self._releases, False, self._fetched_at
@@ -381,22 +589,41 @@ class ReleaseCatalog:
         refresh: bool = False,
         master_bus_compat: int | None = None,
         module_bus_compatible: bool | None = None,
+        mqtt_compat: int | None = None,
+        master_mqtt_compat: int | None = None,
         allow_incompatible: bool = False,
     ) -> dict[str, Any]:
         """Return the panel's release list with compatibility annotations."""
 
         releases, stale, fetched_at = await self._load(refresh=refresh)
-        items = [
-            release.as_dict(
-                check_compatibility(
-                    release,
-                    master_bus_compat=master_bus_compat,
-                    module_bus_compatible=module_bus_compatible,
-                    allow_incompatible=allow_incompatible,
+        if self._kind == MASTER_MANIFEST_KIND:
+            if mqtt_compat is None:
+                raise FirmwareReleaseError("firmware_release_unavailable")
+            items = [
+                release.as_dict(
+                    check_master_compatibility(
+                        release,
+                        mqtt_compat=mqtt_compat,
+                        master_mqtt_compat=master_mqtt_compat,
+                        allow_incompatible=allow_incompatible,
+                    )
                 )
-            )
-            for release in releases
-        ]
+                for release in releases
+                if isinstance(release, MasterFirmwareRelease)
+            ]
+        else:
+            items = [
+                release.as_dict(
+                    check_compatibility(
+                        release,
+                        master_bus_compat=master_bus_compat,
+                        module_bus_compatible=module_bus_compatible,
+                        allow_incompatible=allow_incompatible,
+                    )
+                )
+                for release in releases
+                if isinstance(release, FirmwareRelease)
+            ]
         return {
             "releases": items,
             "stale": stale,
@@ -404,7 +631,9 @@ class ReleaseCatalog:
             "count": len(items),
         }
 
-    async def get(self, tag: str, *, refresh: bool = True) -> FirmwareRelease:
+    async def get(
+        self, tag: str, *, refresh: bool = True
+    ) -> FirmwareRelease | MasterFirmwareRelease:
         """Return one release by GitHub tag."""
 
         releases, _stale, _fetched_at = await self._load(refresh=refresh)
@@ -413,8 +642,30 @@ class ReleaseCatalog:
                 return release
         raise FirmwareReleaseError("firmware_release_not_found")
 
-    async def fetch_image(self, release: FirmwareRelease) -> bytes:
+    async def fetch_image(
+        self, release: FirmwareRelease | MasterFirmwareRelease
+    ) -> bytes:
         """Download, checksum and validate one published application image."""
+
+        if isinstance(release, MasterFirmwareRelease):
+            if self._fetch_bytes is None:
+                raise FirmwareReleaseError(
+                    "firmware_release_image_invalid", "binary fetch is unavailable"
+                )
+            try:
+                image = await self._fetch_bytes(release.image_url)
+            except FirmwareReleaseError:
+                raise
+            except Exception as err:  # noqa: BLE001 - one code for network errors
+                raise FirmwareReleaseError(
+                    "firmware_release_unavailable", str(err)
+                ) from err
+            digest = hashlib.sha256(image).hexdigest()
+            if digest != release.sha256:
+                raise FirmwareReleaseError("firmware_release_checksum_mismatch")
+            if not image or len(image) > MASTER_OTA_MAX_SIZE:
+                raise FirmwareReleaseError("firmware_release_image_invalid")
+            return image
 
         try:
             text = await self._fetch_text(release.image_url)

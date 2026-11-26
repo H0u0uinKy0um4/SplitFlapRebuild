@@ -5,6 +5,8 @@
 This page covers the roles, the MQTT connection, and the status payload. Command
 payloads are in [commands](commands.md); board geometry is in
 [layout](layout.md); compatibility numbers are in [versioning](versioning.md).
+The two independent OTA channels are [slave OTA](ota.md) and
+[master OTA](master-ota.md).
 
 The wire protocol between master and slaves (RS485 framing, bootloader escaping,
 CRCs) belongs to the firmware repositories. Home Assistant never speaks it
@@ -35,7 +37,7 @@ Only one config entry is allowed, because the firmware is a single master.
 | --- | --- | --- |
 | Topic prefix | `splitflap` | Configurable during setup. Must not be empty or contain `+` / `#`. |
 | Status topic | `<prefix>/status` | JSON, retained by the master. |
-| Command topics | `<prefix>/command/{display,sync,scan,update,calibrate,firmware}` | JSON, not retained. |
+| Command topics | `<prefix>/command/{display,sync,scan,update,calibrate,firmware,master_firmware}` | JSON, not retained. `firmware` targets slave modules, `master_firmware` updates the ESP32 itself. |
 
 The integration subscribes to the status topic and marks the master offline after
 **90 seconds** without a payload. The master publishes a heartbeat every
@@ -53,10 +55,11 @@ Canonical shape (abridged):
 {
   "state": "online",
   "text": "HELLO",
-  "version": "1.1.0.1",
+  "version": "1.2.0.0",
   "bus_compat": 1,
-  "mqtt_compat": 1,
-  "compat": 1,
+  "mqtt_compat": 2,
+  "compat": 2,
+  "ip": "10.0.1.42",
   "scanning": false,
   "modules_count": 7,
   "modules": [
@@ -83,7 +86,8 @@ Canonical shape (abridged):
       "fw_compatible": true
     }
   ],
-  "ota": {"state": "idle"}
+  "ota": {"state": "idle"},
+  "master_ota": {"state": "idle"}
 }
 ```
 
@@ -97,10 +101,12 @@ Canonical shape (abridged):
 | `bus_compat` | int | Master's RS485 application generation. |
 | `mqtt_compat` | int | Master's MQTT schema generation. |
 | `compat` | int | Legacy alias for `mqtt_compat`. |
+| `ip` | string | Master's IP address, for diagnostics only. |
 | `scanning` | bool | A bus scan is in progress. |
 | `modules_count` | int | Modules the master knows about. Drives the board size. |
 | `modules` | array | Module objects, see below. |
 | `ota` | object | Slave OTA session state; see [slave OTA](ota.md). |
+| `master_ota` | object | Master self-update state; see [master OTA](master-ota.md). Always present after normalization. |
 
 ### Module fields
 
@@ -156,6 +162,8 @@ entering edge during every move. See
 | Module looks offline right after a move | Expected: the refresh is deferred by 5 s. |
 | `Cannot display: module N lacks 'X'` | The reported drum lacks the character. Nothing was sent. |
 | OTA rejected | Another session is active, the image is too large, or the bootloader protocol is unknown. |
+| Master OTA blocked | The release `mqtt_compat` differs from this integration or the connected master. See [master OTA](master-ota.md). |
+| Master OTA timed out | The master did not reconnect with the expected version within five minutes; use manual ArduinoOTA recovery. |
 | Version warning | Master `mqtt_compat` differs from `MQTT_COMPAT`. |
 
 More in [troubleshooting](../automation/troubleshooting.md).

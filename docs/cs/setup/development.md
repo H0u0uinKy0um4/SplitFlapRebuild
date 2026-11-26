@@ -21,8 +21,12 @@ python3 tests/test_layout.py
 python3 tests/test_positions.py
 python3 tests/test_translations.py
 python3 tests/test_ota.py
+python3 tests/test_master_ota.py
+python3 tests/test_module_status.py
+python3 tests/test_commands.py
 python3 tests/test_firmware_releases.py
 python3 tests/test_versions.py
+node --test tests/*.mjs
 ```
 
 ## Verze v jednom kroku
@@ -51,13 +55,19 @@ custom_components/splitflap_os/
 ├── coordinator.py       MQTT stav, normalizace, publikování
 ├── engine.py            smyčka displeje, playlisty, nastavení, záloha
 ├── entity.py            společná základna entit
-├── firmware.py          parsování Intel HEX pro OTA obrazy
+├── firmware.py          parsování Intel HEX pro OTA modulů
+├── firmware_releases.py manifesty verzí, katalogy, kontroly kompatibility
 ├── frontend/            JavaScript panelu v postranním menu
-│   └── panel/           core, components, actions, flap-display, views/
+│   └── panel/           core, components, actions, flap-display, views/,
+│                        bulk-ota-flow, calibration-flow, master-ota-flow
 ├── layout.py            čisté funkce pro text, rozvržení, pořadí a rotaci
 ├── manifest.json
+├── master_ota.py        kontrakt stavu a akcí aktualizace masteru
 ├── models.py            objekt Page
-├── ota.py               konstanty a normalizace OTA stavu/akcí
+├── module_status.py     normalizace a snímek stavu pro panel
+├── ota.py               konstanty a normalizace OTA stavu/akcí modulů
+├── positions.py         čisté funkce pro mapu pozic
+├── release_client.py    GitHub čtení manifestů a obrazů verzí
 ├── panel.py             registrace statické cesty a panelu
 ├── runtime.py           pomocník pro nalezení runtime
 ├── select.py            entita pro výběr aplikace

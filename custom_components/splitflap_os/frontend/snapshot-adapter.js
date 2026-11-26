@@ -208,6 +208,24 @@ const normalizeCompat = (state, coordinator) => {
   return { local, masterMqtt, masterBus, ok, missing: ok === null };
 };
 
+/** Master self-update status: every field always present, progress clamped. */
+const normalizeMasterOta = (raw) => {
+  const info = raw && typeof raw === "object" ? raw : {};
+  const state = String(info.state || "idle");
+  const progress = Number(info.progress);
+  return {
+    state,
+    progress: Number.isFinite(progress)
+      ? Math.max(0, Math.min(100, progress))
+      : null,
+    received: Number(info.received) || 0,
+    size: Number(info.size) || 0,
+    version: firstNonNull(info.version),
+    target_version: firstNonNull(info.target_version),
+    error: firstNonNull(info.error),
+  };
+};
+
 const normalizeModule = (raw, stockDrum) => {
   const module = raw && typeof raw === "object" ? raw : {};
   const flapList =
@@ -283,6 +301,8 @@ const normalizeCoordinator = (raw, state, stockDrum) => {
     master_compat: compatInfo.masterMqtt,
     mqtt_compat_ok: compatInfo.ok,
     compat_ok: compatInfo.ok,
+    master_ip: firstNonNull(coordinator.master_ip, coordinator.ip),
+    master_ota: normalizeMasterOta(coordinator.master_ota),
   };
 };
 

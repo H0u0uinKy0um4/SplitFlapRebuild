@@ -6,18 +6,36 @@ identity, so the whole command interface is testable under plain Python.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Mapping
 
 try:  # package import (Home Assistant)
     from .firmware import image_from_hex
-    from .firmware_releases import FirmwareReleaseError, check_compatibility
+    from .firmware_releases import (
+        Compatibility,
+        FirmwareReleaseError,
+        MasterFirmwareRelease,
+        check_compatibility,
+        check_master_compatibility,
+        check_master_versions,
+    )
+    from .master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from .ota import OTA_PROTOCOL_VERSION
     from .positions import normalize_position_map
 except ImportError:  # direct import in the host tests (component dir on sys.path)
     from firmware import image_from_hex
-    from firmware_releases import FirmwareReleaseError, check_compatibility
+    from firmware_releases import (
+        Compatibility,
+        FirmwareReleaseError,
+        MasterFirmwareRelease,
+        check_compatibility,
+        check_master_compatibility,
+        check_master_versions,
+    )
+    from master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from ota import OTA_PROTOCOL_VERSION
     from positions import normalize_position_map
 
@@ -259,6 +277,108 @@ async def _flash_firmware_release(
     }
 
 
+# ---------------------------------------------------------------------------
+# Master self-update
+# ---------------------------------------------------------------------------
+
+
+def _master_release_catalog(runtime: Mapping[str, Any]) -> Any:
+    catalog = runtime.get("master_release_catalog")
+    if catalog is None:
+        raise FirmwareReleaseError("firmware_release_unavailable")
+    return catalog
+
+
+def _master_mqtt_pair(runtime: Mapping[str, Any]) -> tuple[int, int | None]:
+    """Local MQTT generation plus the generation the master reports."""
+
+    coordinator = runtime["coordinator"]
+    snapshot = coordinator.snapshot()
+    local = snapshot.get("mqtt_compat")
+    if not isinstance(local, int):
+        raise FirmwareReleaseError("master_release_local_compat_unknown")
+    return local, coordinator.master_mqtt_compat
+
+
+async def _list_master_firmware_releases(
+    args: dict[str, Any], runtime: Mapping[str, Any]
+) -> Any:
+    local, reported = _master_mqtt_pair(runtime)
+    return await _master_release_catalog(runtime).list(
+        refresh=args["refresh"],
+        mqtt_compat=local,
+        master_mqtt_compat=reported,
+        allow_incompatible=_allow_incompatible(runtime),
+    )
+
+
+async def _flash_master_firmware(
+    args: dict[str, Any], runtime: Mapping[str, Any]
+) -> Any:
+    try:
+        image = base64.b64decode(args["base64"], validate=True)
+    except (binascii.Error, ValueError) as err:
+        raise ValueError("master_firmware_image_invalid") from err
+    if not image or len(image) > MASTER_OTA_MAX_SIZE:
+        raise ValueError("master_firmware_image_invalid")
+
+    local, reported = _master_mqtt_pair(runtime)
+    expected = str(args.get("version") or "").strip()
+    if expected:
+        image_mqtt = master_mqtt_from_version(expected)
+        if image_mqtt is None:
+            raise ValueError("master_release_version_invalid")
+        compatibility = check_master_versions(
+            image_mqtt=image_mqtt,
+            mqtt_compat=local,
+            master_mqtt_compat=reported,
+            allow_incompatible=_allow_incompatible(runtime),
+        )
+        if compatibility.blocked:
+            raise FirmwareReleaseError(compatibility.codes[0])
+    else:
+        compatibility = Compatibility(
+            level="warn",
+            codes=("master_release_version_unknown",),
+            details={"local_mqtt": local, "master_mqtt": reported},
+        )
+
+    result = await runtime["coordinator"].async_flash_master_image(
+        image,
+        version=expected or None,
+        sha256=args.get("sha256") or None,
+    )
+    return {**result, "compatibility": compatibility.as_dict()}
+
+
+async def _flash_master_firmware_release(
+    args: dict[str, Any], runtime: Mapping[str, Any]
+) -> Any:
+    local, reported = _master_mqtt_pair(runtime)
+    catalog = _master_release_catalog(runtime)
+    release = await catalog.get(args["release"], refresh=True)
+    if not isinstance(release, MasterFirmwareRelease):
+        raise FirmwareReleaseError("firmware_release_manifest_invalid")
+    compatibility = check_master_compatibility(
+        release,
+        mqtt_compat=local,
+        master_mqtt_compat=reported,
+        allow_incompatible=_allow_incompatible(runtime),
+    )
+    if compatibility.blocked:
+        raise FirmwareReleaseError(compatibility.codes[0])
+
+    image = await catalog.fetch_image(release)
+    result = await runtime["coordinator"].async_flash_master_image(
+        image, version=release.version, sha256=release.sha256
+    )
+    return {
+        **result,
+        "release": release.as_dict(),
+        "compatibility": compatibility.as_dict(),
+    }
+
+
 COMMANDS: dict[str, Command] = {
     "send_text": Command(
         (
@@ -361,6 +481,25 @@ COMMANDS: dict[str, Command] = {
     "reset_firmware": Command(
         (Field("module", "int"),),
         _call("coordinator", "async_firmware_reset", "module"),
+    ),
+    "list_master_firmware_releases": Command(
+        (Field("refresh", "bool", False),),
+        _list_master_firmware_releases,
+    ),
+    "flash_master_firmware": Command(
+        (
+            Field("base64", "str"),
+            Field("version", "str", ""),
+            Field("sha256", "str", None),
+        ),
+        _flash_master_firmware,
+    ),
+    "flash_master_firmware_release": Command(
+        (Field("release", "str"),),
+        _flash_master_firmware_release,
+    ),
+    "cancel_master_firmware": Command(
+        (), _call("coordinator", "async_master_firmware_cancel")
     ),
 }
 

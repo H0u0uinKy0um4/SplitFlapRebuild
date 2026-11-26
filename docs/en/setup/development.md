@@ -21,8 +21,12 @@ python3 tests/test_layout.py
 python3 tests/test_positions.py
 python3 tests/test_translations.py
 python3 tests/test_ota.py
+python3 tests/test_master_ota.py
+python3 tests/test_module_status.py
+python3 tests/test_commands.py
 python3 tests/test_firmware_releases.py
 python3 tests/test_versions.py
+node --test tests/*.mjs
 ```
 
 ## Version lockstep
@@ -52,13 +56,19 @@ custom_components/splitflap_os/
 ├── coordinator.py       MQTT state, normalization, publishing
 ├── engine.py            display loop, playlists, settings, backup
 ├── entity.py            shared entity base
-├── firmware.py          Intel HEX parsing for OTA images
+├── firmware.py          Intel HEX parsing for slave OTA images
+├── firmware_releases.py release manifests, catalogs, compatibility gates
 ├── frontend/            sidebar panel JavaScript
-│   └── panel/           core, components, actions, flap-display, views/
+│   └── panel/           core, components, actions, flap-display, views/,
+│                        bulk-ota-flow, calibration-flow, master-ota-flow
 ├── layout.py            pure text/layout/order/rotation helpers
 ├── manifest.json
+├── master_ota.py        master self-update status/action contract
 ├── models.py            Page object
-├── ota.py               OTA status/action constants and normalization
+├── module_status.py     normalization and snapshot for the panel
+├── ota.py               slave OTA status/action constants and normalization
+├── positions.py         pure position-map helpers
+├── release_client.py    GitHub fetchers for release manifests and images
 ├── panel.py             static path + panel registration
 ├── runtime.py           runtime lookup helper
 ├── select.py            app select entity

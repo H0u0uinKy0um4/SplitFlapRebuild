@@ -91,9 +91,18 @@ Poznámky:
   (`MOVE_SETTLE_MS`); neptejte se modulu hned po `goto`/`home`/`step`/`apply`,
   jinak se může jevit jako offline.
 
+## master_firmware
+
+Aktualizuje samotný ESP32 master; tento topic poslouchá jen firmware s MQTT
+kompatibilitou 2. Akce jsou `begin` (s `version`, `sha256`, `size`), `chunk`
+(s `data` v base64), `flash` a `cancel`. Akce `reset` neexistuje: při neúspěšném
+startu se master vrátí sám. Celý kontrakt, pole statusu a kontrola kompatibility
+jsou v [OTA masteru](master-ota.md).
+
 ## Viz také
 
 - [Přehled protokolu](overview.md)
 - [Skládání textu](text.md)
 - [OTA modulů](ota.md)
+- [OTA masteru](master-ota.md)
 - [Rozvržení a geometrie](layout.md)

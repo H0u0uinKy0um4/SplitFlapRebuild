@@ -22,7 +22,7 @@ Home Assistant                         ESP32 master                 Moduly
 | **Instalace** | [Instalace](docs/cs/setup/install.md), [Vývoj](docs/cs/setup/development.md) |
 | **Používání displeje** | [Panel a nastavení](docs/cs/use/panel.md), [Entity](docs/cs/use/entities.md), [Služby](docs/cs/use/services.md) |
 | **Automatizace** | [YAML příklady](docs/cs/automation/examples.md), [Kalibrace](docs/cs/automation/calibration.md), [Skripty a šablony](docs/cs/automation/scripts.md), [Řešení potíží](docs/cs/automation/troubleshooting.md) |
-| **Protokol** | [Přehled](docs/cs/protocol/overview.md), [Příkazy](docs/cs/protocol/commands.md), [Text](docs/cs/protocol/text.md), [OTA](docs/cs/protocol/ota.md), [Rozvržení](docs/cs/protocol/layout.md), [Verze](docs/cs/protocol/versioning.md) |
+| **Protokol** | [Přehled](docs/cs/protocol/overview.md), [Příkazy](docs/cs/protocol/commands.md), [Text](docs/cs/protocol/text.md), [OTA modulů](docs/cs/protocol/ota.md), [OTA masteru](docs/cs/protocol/master-ota.md), [Rozvržení](docs/cs/protocol/layout.md), [Verze](docs/cs/protocol/versioning.md) |
 | **Aplikace** | [Manifest](docs/cs/apps/manifest.md), [Tvorba aplikace](docs/cs/apps/authoring.md), [Příklady](docs/cs/apps/examples.md) |
 
 ## Požadavky
@@ -30,7 +30,9 @@ Home Assistant                         ESP32 master                 Moduly
 - Home Assistant 2024.11 nebo novější.
 - Integrace MQTT připojená ke brokeru, který používá master.
 - Firmware SplitFlap Master publikující `<prefix>/status` a poslouchající na
-  `<prefix>/command/{display,sync,scan,update,calibrate,firmware}`.
+  `<prefix>/command/{display,sync,scan,update,calibrate,firmware,master_firmware}`.
+  Aktualizace masteru (`master_firmware`) vyžaduje firmware masteru s MQTT
+  kompatibilitou 2; starší mastery dál fungují pro zobrazování a OTA modulů.
 
 ## Rychlý start
 
@@ -53,6 +55,9 @@ Home Assistant                         ESP32 master                 Moduly
 - Playlisty s textem, prodlevou, pořadím odesílání a smyčkou pro každou stránku.
 - Entity a služby pro automatizace, včetně přerušujících oznámení.
 - OTA firmware modulů přes MQTT; RS485 bootloader vlastní master.
+- Aktualizace ESP32 masteru z publikovaných verzí nebo z místního
+  `firmware.bin`, se dvěma OTA oddíly, automatickým vrácením a potvrzením
+  znovupřipojení.
 - Kontrola znaků proti bubnu každého modulu před odesláním.
 
 ## Verze
@@ -60,11 +65,14 @@ Home Assistant                         ESP32 master                 Moduly
 | Část | Formát | Příklad | Osa |
 | --- | --- | --- | --- |
 | Modul | `<bus>.<vydání>` | `1.0.1` | RS485 sběrnice |
-| Master | `<bus>.<mqtt>.<vydání>` | `1.1.0.1` | sběrnice + MQTT |
-| Home Assistant | `<mqtt>.<vydání>` | `1.2.24` | MQTT |
+| Master | `<bus>.<mqtt>.<vydání>` | `1.2.0.0` | sběrnice + MQTT |
+| Home Assistant | `<mqtt>.<vydání>` | `2.0.0` | MQTT |
 
-Neshoda v `mqtt_compat` zobrazí upozornění, ale nezastaví zobrazování. Podrobnosti:
-[verze](docs/cs/protocol/versioning.md).
+Neshoda v `mqtt_compat` zobrazí upozornění, ale nezastaví zobrazování. Aktualizace
+masteru navíc vyžaduje, aby generace MQTT integrace i připojeného masteru
+odpovídaly verzi; jedinou výjimkou je ladící přepínač. Podrobnosti:
+[verze](docs/cs/protocol/versioning.md) a
+[OTA masteru](docs/cs/protocol/master-ota.md).
 
 ## Poděkování a licence
 

@@ -16,6 +16,9 @@ export const PANEL = {
   subtab_display: "DISPLEJ",
   subtab_apps: "APLIKACE",
   subtab_system: "SYSTÉM",
+  subtab_module_ota: "OTA MODULŮ",
+  subtab_master_ota: "OTA MASTERU",
+  subtab_connection_backup: "PŘIPOJENÍ A ZÁLOHA",
   stop: "STOP",
   clear: "SMAZAT",
   save: "ULOŽIT",
@@ -254,6 +257,70 @@ export const PANEL = {
   firmware_release_flash_timeout: "Čekání na OTA relaci modulu vypršelo.",
   firmware_release_bulk_error: "Hromadnou operaci OTA se nepodařilo pokračovat.",
   firmware_release_no_modules: "Nebyly nalezeny žádné moduly. Nejprve spusťte prohledání sběrnice.",
+
+  // Aktualizace ESP32 masteru — Nastavení → Systém → OTA masteru.
+  master_ota_title: "FIRMWARE ESP32 MASTERU",
+  master_ota_installed: "Nainstalovaný master: {version} (kompatibilita MQTT {compat})",
+  master_ota_installed_unknown: "Nainstalovaná verze masteru: neznámá",
+  master_ota_state_idle: "Žádná relace aktualizace masteru.",
+  master_ota_state_uploading: "Přenos obrazu do masteru…",
+  master_ota_state_collecting: "Master přijímá obraz",
+  master_ota_state_applying: "Master aplikuje nový obraz",
+  master_ota_state_rebooting: "Master se restartuje",
+  master_ota_state_done: "Master se po aktualizaci znovu připojil",
+  master_ota_state_failed: "Aktualizace masteru selhala",
+  master_ota_state_cancelled: "Aktualizace masteru zrušena",
+  master_ota_uploading: "Přenos obrazu do masteru…",
+  master_ota_remaining: "zbývá {seconds}s na znovupřipojení",
+  master_ota_local_title: "Místní BIN (pokročilé)",
+  master_ota_local_help:
+    "Použít místně sestavený firmware.bin pouze s aplikací. Bez očekávané verze panel upozorní a potvrdí pouze znovupřipojení masteru.",
+  master_ota_expected_version: "Očekávaná verze",
+  master_ota_flash_local: "NAHRÁT DO MASTERU",
+  master_ota_recovery_hint:
+    "Pokud master přestane odpovídat, použijte ruční obnovení přes ArduinoOTA na portu 3232 (hostitel SplFlp_Master). Panel tento port nepoužívá.",
+  master_ota_release_confirm:
+    "Aktualizovat master na verzi {version}? Master se automaticky restartuje a znovu připojí; nevypínejte napájení.",
+  master_ota_local_confirm:
+    "Zapsat tento firmware.bin do masteru (očekávaná verze: {version})? Master se automaticky restartuje a znovu připojí.",
+  master_ota_success: "Master se znovu připojil s verzí {version}.",
+  master_ota_version_unknown:
+    "Nebyla zadána očekávaná verze; potvrzeno bylo pouze znovupřipojení.",
+  master_ota_version_mismatch:
+    "Master se znovu připojil s verzí {actual}, očekávána byla {expected}.",
+  master_ota_reconnect_timeout:
+    "Master se do pěti minut znovu nepřipojil. Použijte obnovení přes ArduinoOTA.",
+  master_ota_failed: "Master oznámil selhání aktualizace: {error}",
+  master_ota_cancelled: "Aktualizace masteru zrušena; nebyl aplikován žádný obraz.",
+  master_ota_cancel_requested: "Požadavek na zrušení aktualizace masteru odeslán.",
+  master_ota_cancel_not_allowed:
+    "Zrušení je možné pouze když master přijímá obraz.",
+  master_ota_running: "Aktualizace masteru už probíhá.",
+  master_ota_select_release: "Vyberte publikovanou verzi masteru.",
+  master_ota_no_file: "Nejprve vyberte soubor firmware.bin.",
+  master_ota_not_bin: "Použijte obraz firmware.bin pouze s aplikací.",
+  master_ota_read_failed: "Soubor se nepodařilo přečíst: {error}",
+  master_release_option: "{version} · {channel}",
+  master_release_summary:
+    "{version} · kompatibilita MQTT {mqtt} · sběrnice {bus}",
+  master_release_notes: "Poznámky: {notes}",
+  master_release_mqtt_mismatch:
+    "Kompatibilita MQTT verze neodpovídá této integraci.",
+  master_release_master_mqtt_unknown:
+    "Master nehlásí kompatibilitu MQTT; kompatibilita nebyla potvrzena.",
+  master_release_master_mqtt_mismatch:
+    "Kompatibilita MQTT verze neodpovídá připojenému masteru.",
+  master_release_blocked:
+    "Nesoulad kompatibility blokuje aktualizaci masteru.",
+  master_release_local_compat_unknown:
+    "Tato integrace nehlásí svou kompatibilitu MQTT.",
+  master_release_version_invalid:
+    "Očekávaná verze musí mít tvar 1.2.0.0.",
+  master_release_version_unknown: "Nebyla zadána očekávaná verze.",
+  master_firmware_image_invalid: "Obraz masteru je prázdný nebo příliš velký.",
+  master_firmware_checksum_mismatch:
+    "Kontrolní součet obrazu masteru neodpovídá.",
+
   compose_message_first: "Nejprve slož zprávu",
   enter_drum_index: "Zadej index bubnu",
   drum_length_error: "Buben musí mít přesně 64 znaků a nesmí obsahovat zalomení řádku",

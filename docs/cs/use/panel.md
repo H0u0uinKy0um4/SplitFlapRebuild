@@ -12,7 +12,7 @@ Není potřeba přidávat žádný zdroj do Lovelace.
 | **Control** | Živý náhled, víceřádkové psaní, tlačítka barevných lístků, startovní sloupec, pořadí odesílání, rychlost, tvorba playlistu a uložené playlisty. |
 | **Apps** | Karty aplikací s dostupností, ozubené kolečko pro nastavení aplikace, tlačítko režimu a spuštění/zastavení. |
 | **Tuning** | Záložky Commands, Map, Auto-tune, Teach a Drum. |
-| **Settings** | Záložky Display, Apps, Drums a System. |
+| **Settings** | Záložky Display, Apps, Drums a System. System má vnořené OTA modulů, OTA masteru a Připojení a zálohu. |
 
 ## Control
 
@@ -95,12 +95,17 @@ textové pole; záložka buben zobrazí a nabídne standardní.
 
 ### Záložka System
 
-Jeden seskupený panel obsahuje OTA modulů, zálohu/obnovu a údaje o připojení a
-sběrnici. Část OTA má pole cílového modulu, výběr verze s kompaktní obnovovací
-akcí a tlačítka zápisu a zrušení. Údaje o připojení jsou v dlaždicích
-klíč/hodnota pro stav masteru, MQTT prefix, hardware a engine, včetně verzí
-a poznámek o kompatibilitě. Záloha pokrývá nastavení, playlisty a poslední
-snímek modulů.
+System má vlastní vnořené podzáložky, výchozí je **OTA modulů**:
+
+| Vnořená podzáložka | Obsah |
+| --- | --- |
+| **OTA modulů** | Cílový modul, publikované verze modulů, místní HEX, hromadný zápis, průběh a zrušení. |
+| **OTA masteru** | Publikované verze masteru, místní BIN, přehled verze a kompatibility, průběh a zrušení. |
+| **Připojení a záloha** | Dlaždice připojení a sběrnice plus záloha a obnova nastavení, playlistů a snímku. |
+
+Vždy se vykresluje jen jedna vnořená stránka a průběh zůstává v její
+podzáložce; globální odznak OTA není. Dlaždice připojení ukazují stav masteru,
+MQTT prefix, hardware a engine včetně verzí a poznámek o kompatibilitě.
 
 ## OTA firmware modulů
 
@@ -121,11 +126,34 @@ až po dokončení předchozího modulu. Selhání nebo zrušení modulu frontu 
 a **Zrušit** přeruší celou operaci. Řádek průběhu ukazuje aktuální modul a počet
 dokončených. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
 
+## OTA masteru
+
+**Nastavení → Systém → OTA masteru** aktualizuje samotný ESP32 master přes
+samostatný MQTT topic. Výběr verze zobrazuje publikované verze typu `master-app`,
+nejprve stabilní a pak nejnovější `dev`. Home Assistant stáhne `.bin` až při
+zápisu, ověří SHA-256 a porovná `mqtt_compat` verze s integrací i s připojeným
+masterem. Známá neshoda zápis zablokuje; jedinou výjimkou je ladící přepínač.
+
+Po potvrzení master přijme obraz, ověří ho, zapíše do neaktivního OTA oddílu,
+restartuje se a publikuje novou verzi. Panel považuje aktualizaci za úspěšnou
+až po tomto znovupřipojení do pěti minut. Zrušení je možné během přijímání; po
+`flash` se master restartuje sám a tlačítko reset neexistuje. Pokud se nevrátí,
+použijte ruční obnovení přes ArduinoOTA (hostitel `SplFlp_Master`, port 3232,
+heslo z `OTA_PASSWORD`); panel tento port nikdy nepoužije. Viz
+[kontrakt protokolu](../protocol/master-ota.md).
+
+**Místní BIN (pokročilé)** přijímá místně sestavenou aplikaci `firmware.bin`.
+Očekávaná verze je volitelná; bez ní panel upozorní a potvrdí jen znovupřipojení.
+S očekávanou verzí se neshoda s kteroukoli generací MQTT odmítne; bez ní se
+kontrola kompatibility přeskočí a zobrazí se jen upozornění. OTA modulů a OTA
+masteru nemohou běžet současně.
+
 ## Poznámky k chování
 
 - Statické vstupy se během psaní nepřekreslují, takže status neruší psaní.
-- Zvolená záložka, podzáložka nastavení a měřítko náhledu se ukládají do
-  `localStorage`; platí pro daný prohlížeč, ne pro instalaci.
+- Zvolená záložka, podzáložka nastavení, vnořená podzáložka Systému a měřítko
+  náhledu se ukládají do `localStorage`; platí pro daný prohlížeč, ne pro
+  instalaci.
 - Přepnutí jazyka pokrývá texty panelu, popisky nastavení, manifesty aplikací
   i názvy služeb a entit.
 
@@ -133,4 +161,5 @@ dokončených. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
 
 - [Entity](../use/entities.md)
 - [Služby](../use/services.md)
+- [Protokol OTA masteru](../protocol/master-ota.md)
 - [YAML příklady](../automation/examples.md)

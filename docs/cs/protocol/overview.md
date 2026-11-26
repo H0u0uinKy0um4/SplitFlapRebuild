@@ -4,7 +4,8 @@
 
 Tato stránka pokrývá role, MQTT připojení a status payload. Payloady příkazů jsou
 v [příkazech](commands.md); geometrie tabule v [rozvržení](layout.md); čísla
-kompatibility ve [verzích](versioning.md).
+kompatibility ve [verzích](versioning.md). Dva nezávislé OTA kanály jsou
+[OTA modulů](ota.md) a [OTA masteru](master-ota.md).
 
 Drátový protokol mezi masterem a moduly (RS485 rámování, escapování v
 bootloaderu, CRC) patří do repozitářů firmwaru. Home Assistant s ním nikdy nemluví
@@ -35,7 +36,7 @@ Je povolena jen jedna konfigurační položka, protože firmware je jeden master
 | --- | --- | --- |
 | Topic prefix | `splitflap` | Volitelný při instalaci. Nesmí být prázdný ani obsahovat `+` / `#`. |
 | Status topic | `<prefix>/status` | JSON, master ho publikuje jako retained. |
-| Příkazové topicy | `<prefix>/command/{display,sync,scan,update,calibrate,firmware}` | JSON, ne retained. |
+| Příkazové topicy | `<prefix>/command/{display,sync,scan,update,calibrate,firmware,master_firmware}` | JSON, ne retained. `firmware` je pro moduly, `master_firmware` aktualizuje ESP32. |
 
 Integrace odebírá status topic a po **90 sekundách** bez zprávy označí master jako
 offline. Master publikuje heartbeat každých **30 sekund**.
@@ -52,10 +53,11 @@ Základní tvar (zkráceno):
 {
   "state": "online",
   "text": "HELLO",
-  "version": "1.1.0.1",
+  "version": "1.2.0.0",
   "bus_compat": 1,
-  "mqtt_compat": 1,
-  "compat": 1,
+  "mqtt_compat": 2,
+  "compat": 2,
+  "ip": "10.0.1.42",
   "scanning": false,
   "modules_count": 7,
   "modules": [
@@ -82,7 +84,8 @@ Základní tvar (zkráceno):
       "fw_compatible": true
     }
   ],
-  "ota": {"state": "idle"}
+  "ota": {"state": "idle"},
+  "master_ota": {"state": "idle"}
 }
 ```
 
@@ -96,10 +99,12 @@ Základní tvar (zkráceno):
 | `bus_compat` | int | Generace RS485 aplikačního protokolu masteru. |
 | `mqtt_compat` | int | Generace MQTT schématu masteru. |
 | `compat` | int | Starší alias pro `mqtt_compat`. |
+| `ip` | string | IP adresa masteru, jen pro diagnostiku. |
 | `scanning` | bool | Probíhá sken sběrnice. |
 | `modules_count` | int | Počet modulů, které master zná. Řídí velikost tabule. |
 | `modules` | array | Objekty modulů, viz níže. |
-| `ota` | object | Stav OTA relace; viz [OTA modulů](ota.md). |
+| `ota` | object | Stav OTA relace modulů; viz [OTA modulů](ota.md). |
+| `master_ota` | object | Stav aktualizace masteru; viz [OTA masteru](master-ota.md). Po normalizaci vždy přítomné. |
 
 ### Pole modulu
 
@@ -155,6 +160,8 @@ znovu referencuje náběžnou hranu hall senzoru. Viz
 | Modul se po pohybu jeví offline | Očekávané: obnovení se odkládá o 5 s. |
 | `Cannot display: module N lacks 'X'` | Hlášený buben znak neobsahuje. Nic se neodeslalo. |
 | OTA odmítnuta | Běží jiná relace, obraz je příliš velký nebo je neznámý protokol bootloaderu. |
+| OTA masteru zablokována | `mqtt_compat` verze se liší od integrace nebo připojeného masteru. Viz [OTA masteru](master-ota.md). |
+| OTA masteru vypršela | Master se do pěti minut znovu nepřipojil s očekávanou verzí; použijte ruční obnovení přes ArduinoOTA. |
 | Upozornění na verzi | `mqtt_compat` masteru se liší od `MQTT_COMPAT`. |
 
 Více v [řešení potíží](../automation/troubleshooting.md).
