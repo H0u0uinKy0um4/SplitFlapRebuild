@@ -39,6 +39,7 @@ from .const import (
 )
 from .master_ota import (
     MASTER_OTA_CHUNK_BYTES,
+    MASTER_OTA_CHUNK_PAUSE_SECONDS,
     MASTER_OTA_MAX_SIZE,
     MASTER_OTA_STATES_ACTIVE,
 )
@@ -682,6 +683,9 @@ class SplitFlapCoordinator:
             await self.async_master_firmware_chunk(
                 image[offset : offset + MASTER_OTA_CHUNK_BYTES]
             )
+            # QoS 0 cannot signal congestion: pace the stream so the master can
+            # finish its blocking slot write before the broker sends the next.
+            await asyncio.sleep(MASTER_OTA_CHUNK_PAUSE_SECONDS)
         await self.async_master_firmware_flash()
 
         return {

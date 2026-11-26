@@ -52,8 +52,17 @@ MASTER_FIRMWARE_ACTION_CANCEL: Final = "cancel"
 #: ship. The published mqtt-compat-2 image is 1,477,664 bytes and must fit.
 MASTER_OTA_MAX_SIZE: Final = 0x1E0000  # 1,966,080 bytes (one app slot)
 
-#: Reuse the proven chunk size: 768 bytes -> 1024 base64 characters.
-MASTER_OTA_CHUNK_BYTES: Final = 768
+#: Image bytes per chunk (10,920 base64 characters). The master reserves a
+#: 24,576-byte MQTT buffer; 768-byte chunks needed ~1,900 back-to-back QoS-0
+#: messages for one release and the broker dropped the tail of the burst.
+#: The value must be a multiple of 3: the master carries incomplete base64
+#: groups between chunks, so padding in a non-final chunk corrupts the stream.
+MASTER_OTA_CHUNK_BYTES: Final = 8190
+
+#: Yield between chunks. QoS 0 gives the publisher no backpressure, and the
+#: master writes each chunk into flash inside its MQTT callback, so a short
+#: pause keeps the broker's queue for the single subscriber shallow.
+MASTER_OTA_CHUNK_PAUSE_SECONDS: Final = 0.02
 
 #: How long the panel waits for the master to reconnect after a flash.
 MASTER_OTA_REBOOT_TIMEOUT_SECONDS: Final = 300

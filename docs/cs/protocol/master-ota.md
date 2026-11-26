@@ -8,7 +8,7 @@ aktualizace modulů běží přes RS485 bootloader. Home Assistant nikdy nemluv�
 RS485 a nepoužívá ruční ArduinoOTA port.
 
 Aktualizace masteru vyžaduje firmware masteru s `mqtt_compat` 2 (například
-`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.1`). Starší mastery dál
+`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.2`). Starší mastery dál
 normálně zobrazují a aktualizují moduly; karta OTA masteru se zobrazí, ale
 kompatibilita může varovat nebo zápis zablokovat.
 
@@ -36,7 +36,7 @@ Publikují se na `<prefix>/command/master_firmware` jako JSON (ne retained):
 | Akce | Payload | Poznámky |
 | --- | --- | --- |
 | `begin` | `{"action": "begin", "version": "1.2.0.0", "sha256": "<64 hex>", "size": 524288}` | Začne přijímat obraz. `version` může být prázdná u místního obrazu s neznámou verzí. |
-| `chunk` | `{"action": "chunk", "data": "<base64>"}` | Připojí surové bajty obrazu. Home Assistant posílá 768 bajtů na blok (1024 znaků base64). |
+| `chunk` | `{"action": "chunk", "data": "<base64>"}` | Připojí surové bajty obrazu. Home Assistant posílá 8190 bajtů na blok (10 920 znaků base64) s 20ms prodlevou, aby broker neztrácel QoS 0 zprávy. Každý neposlední blok má násobek tří bajtů, aby inkrementální dekodér base64 v masteru zůstal zarovnaný. |
 | `flash` | `{"action": "flash"}` | Ověří a aplikuje obraz; master se automaticky restartuje. |
 | `cancel` | `{"action": "cancel"}` | Zruší přijímání obrazu. Přijímá se jen během shromažďování. |
 

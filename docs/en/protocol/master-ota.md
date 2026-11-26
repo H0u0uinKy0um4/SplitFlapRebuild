@@ -8,7 +8,7 @@ module updates travel over the RS485 bootloader. Home Assistant never speaks
 RS485 and does not use the manual ArduinoOTA port.
 
 Master self-update requires master firmware with `mqtt_compat` 2 (for example
-`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.1`). Older masters keep
+`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.2`). Older masters keep
 handling display and slave OTA normally; the Master OTA card still appears but
 the compatibility gate warns or blocks a flash.
 
@@ -38,7 +38,7 @@ Published to `<prefix>/command/master_firmware` as JSON (not retained):
 | Action | Payload | Notes |
 | --- | --- | --- |
 | `begin` | `{"action": "begin", "version": "1.2.0.0", "sha256": "<64 hex>", "size": 524288}` | Start collecting an image. `version` may be empty for a local image without a known version. |
-| `chunk` | `{"action": "chunk", "data": "<base64>"}` | Append raw image bytes. Home Assistant sends 768 image bytes per chunk (1024 base64 characters). |
+| `chunk` | `{"action": "chunk", "data": "<base64>"}` | Append raw image bytes. Home Assistant sends 8190 image bytes per chunk (10,920 base64 characters), paced by 20 ms so the broker does not drop QoS-0 messages. Each non-final chunk is a multiple of three bytes so the master's incremental base64 decoder stays aligned. |
 | `flash` | `{"action": "flash"}` | Verify and apply the staged image; the master reboots automatically. |
 | `cancel` | `{"action": "cancel"}` | Discard a staged image. Accepted only while collecting. |
 

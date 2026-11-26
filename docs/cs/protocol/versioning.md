@@ -21,11 +21,11 @@ Master obě strany propojuje, takže nese obě čísla. Protokol bootloaderu OTA
 ```text
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
 master   <bus>.<mqtt>.<vydání>        1.2.0.0    bus 1, mqtt 2, vydání 0.0
-HA       <mqtt>.<vydání>              2.0.1      mqtt 2, vydání 0.1
+HA       <mqtt>.<vydání>              2.0.2      mqtt 2, vydání 0.2
 ```
 
 Verzi s MQTT generací 2 koordinují všechny tři repozitáře pod značkou
-`mqtt-compat-2`. Verze masteru je `1.2.0.0`, Home Assistant `2.0.1`. Firmware
+`mqtt-compat-2`. Verze masteru je `1.2.0.0`, Home Assistant `2.0.2`. Firmware
 modulu MQTT generaci nenese.
 
 ## Kontroly

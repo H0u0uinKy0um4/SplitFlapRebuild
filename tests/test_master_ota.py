@@ -84,7 +84,11 @@ class NormalizeTests(unittest.TestCase):
 
 class ContractTests(unittest.TestCase):
     def test_transport_limits_are_stable(self) -> None:
-        self.assertEqual(master_ota.MASTER_OTA_CHUNK_BYTES, 768)
+        self.assertEqual(master_ota.MASTER_OTA_CHUNK_BYTES, 8190)
+        # The master keeps partial base64 groups between chunks: a non-final
+        # chunk with padding would shift every following byte.
+        self.assertEqual(master_ota.MASTER_OTA_CHUNK_BYTES % 3, 0)
+        self.assertEqual(master_ota.MASTER_OTA_CHUNK_PAUSE_SECONDS, 0.02)
         self.assertEqual(master_ota.MASTER_OTA_MAX_SIZE, 0x1E0000)
         # The published mqtt-compat-2 master image must fit in one app slot.
         self.assertGreater(master_ota.MASTER_OTA_MAX_SIZE, 1_477_664)
