@@ -1,15 +1,14 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.23";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.23";
-import { PANEL_STYLES } from "../styles.js?v=1.2.23";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.24";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.24";
+import { PANEL_STYLES } from "../styles.js?v=1.2.24";
 
 export const PanelMixin = (Base) =>
   class extends Base {
     _renderShell() {
       this._settingsBuilt = false;
       this._inspectorModule = null;
-      this._charSignature = "";
       this._resetFlapDisplay();
       this.shadowRoot.innerHTML = `
       <style>${PANEL_STYLES}</style>
@@ -144,6 +143,17 @@ export const PanelMixin = (Base) =>
           this._subtabs[group] === node.dataset.sub
         );
       });
+      // The Display mock puts Save in the sub-tab bar. Apps keeps its own
+      // in-form button, so this one only belongs to the Display sub-tab.
+      const save = this.shadowRoot.querySelector(
+        '[data-action="save-settings"].settings-save'
+      );
+      if (save) {
+        save.classList.toggle(
+          "hidden",
+          !(this._tab === "settings" && this._subtabs.settings === "display")
+        );
+      }
     }
 
     _setSubtab(group, sub) {

@@ -1,7 +1,7 @@
 /** Bulk OTA choreography for the split-flap panel.
  *
- * The master owns one OTA session at a time, so "flash all" and "boot all"
- * are strictly sequential. This module holds that choreography behind one
+ * The master owns one OTA session at a time, so "flash all" is strictly
+ * sequential. This module holds that choreography behind one
  * small interface: ``view()`` is a DOM-free progress model and ``act()`` is
  * the single entry point for every user intent. Snapshot, send, clock and
  * notification adapters are injected, so the whole flow can be driven by a
@@ -19,7 +19,6 @@ const ACTIVE_STATES = new Set([
 ]);
 
 const DEFAULT_POLL_MS = 200;
-const DEFAULT_RESET_SETTLE_MS = 200;
 const DEFAULT_FLASH_SETTLE_MS = 750;
 const DEFAULT_SESSION_TIMEOUT_MS = 45000;
 
@@ -39,7 +38,6 @@ export function createBulkOtaFlow({
   render,
   now = Date.now,
   pollMs = DEFAULT_POLL_MS,
-  resetSettleMs = DEFAULT_RESET_SETTLE_MS,
   flashSettleMs = DEFAULT_FLASH_SETTLE_MS,
   sessionTimeoutMs = DEFAULT_SESSION_TIMEOUT_MS,
 }) {
@@ -56,8 +54,8 @@ export function createBulkOtaFlow({
     if (typeof notify === "function") notify(key, params || {}, level);
   };
 
-  /** Flash targets are detected modules; boots also cover the full bus. */
-  const targets = (kind) => {
+  /** Flash targets are the modules detected by the last scan. */
+  const targets = () => {
     const ids = [];
     const modules = coordinator().modules;
     if (Array.isArray(modules)) {
@@ -66,25 +64,11 @@ export function createBulkOtaFlow({
         if (id != null && !ids.includes(id)) ids.push(id);
       }
     }
-    if (kind === "boot_all") {
-      // A module in the bootloader no longer answers the scan, so a detected-
-      // only list would miss exactly the modules that need a boot command.
-      const configured = Math.min(
-        255,
-        Math.max(0, Number(coordinator().modules_count) || 0)
-      );
-      for (let id = 1; id <= configured; id += 1) {
-        if (!ids.includes(id)) ids.push(id);
-      }
-      const stuck = moduleId(ota().module);
-      if (stuck != null && !ids.includes(stuck)) ids.push(stuck);
-    }
     return ids.sort((left, right) => left - right);
   };
 
   const view = () => ({
     running: Boolean(job && job.state === "running"),
-    kind: job ? job.kind : null,
     state: job ? job.state : "idle",
     done: job ? job.done : 0,
     total: job ? job.total : 0,
@@ -161,24 +145,23 @@ export function createBulkOtaFlow({
       return { ok: true };
     }
 
-    if (action !== "boot_all" && action !== "flash_all") {
+    if (action !== "flash_all") {
       return { ok: false, code: "invalid_request" };
     }
     const blocked = guard();
     if (blocked) return { ok: false, code: blocked };
 
-    const ids = targets(action);
+    const ids = targets();
     if (!ids.length) return { ok: false, code: "firmware_release_no_modules" };
 
     generation += 1;
     const mine = generation;
     job = {
-      kind: action === "boot_all" ? "reset" : "flash",
       state: "running",
       done: 0,
       total: ids.length,
       module: null,
-      version: action === "flash_all" ? params.version || null : null,
+      version: params.version || null,
       error: null,
     };
     changed();
@@ -189,28 +172,23 @@ export function createBulkOtaFlow({
         job = { ...job, module: id };
         changed();
 
-        if (action === "flash_all") {
-          await send("flash_firmware_release", {
-            release: params.release,
-            module: id,
-          });
-          const outcome = await waitForSession(id, mine);
-          if (mine !== generation) break;
-          if (!outcome || outcome.ok !== true) {
-            finish(
-              mine,
-              "failed",
-              outcome && outcome.code
-                ? outcome.code
-                : "firmware_release_bulk_error"
-            );
-            return { ok: false, code: job.error };
-          }
-          await sleep(flashSettleMs);
-        } else {
-          await send("reset_firmware", { module: id });
-          await sleep(resetSettleMs);
+        await send("flash_firmware_release", {
+          release: params.release,
+          module: id,
+        });
+        const outcome = await waitForSession(id, mine);
+        if (mine !== generation) break;
+        if (!outcome || outcome.ok !== true) {
+          finish(
+            mine,
+            "failed",
+            outcome && outcome.code
+              ? outcome.code
+              : "firmware_release_bulk_error"
+          );
+          return { ok: false, code: job.error };
         }
+        await sleep(flashSettleMs);
 
         if (mine !== generation) break;
         job = { ...job, done: job.done + 1 };

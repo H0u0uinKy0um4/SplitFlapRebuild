@@ -1,12 +1,28 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.23";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.23";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.24";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.24";
 
 const checkedSettingValue = (value) =>
   value === true ||
   value === 1 ||
   ["true", "yes", "on", "1"].includes(String(value).trim().toLowerCase());
+
+// The backend still sends one Display group; the panel splits it into the
+// three clean sections from the settings mock without changing the setting
+// keys or the save path.
+const DISPLAY_GEOMETRY_KEYS = new Set(["row_counts", "rows", "cols"]);
+const DISPLAY_DEVELOPER_KEYS = new Set([
+  "debug_ignore_module_limit",
+  "debug_allow_incompatible_firmware",
+]);
+const DISPLAY_FIELD_HINTS = {
+  row_counts: "display_hint_row_counts",
+  ui_scale: "display_hint_ui_scale",
+  debug_ignore_module_limit: "display_hint_debug_ignore_module_limit",
+  debug_allow_incompatible_firmware:
+    "display_hint_debug_allow_incompatible_firmware",
+};
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -18,15 +34,18 @@ export const PanelMixin = (Base) =>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="apps">${this._t("subtab_apps")}</button>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="drum">${this._t("subtab_drums")}</button>
             <button class="subtab" data-action="subtab" data-group="settings" data-sub="system">${this._t("subtab_system")}</button>
+            <button class="btn settings-save hidden" data-action="save-settings">${this._t("save_settings")}</button>
           </nav>
 
           <div class="subpage active" data-subpage="settings" data-sub="display">
-            <div class="card">
-              <div class="row between">
-                <h2 style="margin:0">${this._t('display_settings')}</h2>
-                <button class="btn" data-action="save-settings">${this._t("save_settings")}</button>
+            <div class="card settings-card">
+              <div class="settings-card-head">
+                <div>
+                  <h2>${this._t('display_settings')}</h2>
+                  <p class="muted">${this._t('display_settings_hint')}</p>
+                </div>
               </div>
-              <div id="displaySettingsGroups" class="settings-groups" style="margin-top:14px"></div>
+              <div id="displaySettingsGroups" class="settings-groups"></div>
             </div>
           </div>
 
@@ -113,8 +132,6 @@ export const PanelMixin = (Base) =>
                 <div class="actions">
                   <button class="btn" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
                   <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
-                  <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
-                  <button class="btn secondary" data-action="boot-all-firmware">${this._t('firmware_release_boot_all')}</button>
                   <button class="btn cancel" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
                 </div>
                 <div class="muted" id="otaBulkStatus"></div>
@@ -207,16 +224,53 @@ export const PanelMixin = (Base) =>
         .join("");
     }
 
-    _fieldHtml(field, value) {
+    _displayFieldHint(key) {
+      const hintKey = DISPLAY_FIELD_HINTS[key];
+      return hintKey ? this._t(hintKey) : "";
+    }
+
+    _fieldHtml(field, value, displayGroup = null) {
       const type = field.type || "text";
       const key = escapeAttr(field.key);
       const current = value == null ? "" : String(value);
+      const help = this._settingHelp(field.key, field.help || "");
+      const visible =
+        field.visible_when && field.visible_when.key
+          ? ` data-visible-key="${escapeAttr(field.visible_when.key)}" data-visible-value="${escapeAttr(
+              JSON.stringify(
+                field.visible_when.equals == null ? "" : field.visible_when.equals
+              )
+            )}"`
+          : "";
+      const label = escapeHtml(
+        this._settingLabel(field.key, field.label || field.key)
+      );
+      const hint = displayGroup ? this._displayFieldHint(field.key) : "";
       let input = "";
 
       if (type === "boolean") {
         input = `<input type="checkbox" data-setting="${key}"${
           checkedSettingValue(value) ? " checked" : ""
         }>`;
+        if (displayGroup && displayGroup.toggle) {
+          return `
+          <label class="settings-toggle-row"${visible}${
+            help ? ` title="${escapeAttr(help)}"` : ""
+          }>
+            <span class="settings-toggle-text">
+              <span class="settings-toggle-title">${label}</span>
+              ${
+                hint
+                  ? `<span class="settings-toggle-sub">${escapeHtml(hint)}</span>`
+                  : ""
+              }
+            </span>
+            <span class="settings-switch">
+              ${input}
+              <span class="settings-slider"></span>
+            </span>
+          </label>`;
+        }
       } else if (type === "select") {
         const options = Array.isArray(field.options) ? field.options.slice() : [];
         if (current !== "" && !options.includes(current)) options.unshift(current);
@@ -250,18 +304,14 @@ export const PanelMixin = (Base) =>
         input = `<input ${attrs.join(" ")} value="${escapeAttr(current)}">`;
       }
 
-      const help = this._settingHelp(field.key, field.help || "");
-      const visible =
-        field.visible_when && field.visible_when.key
-          ? ` data-visible-key="${escapeAttr(field.visible_when.key)}" data-visible-value="${escapeAttr(
-              JSON.stringify(
-                field.visible_when.equals == null ? "" : field.visible_when.equals
-              )
-            )}"`
-          : "";
+      const labelMarkup = hint
+        ? `<span class="settings-label-row"><span>${label}</span><span class="settings-hint">${escapeHtml(
+            hint
+          )}</span></span>`
+        : `<span>${label}</span>`;
       return `
       <label class="field"${visible}>
-        <span>${escapeHtml(this._settingLabel(field.key, field.label || field.key))}</span>
+        ${labelMarkup}
         ${input}
         ${help ? `<small>${escapeHtml(help)}</small>` : ""}
       </label>`;
@@ -289,23 +339,91 @@ export const PanelMixin = (Base) =>
       });
     }
 
+    /** Split the backend Display group into the three mock sections. */
+    _displayGroups(groups) {
+      const fields = groups.flatMap((group) =>
+        Array.isArray(group.fields) ? group.fields : []
+      );
+      const geometry = fields.filter((field) =>
+        DISPLAY_GEOMETRY_KEYS.has(field.key)
+      );
+      const developer = fields.filter((field) =>
+        DISPLAY_DEVELOPER_KEYS.has(field.key)
+      );
+      const preferences = fields.filter(
+        (field) =>
+          !DISPLAY_GEOMETRY_KEYS.has(field.key) &&
+          !DISPLAY_DEVELOPER_KEYS.has(field.key)
+      );
+      return [
+        {
+          key: "display_geometry",
+          display: true,
+          name: this._t("display_group_geometry"),
+          hint: this._t("display_group_geometry_hint"),
+          columns: 3,
+          fields: geometry,
+        },
+        {
+          key: "display_preferences",
+          display: true,
+          name: this._t("display_group_preferences"),
+          columns: 2,
+          fields: preferences,
+        },
+        {
+          key: "display_developer",
+          display: true,
+          name: this._t("display_group_developer"),
+          columns: 2,
+          toggle: true,
+          fields: developer,
+        },
+      ].filter((group) => group.fields.length > 0);
+    }
+
     _settingsGroupHtml(group, settings, showHeading = true, paneKey = null) {
       const pane =
         paneKey == null ? "" : ` data-app-pane="${escapeAttr(paneKey)}"`;
-      const classes =
-        paneKey == null ? "settings-group" : "settings-group app-settings-pane";
+      const classes = [
+        paneKey == null ? "settings-group" : "settings-group app-settings-pane",
+        group.toggle ? "settings-group-toggles" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const heading = showHeading
+        ? `<div class="settings-group-head">
+            <h3>${escapeHtml(group.icon || "")} ${escapeHtml(
+                this._settingGroup(group.key, group.name || group.key)
+              )}</h3>
+            ${
+              group.hint
+                ? `<span class="settings-group-hint">${escapeHtml(
+                    group.hint
+                  )}</span>`
+                : ""
+            }
+          </div>`
+        : "";
+      const gridClass = group.toggle
+        ? "settings-toggle-list"
+        : group.columns === 3
+          ? "settings-grid-3"
+          : group.columns === 2
+            ? "settings-grid-2"
+            : "settings-grid";
       return `
       <div class="${classes}"${pane}>
-        ${
-          showHeading
-            ? `<h3>${escapeHtml(group.icon || "")} ${escapeHtml(
-                this._settingGroup(group.key, group.name || group.key)
-              )}</h3>`
-            : ""
-        }
-        <div class="settings-grid">
+        ${heading}
+        <div class="${gridClass}">
           ${(group.fields || [])
-            .map((field) => this._fieldHtml(field, settings[field.key]))
+            .map((field) =>
+              this._fieldHtml(
+                field,
+                settings[field.key],
+                group.display ? group : null
+              )
+            )
             .join("")}
         </div>
       </div>`;
@@ -329,7 +447,7 @@ export const PanelMixin = (Base) =>
 
       if (!this._settingsBuilt) {
         if (displayNode) {
-          displayNode.innerHTML = displayGroups
+          displayNode.innerHTML = this._displayGroups(displayGroups)
             .map((group) => this._settingsGroupHtml(group, settings))
             .join("");
         }
@@ -602,10 +720,6 @@ export const PanelMixin = (Base) =>
       // an active phase is reported. A bulk job routes the same button to
       // its own cancel so the whole queue stops, not only one module.
       if (cancelBtn) cancelBtn.disabled = !(busy || state !== "idle");
-      const resetBtn = this.shadowRoot.querySelector(
-        '[data-action="reset-firmware"]'
-      );
-      if (resetBtn) resetBtn.disabled = busy;
       const flashReleaseBtn = this.shadowRoot.querySelector(
         '[data-action="flash-release-firmware"]'
       );
@@ -615,13 +729,9 @@ export const PanelMixin = (Base) =>
       const flashAllBtn = this.shadowRoot.querySelector(
         '[data-action="flash-release-firmware-all"]'
       );
-      const bootAllBtn = this.shadowRoot.querySelector(
-        '[data-action="boot-all-firmware"]'
-      );
       if (flashReleaseBtn) flashReleaseBtn.disabled = busy;
       if (flashLocalBtn) flashLocalBtn.disabled = busy;
       if (flashAllBtn) flashAllBtn.disabled = busy;
-      if (bootAllBtn) bootAllBtn.disabled = busy;
 
       let percent = null;
       if (typeof ota.progress === "number") {
@@ -648,18 +758,12 @@ export const PanelMixin = (Base) =>
         if (!bulk.state || bulk.state === "idle") {
           bulkStatus.textContent = "";
         } else if (bulk.state === "running") {
-          const kind = this._t(
-            bulk.kind === "reset"
-              ? "firmware_release_bulk_kind_reset"
-              : "firmware_release_bulk_kind_flash"
-          );
           const module = bulk.module != null
             ? formatMessage(this._t("ota_module"), { module: bulk.module })
             : this._t("unknown");
           bulkStatus.textContent = formatMessage(
             this._t("firmware_release_bulk_progress"),
             {
-              kind,
               done: bulk.done,
               total: bulk.total,
               module: bulk.version ? `${module} · ${bulk.version}` : module,

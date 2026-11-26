@@ -63,28 +63,29 @@ a warning for development.
 
 While a session is active (`collecting`, `entering`, `flashing`, `verifying`) the
 master refuses display, scan, update, and calibrate commands, and a second upload
-is rejected. A module stuck in the bootloader no longer answers the ASCII scan, so
-`reset` is the recovery path.
+is rejected. A module stuck in the bootloader no longer answers the ASCII scan,
+so `reset` remains a protocol-level recovery path. The panel does not expose a
+boot button: a successful flash restarts the module into the application
+automatically.
 
-### Bus-wide operations
+### Bus-wide flashing
 
-The panel's **FLASH ALL MODULES** and **BOOT ALL INTO APP** buttons reuse the
-same single-session path. Flash-all walks the modules detected by the last scan
-in ascending id order. Boot-all additionally walks every id in the configured
-module range plus the last OTA target, because a module stuck in the bootloader
-no longer answers the scan. The master rejects concurrent sessions, so commands
-are sent strictly one module at a time. A flash advances only after the master
-reports `done` (or `idle` after an active phase) for that module. A failed,
-cancelled, or timed-out session stops the queue immediately; **Cancel** aborts
-the active module and the remaining queue. No master firmware change is needed.
+The panel's **FLASH ALL MODULES** button reuses the same single-session path. It
+walks the modules detected by the last scan in ascending id order. The master
+rejects concurrent sessions, so commands are sent strictly one module at a time.
+A flash advances only after the master reports `done` (or `idle` after an active
+phase) for that module. A failed, cancelled, or timed-out session stops the queue
+immediately; **Cancel** aborts the active module and the remaining queue. No
+master firmware change is needed.
 
 ## Home Assistant surface
 
 There is no service for OTA. The panel uses the WebSocket commands
 `splitflap_os/flash_firmware`, `splitflap_os/list_firmware_releases`,
-`splitflap_os/flash_firmware_release`, `splitflap_os/cancel_firmware`, and
-`splitflap_os/reset_firmware`. The topic is documented here because it is part of
-the MQTT contract.
+`splitflap_os/flash_firmware_release`, and `splitflap_os/cancel_firmware`.
+`splitflap_os/reset_firmware` remains available for manual recovery, but the
+panel no longer exposes a boot button because flashed modules restart
+themselves. The topic is documented here because it is part of the MQTT contract.
 
 ## See also
 

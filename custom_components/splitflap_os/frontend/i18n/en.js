@@ -55,6 +55,18 @@ export const PANEL = {
   character_map: "CHARACTER MAP",
   settings: "SETTINGS",
   display_settings: "Display settings",
+  display_settings_hint:
+    "Layout, appearance and developer flags for this display.",
+  display_group_geometry: "Board Geometry",
+  display_group_geometry_hint: "Leave 0 or blank for auto-detection",
+  display_hint_row_counts: "e.g. 3,3,1",
+  display_group_preferences: "Preferences",
+  display_hint_ui_scale: "Default 100%",
+  display_group_developer: "Developer Flags",
+  display_hint_debug_ignore_module_limit:
+    "Preview larger frame than detected hardware",
+  display_hint_debug_allow_incompatible_firmware:
+    "Bypass bus/OTA compatibility check",
   app_settings: "App settings",
   connection: "CONNECTION",
   backup_restore: "BACKUP & RESTORE",
@@ -99,7 +111,6 @@ export const PANEL = {
   bus_compatibility: "Bus compatibility",
   mqtt_compatibility: "MQTT compatibility",
   select_module_hint: "Select a module in the matrix above.",
-  char_map_title: "Module {id} • {flaps}",
   index_named: "Index {index}",
   mode_idle: "idle",
   mode_app: "app",
@@ -180,10 +191,6 @@ export const PANEL = {
   ota_sent:
     "Image sent ({size} bytes, CRC-32 {crc}). The session is starting.",
   ota_cancel_requested: "Cancel requested.",
-  ota_reset: "BOOT TARGET",
-  ota_reset_confirm:
-    "Boot module {module} out of the bootloader into its current application?",
-  ota_reset_requested: "Boot request sent for module {module}.",
   firmware_release_select: "Firmware release",
   firmware_release_none: "No published firmware yet",
   firmware_release_loading: "Loading published firmware…",
@@ -230,14 +237,9 @@ export const PANEL = {
   firmware_release_blocked: "A firmware compatibility mismatch blocks flashing.",
   firmware_release_override_used: "The incompatible-firmware override is enabled.",
   firmware_release_flash_all: "FLASH ALL MODULES",
-  firmware_release_boot_all: "BOOT ALL INTO APP",
   firmware_release_confirm_all:
     "Flash all {count} detected modules with {version}? Modules are flashed one at a time and the display stays paused until the queue finishes.",
-  firmware_release_boot_all_confirm:
-    "Boot all {count} target modules out of the bootloader into their applications? Modules are processed one at a time.",
-  firmware_release_bulk_progress: "Bulk {kind}: {done}/{total} — {module}",
-  firmware_release_bulk_kind_flash: "flash",
-  firmware_release_bulk_kind_reset: "boot",
+  firmware_release_bulk_progress: "Flashing: {done}/{total} — {module}",
   firmware_release_bulk_done: "Bulk OTA finished: {count} module(s) processed.",
   firmware_release_bulk_failed: "Bulk OTA failed: {error}",
   firmware_release_bulk_cancelled:
@@ -265,7 +267,6 @@ export const PANEL = {
   requested_sync: "Requested EEPROM/state sync",
   scanning_bus: "Scanning the RS485 bus…",
   select_module_first: "Select a module first",
-  select_module: "Select a module",
   not_connected: "Home Assistant is not connected",
   connect_failed: "Panel connection failed: {error}",
   display_too_small: "display too small",

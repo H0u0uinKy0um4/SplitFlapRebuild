@@ -55,6 +55,18 @@ export const PANEL = {
   character_map: "MAPA ZNAKŮ",
   settings: "NASTAVENÍ",
   display_settings: "Nastavení displeje",
+  display_settings_hint:
+    "Rozvržení, vzhled a vývojářské volby tohoto displeje.",
+  display_group_geometry: "Rozvržení desky",
+  display_group_geometry_hint: "0 nebo prázdné = automatické rozpoznání",
+  display_hint_row_counts: "např. 3,3,1",
+  display_group_preferences: "Předvolby",
+  display_hint_ui_scale: "Výchozí 100 %",
+  display_group_developer: "Vývojářské volby",
+  display_hint_debug_ignore_module_limit:
+    "Náhled většího rámu než detekovaný hardware",
+  display_hint_debug_allow_incompatible_firmware:
+    "Obcházet kontrolu kompatibility sběrnice/OTA",
   app_settings: "Nastavení aplikací",
   connection: "PŘIPOJENÍ",
   backup_restore: "ZÁLOHA A OBNOVA",
@@ -99,7 +111,6 @@ export const PANEL = {
   bus_compatibility: "Kompatibilita sběrnice",
   mqtt_compatibility: "Kompatibilita MQTT",
   select_module_hint: "Vyberte modul v matici výše.",
-  char_map_title: "Modul {id} • {flaps}",
   index_named: "Index {index}",
   mode_idle: "nečinnost",
   mode_app: "aplikace",
@@ -180,10 +191,6 @@ export const PANEL = {
   ota_sent:
     "Obrázek odeslán ({size} bajtů, CRC-32 {crc}). Relace se spouští.",
   ota_cancel_requested: "Požadavek na zrušení odeslán.",
-  ota_reset: "SPUSTIT CÍL",
-  ota_reset_confirm:
-    "Spustit modul {module} z bootloaderu do stávající aplikace?",
-  ota_reset_requested: "Požadavek na spuštění modulu {module} odeslán.",
   firmware_release_select: "Firmwareová verze",
   firmware_release_none: "Zatím žádný publikovaný firmware",
   firmware_release_loading: "Načítání publikovaného firmwaru…",
@@ -230,14 +237,9 @@ export const PANEL = {
   firmware_release_blocked: "Nesoulad kompatibility firmwaru blokuje zápis.",
   firmware_release_override_used: "Je zapnuté přepsání nekompatibilního firmwaru.",
   firmware_release_flash_all: "ZAPSAT VŠECHNY MODULY",
-  firmware_release_boot_all: "SPUSTIT VŠECHNY DO APLIKACE",
   firmware_release_confirm_all:
     "Zapsat verzi {version} do všech {count} nalezených modulů? Moduly se zapisují postupně, displej zůstane pozastavený do konce fronty.",
-  firmware_release_boot_all_confirm:
-    "Spustit všech {count} cílových modulů z bootloaderu do aplikace? Moduly se zpracovávají postupně.",
-  firmware_release_bulk_progress: "Hromadná operace ({kind}): {done}/{total} — {module}",
-  firmware_release_bulk_kind_flash: "zápis",
-  firmware_release_bulk_kind_reset: "spuštění",
+  firmware_release_bulk_progress: "Zápis: {done}/{total} — {module}",
   firmware_release_bulk_done: "Hromadná operace OTA dokončena: zpracováno {count} modulů.",
   firmware_release_bulk_failed: "Hromadná operace OTA selhala: {error}",
   firmware_release_bulk_cancelled:
@@ -265,7 +267,6 @@ export const PANEL = {
   requested_sync: "Požadována synchronizace EEPROM/stavu",
   scanning_bus: "Prohledávání RS485 sběrnice…",
   select_module_first: "Nejprve vyber modul",
-  select_module: "Vyber modul",
   not_connected: "Home Assistant není připojen",
   connect_failed: "Připojení panelu selhalo: {error}",
   display_too_small: "displej je příliš malý",

@@ -44,7 +44,7 @@ current two-digit minute of the hour and fits a 1 × 2 frame.
 | **Map** | EEPROM position map per module, including clearing entries. |
 | **Auto-tune** | Sweep a module through its drum and record positions. |
 | **Teach** | Record the current position as a drum index, including index `0`. |
-| **Drum** | Write a 64-character drum to the slave's EEPROM and verify the readback. |
+| **Drum** | Write a 64-character drum to the slave's EEPROM. The character map stays on the Map sub-tab. |
 
 Moves are blocking. After `home`, `goto`, `step`, or `apply`, the master defers
 its refresh by 5 seconds, so a module can briefly look offline; that is expected.
@@ -53,11 +53,17 @@ its refresh by 5 seconds, so a module can briefly look offline; that is expected
 
 ### Display sub-tab
 
+The Display sub-tab is one card with three sections: **Board Geometry**,
+**Preferences** and **Developer Flags**. Geometry uses a compact three-column
+grid, preferences a two-column grid, and developer options are switch rows.
+**Save settings** sits in the sub-tab bar.
+
 | Key | Meaning |
 | --- | --- |
 | `row_counts` | One comma-separated module count per physical row, for example `3,3,1`. Blank means automatic. |
 | `rows`, `cols` | Frame dimensions. `0` derives them from the detected module count. |
 | `debug_ignore_module_limit` | Debug switch: use the configured frame even when fewer modules are detected, and allow apps that normally need a larger board. Default `false`. |
+| `debug_allow_incompatible_firmware` | Debug switch: allow flashing firmware whose bus or OTA generation does not match the master. Default `false`. |
 | `ui_scale` | Preview scale in percent (`50`–`200`, default `100`). |
 | `theme` | `auto` (follow Home Assistant), `light`, or `dark`. |
 | `timezone` | IANA name such as `Europe/Prague`. Empty uses Home Assistant's timezone. |
@@ -91,10 +97,10 @@ pick the stock one.
 
 A single grouped panel holds module OTA, backup/restore, and connection/bus
 details. The OTA group uses a target-module field, a release selector with a
-compact refresh action, and a primary flash action; boot and cancel actions sit
-beside it. Connection data is shown as key/value tiles for master state, MQTT
-prefix, hardware and engine, with version and compatibility notes. The backup
-covers settings, playlists, and the last module snapshot.
+compact refresh action, and flash/cancel actions. Connection data is shown as
+key/value tiles for master state, MQTT prefix, hardware and engine, with version
+and compatibility notes. The backup covers settings, playlists, and the last
+module snapshot.
 
 ## Slave-module OTA
 
@@ -107,15 +113,14 @@ streams it over `<prefix>/command/firmware`. A locally built `ATtiny1616_OTA`
 in the `ota` status object, and the master blocks display traffic for roughly
 20–25 seconds while flashing.
 
-The same card also offers **FLASH ALL MODULES** and **BOOT ALL INTO APP**.
-Flash-all walks the detected modules in ascending id order. Boot-all also walks
-every id in the configured module range plus the last OTA target, so modules
-that dropped off the scan while in the bootloader can be recovered. Only one OTA
-session can exist at a time, so the panel
-runs the queue strictly sequentially: the next flash starts only after the
-previous module reports completion. A failed or cancelled module stops the queue,
-and **Cancel** aborts the whole job. The progress line shows the current module
-and completed count. The wire details are in [slave OTA](../protocol/ota.md).
+The same card also offers **FLASH ALL MODULES**. Flash-all walks the detected
+modules in ascending id order. Modules restart into the application on their own
+after a successful flash, so there is no boot button. Only one OTA session can
+exist at a time, so the panel runs the queue strictly sequentially: the next
+flash starts only after the previous module reports completion. A failed or
+cancelled module stops the queue, and **Cancel** aborts the whole job. The
+progress line shows the current module and completed count. The wire details are
+in [slave OTA](../protocol/ota.md).
 
 ## Behaviour notes
 

@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.23";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.23";
+import { formatMessage } from "../utils.js?v=1.2.24";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.24";
 
 export const PanelMixin = (Base) => class extends Base {
   _onInput(event) {
@@ -174,17 +174,11 @@ export const PanelMixin = (Base) => class extends Base {
       case "flash-release-firmware-all":
         await this._flashReleaseFirmwareAll();
         break;
-      case "boot-all-firmware":
-        await this._bootAllFirmware();
-        break;
       case "refresh-firmware-releases":
         await this._loadFirmwareReleases(true);
         break;
       case "cancel-firmware":
         await this._cancelFirmware();
-        break;
-      case "reset-firmware":
-        await this._resetFirmware();
         break;
       case "save-settings":
         await this._saveSettings();
@@ -640,12 +634,6 @@ export const PanelMixin = (Base) => class extends Base {
       await this._send("calibrate", { module, action: "goto", index });
       return;
     }
-    if (sub === "goto_flap") {
-      const flap = data.flap;
-      if (flap === undefined) return;
-      await this._send("calibrate", { module, action: "goto", flap });
-      return;
-    }
     if (sub === "step") {
       const steps =
         data.step !== undefined
@@ -920,19 +908,6 @@ export const PanelMixin = (Base) => class extends Base {
     return Number.isInteger(value) && value >= 1 && value <= 255 ? value : null;
   }
 
-  async _resetFirmware() {
-    const moduleId = this._otaModuleId();
-    if (moduleId == null) {
-      this._toast(this._t("ota_no_module"), "warn");
-      return;
-    }
-    if (!window.confirm(formatMessage(this._t("ota_reset_confirm"), { module: moduleId }))) {
-      return;
-    }
-    await this._send("reset_firmware", { module: moduleId });
-    this._toast(formatMessage(this._t("ota_reset_requested"), { module: moduleId }));
-  }
-
   async _flashFirmware() {
     const fileNode = this.shadowRoot.getElementById("otaFile");
     const file = fileNode && fileNode.files ? fileNode.files[0] : null;
@@ -1071,7 +1046,7 @@ export const PanelMixin = (Base) => class extends Base {
   async _flashReleaseFirmwareAll() {
     const release = this._flashableRelease();
     if (!release) return;
-    const ids = this._bulkOta ? this._bulkOta.targets("flash_all") : [];
+    const ids = this._bulkOta ? this._bulkOta.targets() : [];
     if (!ids.length) {
       this._toast(this._t("firmware_release_no_modules"), "warn");
       return;
@@ -1087,20 +1062,6 @@ export const PanelMixin = (Base) => class extends Base {
       release: release.tag,
       version: release.version || "—",
     });
-  }
-
-  async _bootAllFirmware() {
-    const ids = this._bulkOta ? this._bulkOta.targets("boot_all") : [];
-    if (!ids.length) {
-      this._toast(this._t("firmware_release_no_modules"), "warn");
-      return;
-    }
-    const confirmText = formatMessage(
-      this._t("firmware_release_boot_all_confirm"),
-      { count: ids.length }
-    );
-    if (!window.confirm(confirmText)) return;
-    await this._bulkOta.act("boot_all");
   }
 
   async _downloadBackup() {

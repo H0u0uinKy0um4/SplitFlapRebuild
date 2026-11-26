@@ -44,7 +44,7 @@ dvoumístné minuty a vejde se do rámu 1 × 2.
 | **Map** | Mapa pozic v EEPROM pro každý modul, včetně mazání záznamů. |
 | **Auto-tune** | Projede modul celým bubnem a zaznamená pozice. |
 | **Teach** | Uloží aktuální pozici jako index bubnu, včetně indexu `0`. |
-| **Drum** | Zapíše 64znakový buben do EEPROM modulu a ověří čtení. |
+| **Drum** | Zapíše 64znakový buben do EEPROM modulu. Mapa znaků zůstává na podzáložce Map. |
 
 Pohyby jsou blokující. Po `home`, `goto`, `step` nebo `apply` master odloží
 obnovení stavu o 5 sekund, takže modul se může krátce jevit jako offline. To je
@@ -54,11 +54,17 @@ očekávané.
 
 ### Záložka Display
 
+Záložka Display je jedna karta se třemi sekcemi: **Rozvržení desky**,
+**Předvolby** a **Vývojářské volby**. Rozvržení používá kompaktní třísloupcovou
+mřížku, předvolby dvousloupcovou a vývojářské možnosti jsou přepínače.
+**Uložit nastavení** je v liště podzáložek.
+
 | Klíč | Význam |
 | --- | --- |
 | `row_counts` | Počet modulů v každé fyzické řadě oddělený čárkou, například `3,3,1`. Prázdná hodnota znamená automaticky. |
 | `rows`, `cols` | Rozměry rámu. `0` je odvodí z počtu zjištěných modulů. |
 | `debug_ignore_module_limit` | Ladící přepínač: použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace, které obvykle potřebují větší tabuli. Výchozí `false`. |
+| `debug_allow_incompatible_firmware` | Ladící přepínač: povolí zápis firmwaru, jehož generace sběrnice nebo OTA neodpovídá masteru. Výchozí `false`. |
 | `ui_scale` | Měřítko náhledu v procentech (`50`–`200`, výchozí `100`). |
 | `theme` | `auto` (podle Home Assistantu), `light` nebo `dark`. |
 | `timezone` | IANA název, například `Europe/Prague`. Prázdné použije časové pásmo Home Assistantu. |
@@ -91,10 +97,10 @@ textové pole; záložka buben zobrazí a nabídne standardní.
 
 Jeden seskupený panel obsahuje OTA modulů, zálohu/obnovu a údaje o připojení a
 sběrnici. Část OTA má pole cílového modulu, výběr verze s kompaktní obnovovací
-akcí a hlavní tlačítko zápisu; vedle jsou akce spuštění a zrušení. Údaje o
-připojení jsou v dlaždicích klíč/hodnota pro stav masteru, MQTT prefix, hardware
-a engine, včetně verzí a poznámek o kompatibilitě. Záloha pokrývá nastavení,
-playlisty a poslední snímek modulů.
+akcí a tlačítka zápisu a zrušení. Údaje o připojení jsou v dlaždicích
+klíč/hodnota pro stav masteru, MQTT prefix, hardware a engine, včetně verzí
+a poznámek o kompatibilitě. Záloha pokrývá nastavení, playlisty a poslední
+snímek modulů.
 
 ## OTA firmware modulů
 
@@ -107,14 +113,13 @@ a kompatibilitu z manifestu, zkontroluje aplikační oblast a posílá ji přes
 v objektu `ota` ve statusu a master během flashování blokuje zobrazování
 přibližně 20–25 sekund.
 
-Stejná karta nabízí i **ZAPSAT VŠECHNY MODULY** a **SPUSTIT VŠECHNY DO APLIKACE**.
-Hromadný zápis prochází nalezené moduly ve vzestupném pořadí id. Hromadné spuštění
-zahrnuje navíc každé id v nakonfigurovaném rozsahu a poslední OTA cíl, aby bylo
-možné obnovit moduly, které v bootloaderu přestaly odpovídat na sken. Master
-dovoluje jen jednu OTA relaci, proto panel frontu zpracovává striktně postupně:
-další zápis začne až po dokončení předchozího modulu. Selhání nebo zrušení modulu
-frontu zastaví a **Zrušit** přeruší celou operaci. Řádek průběhu ukazuje aktuální
-modul a počet dokončených. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
+Stejná karta nabízí i **ZAPSAT VŠECHNY MODULY**. Hromadný zápis prochází nalezené
+moduly ve vzestupném pořadí id. Po úspěšném zápisu se modul sám restartuje do
+aplikace, proto panel už nenabízí tlačítko spuštění. Master dovoluje jen jednu
+OTA relaci, proto panel frontu zpracovává striktně postupně: další zápis začne
+až po dokončení předchozího modulu. Selhání nebo zrušení modulu frontu zastaví
+a **Zrušit** přeruší celou operaci. Řádek průběhu ukazuje aktuální modul a počet
+dokončených. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
 
 ## Poznámky k chování
 

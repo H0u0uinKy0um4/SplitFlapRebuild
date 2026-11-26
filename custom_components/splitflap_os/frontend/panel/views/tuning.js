@@ -1,12 +1,12 @@
 /** Tuning tab: module matrix, commands, map, auto-tune, teach and drum. */
 
-import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.23";
+import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.24";
 import {
   escapeAttr,
   escapeHtml,
   formatMessage,
   numberText,
-} from "../../utils.js?v=1.2.23";
+} from "../../utils.js?v=1.2.24";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -158,14 +158,6 @@ export const PanelMixin = (Base) =>
                   <button class="btn danger" data-action="module" data-sub="drum_write">${this._t('write_to_eeprom')}</button>
                   <span class="muted mono" id="moduleDrumPreview"></span>
                 </div>
-                <div class="row between" style="margin-top:16px">
-                  <h3 style="margin:0">${this._t('character_map')}</h3>
-                  <span class="muted" id="charMapTitle"></span>
-                </div>
-                <div class="char-map" id="charMap" style="margin-top:12px"></div>
-                <p class="muted" style="margin-bottom:0">
-                  ${this._t('char_map_help')}
-                </p>
               </div>
             </div>
           </div>
@@ -330,7 +322,6 @@ export const PanelMixin = (Base) =>
           const node = this.shadowRoot.getElementById(id);
           if (node) node.textContent = "";
         }
-        this._renderCharMap(null);
         this._renderMapFlaps(null);
         return;
       }
@@ -389,63 +380,7 @@ export const PanelMixin = (Base) =>
       // handled by the single delegated click listener. A second, direct
       // handler made one click run the action (and its toast) twice.
 
-      this._renderCharMap(selected);
       this._renderMapFlaps(selected);
-    }
-
-    _renderCharMap(module) {
-      const node = this.shadowRoot.getElementById("charMap");
-      const title = this.shadowRoot.getElementById("charMapTitle");
-      if (!node) return;
-      if (!module) {
-        if (title) title.textContent = this._t('select_module');
-        node.innerHTML = `<div class="empty">${escapeHtml(
-          this._t("select_module_hint")
-        )}</div>`;
-        this._charSignature = "";
-        return;
-      }
-
-      const drum =
-        Array.isArray(module.effective_drum) && module.effective_drum.length
-          ? module.effective_drum
-          : DEFAULT_DRUM.split("");
-      const positions = module.map_of_positions || {};
-      const currentIndex =
-        module.display_flap_index != null ? Number(module.display_flap_index) : -1;
-      const signature = [
-        String(module.id),
-        drum.join(""),
-        String(currentIndex),
-        Object.keys(positions)
-          .sort((a, b) => Number(a) - Number(b))
-          .map((key) => `${key}:${positions[key]}`)
-          .join(","),
-      ].join("|");
-      if (signature === this._charSignature) return;
-      this._charSignature = signature;
-
-      if (title) {
-        title.textContent = formatMessage(this._t("char_map_title"), {
-          id: module.id,
-          flaps: this._plural("flaps", drum.length),
-        });
-      }
-      node.innerHTML = drum
-        .map((char, index) => {
-          const color = COLOR_CODES.includes(char) ? ` color-${char}` : "";
-          const tuned = positions[String(index)] !== undefined;
-          return `<button class="char${color}${tuned ? " tuned" : ""}${
-            index === currentIndex ? " current" : ""
-          }" data-action="module" data-sub="goto_flap" data-flap="${escapeAttr(
-            char
-          )}" title="${escapeAttr(
-            formatMessage(this._t("index_named"), { index })
-          )}${tuned ? ` • ${positions[String(index)]}` : ""}">
-          ${char === " " ? "␣" : escapeHtml(char)}<small>${index}</small>
-        </button>`;
-        })
-        .join("");
     }
 
     _renderMapFlaps(module) {
