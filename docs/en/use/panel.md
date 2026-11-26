@@ -89,9 +89,12 @@ pick the stock one.
 
 ### System sub-tab
 
-Connection details (prefix, broker state, versions and compatibility), hardware
-actions, and backup/restore. The backup covers settings, playlists, and the last
-module snapshot.
+A single grouped panel holds module OTA, backup/restore, and connection/bus
+details. The OTA group uses a target-module field, a release selector with a
+compact refresh action, and a primary flash action; boot and cancel actions sit
+beside it. Connection data is shown as key/value tiles for master state, MQTT
+prefix, hardware and engine, with version and compatibility notes. The backup
+covers settings, playlists, and the last module snapshot.
 
 ## Slave-module OTA
 

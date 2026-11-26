@@ -124,6 +124,11 @@ export const PANEL = {
     "No app exposes settings of its own yet. Display options are on the Display tab.",
   backup_help:
     "Export settings, playlists and the last module snapshot. Restoring merges settings and replaces playlists.",
+  system_group_ota: "Module OTA Firmware",
+  system_group_backup: "Backup & Restore",
+  system_group_connection: "Connection & Bus",
+  system_hint_backup: "Settings, playlists & calibration snapshot",
+  firmware_target_module: "Target Module",
   firmware_update: "MODULE FIRMWARE",
   firmware_file: "FIRMWARE (.HEX)",
   firmware: "FIRMWARE",
@@ -175,7 +180,7 @@ export const PANEL = {
   ota_sent:
     "Image sent ({size} bytes, CRC-32 {crc}). The session is starting.",
   ota_cancel_requested: "Cancel requested.",
-  ota_reset: "BOOT INTO APP",
+  ota_reset: "BOOT TARGET",
   ota_reset_confirm:
     "Boot module {module} out of the bootloader into its current application?",
   ota_reset_requested: "Boot request sent for module {module}.",
@@ -187,7 +192,7 @@ export const PANEL = {
   firmware_release_stale: "Cached list; refresh to check GitHub",
   firmware_release_stale_blocked:
     "Refresh the release list before flashing from a cached copy.",
-  firmware_release_flash: "FLASH RELEASE",
+  firmware_release_flash: "FLASH TARGET",
   firmware_release_refresh: "REFRESH RELEASES",
   firmware_release_local_title: "Local HEX (advanced)",
   firmware_release_local_help:

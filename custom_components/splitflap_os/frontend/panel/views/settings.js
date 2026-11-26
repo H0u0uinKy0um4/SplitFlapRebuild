@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.22";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.22";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.23";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.23";
 
 const checkedSettingValue = (value) =>
   value === true ||
@@ -84,66 +84,92 @@ export const PanelMixin = (Base) =>
           </div>
 
           <div class="subpage" data-subpage="settings" data-sub="system">
-            <div class="card">
-              <h2>${this._t('firmware_update')}</h2>
-              <p class="muted" style="margin-top:0">
-                ${this._t('firmware_help')}
-              </p>
-              <div class="row" style="align-items:flex-end">
-                <label class="field" style="flex:1 1 120px">
-                  <span>${this._t('module')}</span>
-                  <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
-                  <datalist id="otaModuleList"></datalist>
-                </label>
-                <label class="field" style="flex:2 1 260px">
-                  <span>${this._t('firmware_release_select')}</span>
-                  <select id="firmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
-                </label>
-              </div>
-              <div class="muted" id="firmwareReleaseInfo" style="margin-top:8px">${this._t('firmware_release_loading')}</div>
-              <div class="muted" id="otaInstalled" style="margin-top:8px"></div>
-              <div class="actions">
-                <button class="btn secondary" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
-                <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
-                <button class="btn secondary" data-action="refresh-firmware-releases">${this._t('firmware_release_refresh')}</button>
-                <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
-                <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
-                <button class="btn secondary" data-action="boot-all-firmware">${this._t('firmware_release_boot_all')}</button>
-              </div>
-              <div class="muted" id="otaBulkStatus" style="margin-top:8px"></div>
-              <details style="margin-top:12px">
-                <summary>${this._t('firmware_release_local_title')}</summary>
-                <p class="muted" style="margin:6px 0">
-                  ${this._t('firmware_release_local_help')}
-                </p>
-                <div class="row" style="align-items:flex-end">
-                  <label class="field" style="flex:2 1 240px">
-                    <span>${this._t('firmware_file')}</span>
-                    <input id="otaFile" type="file" accept=".hex,text/plain">
-                  </label>
-                  <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+            <div class="card system-card">
+              <div class="system-group">
+                <div class="system-group-head">
+                  <h3 class="system-group-title">${this._t('system_group_ota')}</h3>
+                  <span class="status-badge" id="otaInstalled">${this._t('firmware_installed_unknown')}</span>
                 </div>
-              </details>
-              <div class="ota-progress"><span id="otaBar"></span></div>
-              <div class="muted" id="otaStatus" style="margin-top:8px">${this._t('ota_state_idle')}</div>
-            </div>
-
-            <div class="card">
-              <h2>${escapeHtml(this._t('backup_restore'))}</h2>
-              <p class="muted" style="margin-top:0">
-                ${this._t('backup_help')}
-              </p>
-              <div class="actions">
-                <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
-                <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
-                <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+                <div class="ota-grid">
+                  <label class="field">
+                    <span>${this._t('firmware_target_module')}</span>
+                    <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
+                    <datalist id="otaModuleList"></datalist>
+                  </label>
+                  <label class="field">
+                    <span>${this._t('firmware_release_select')}</span>
+                    <span class="inline-field">
+                      <select id="firmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
+                      <button type="button" class="icon-action" data-action="refresh-firmware-releases" title="${escapeAttr(this._t('firmware_release_refresh'))}" aria-label="${escapeAttr(this._t('firmware_release_refresh'))}">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                          <polyline points="21 3 21 9 15 9"></polyline>
+                        </svg>
+                      </button>
+                    </span>
+                    <span class="ota-meta" id="firmwareReleaseInfo">${this._t('firmware_release_loading')}</span>
+                  </label>
+                </div>
+                <div class="actions">
+                  <button class="btn" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
+                  <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
+                  <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
+                  <button class="btn secondary" data-action="boot-all-firmware">${this._t('firmware_release_boot_all')}</button>
+                  <button class="btn cancel" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
+                </div>
+                <div class="muted" id="otaBulkStatus"></div>
+                <div class="ota-progress"><span id="otaBar"></span></div>
+                <div class="muted" id="otaStatus">${this._t('ota_state_idle')}</div>
+                <details>
+                  <summary>${this._t('firmware_release_local_title')}</summary>
+                  <div class="advanced-box">
+                    <input id="otaFile" type="file" accept=".hex,text/plain">
+                    <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                    <span class="muted">${this._t('firmware_release_local_help')}</span>
+                  </div>
+                </details>
               </div>
-              <div class="muted" id="backupStatus" style="margin-top:8px"></div>
-            </div>
 
-            <div class="card">
-              <h2>${this._t('connection')}</h2>
-              <div class="muted" id="connectionInfo">${this._t('waiting_state')}</div>
+              <div class="system-group">
+                <div class="system-group-head">
+                  <h3 class="system-group-title">${this._t('system_group_backup')}</h3>
+                  <span class="system-group-hint">${this._t('system_hint_backup')}</span>
+                </div>
+                <div class="actions">
+                  <button class="btn secondary" data-action="download-backup">${this._t('download_backup_json')}</button>
+                  <button class="btn secondary" data-action="restore-backup">${this._t('restore_from_json')}</button>
+                  <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+                </div>
+                <div class="muted" id="backupStatus"></div>
+              </div>
+
+              <div class="system-group">
+                <div class="system-group-head">
+                  <h3 class="system-group-title">${this._t('system_group_connection')}</h3>
+                </div>
+                <div class="kv-grid">
+                  <div class="kv">
+                    <span class="kv-label">${this._t('master')}</span>
+                    <span class="kv-value" id="connMaster">${this._t('waiting_state')}</span>
+                    <span class="kv-note" id="connMasterNote"></span>
+                  </div>
+                  <div class="kv">
+                    <span class="kv-label">${this._t('mqtt_prefix')}</span>
+                    <span class="kv-value" id="connMqtt">—</span>
+                    <span class="kv-note" id="connMqttNote"></span>
+                  </div>
+                  <div class="kv">
+                    <span class="kv-label">${this._t('hardware')}</span>
+                    <span class="kv-value" id="connHardware">—</span>
+                    <span class="kv-note" id="connHardwareNote"></span>
+                  </div>
+                  <div class="kv">
+                    <span class="kv-label">${this._t('engine')}</span>
+                    <span class="kv-value" id="connEngine">—</span>
+                    <span class="kv-note" id="connEngineNote"></span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>`;
@@ -671,38 +697,57 @@ export const PanelMixin = (Base) =>
     }
 
     _renderConnectionInfo() {
-      const node = this.shadowRoot.getElementById("connectionInfo");
+      const node = this.shadowRoot.getElementById("connMaster");
       if (!node || !this._state) return;
       const coordinator = this._coordinator();
       const engine = this._engine();
       const board = this._board();
       const info = this._compat();
-      const parts = [
-        `${this._t("mqtt_prefix")}: ${coordinator.prefix || "—"}`,
-        `${this._t("master")}: ${this._t(
-          coordinator.online ? "master_online" : "master_offline"
-        )}`,
+      const unknown = this._t("unknown");
+      const set = (id, value) => {
+        const target = this.shadowRoot.getElementById(id);
+        if (target) target.textContent = value;
+      };
+
+      set(
+        "connMaster",
+        this._t(coordinator.online ? "master_online" : "master_offline")
+      );
+      set(
+        "connMasterNote",
         `${this._t("master_version")}: ${
-          coordinator.master_version || this._t("unknown")
-        }`,
-        `${this._t("bus_compatibility")}: ${
-          info.masterBus == null ? this._t("unknown") : info.masterBus
-        }`,
+          coordinator.master_version || unknown
+        } · ${this._t("bus_compatibility")}: ${
+          info.masterBus == null ? unknown : info.masterBus
+        }`
+      );
+      set("connMqtt", coordinator.prefix || unknown);
+      set(
+        "connMqttNote",
         `${this._t("mqtt_compatibility")}: ${
-          info.masterMqtt == null ? this._t("unknown") : info.masterMqtt
+          info.masterMqtt == null ? unknown : info.masterMqtt
         } (${this._t("integration")}: ${
-          info.local == null ? this._t("unknown") : info.local
-        })`,
-        `${this._t("last_status")}: ${
+          info.local == null ? unknown : info.local
+        }) · ${this._t("last_status")}: ${
           coordinator.last_status || this._t("never")
-        }`,
-        `${this._t("modules_label")}: ${coordinator.modules_count || 0}`,
-        `${this._t("board")}: ${board.rows} × ${board.cols}`,
-        `${this._t("engine")}: ${this._modeLabel(engine.mode)}${
-          engine.active_app ? ` (${this._appName(engine.active_app)})` : ""
-        }`,
-        `${this._t("integration")}: v${this._state.version || VERSION}`,
-      ];
-      node.textContent = parts.join(" • ");
+        }`
+      );
+      set("connHardware", `${board.rows} × ${board.cols}`);
+      set(
+        "connHardwareNote",
+        `${this._t("modules_label")}: ${coordinator.modules_count || 0} · ${this._t(
+          "detected"
+        )}: ${(coordinator.modules || []).length}`
+      );
+      set(
+        "connEngine",
+        `${this._modeLabel(engine.mode)}${
+          engine.active_app ? ` · ${this._appName(engine.active_app)}` : ""
+        }`
+      );
+      set(
+        "connEngineNote",
+        `${this._t("integration")}: v${this._state.version || VERSION}`
+      );
     }
   };

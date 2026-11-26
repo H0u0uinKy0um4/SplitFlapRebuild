@@ -89,9 +89,12 @@ textové pole; záložka buben zobrazí a nabídne standardní.
 
 ### Záložka System
 
-Informace o připojení (prefix, stav brokeru, verze a kompatibilita), hardwarové
-akce a záloha/obnova. Záloha pokrývá nastavení, playlisty a poslední snímek
-modulů.
+Jeden seskupený panel obsahuje OTA modulů, zálohu/obnovu a údaje o připojení a
+sběrnici. Část OTA má pole cílového modulu, výběr verze s kompaktní obnovovací
+akcí a hlavní tlačítko zápisu; vedle jsou akce spuštění a zrušení. Údaje o
+připojení jsou v dlaždicích klíč/hodnota pro stav masteru, MQTT prefix, hardware
+a engine, včetně verzí a poznámek o kompatibilitě. Záloha pokrývá nastavení,
+playlisty a poslední snímek modulů.
 
 ## OTA firmware modulů
 

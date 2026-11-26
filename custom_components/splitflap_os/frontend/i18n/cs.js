@@ -124,6 +124,11 @@ export const PANEL = {
     "Žádná aplikace zatím nemá vlastní nastavení. Možnosti displeje najdete na kartě Displej.",
   backup_help:
     "Exportuje nastavení, playlisty a poslední snímek modulů. Obnovení sloučí nastavení a nahradí playlisty.",
+  system_group_ota: "OTA firmware modulů",
+  system_group_backup: "Záloha a obnovení",
+  system_group_connection: "Připojení a sběrnice",
+  system_hint_backup: "Nastavení, playlisty a kalibrační snapshot",
+  firmware_target_module: "Cílový modul",
   firmware_update: "FIRMWARE MODULŮ",
   firmware_file: "FIRMWARE (.HEX)",
   firmware: "FIRMWARE",
@@ -175,7 +180,7 @@ export const PANEL = {
   ota_sent:
     "Obrázek odeslán ({size} bajtů, CRC-32 {crc}). Relace se spouští.",
   ota_cancel_requested: "Požadavek na zrušení odeslán.",
-  ota_reset: "SPUSTIT APLIKACI",
+  ota_reset: "SPUSTIT CÍL",
   ota_reset_confirm:
     "Spustit modul {module} z bootloaderu do stávající aplikace?",
   ota_reset_requested: "Požadavek na spuštění modulu {module} odeslán.",
@@ -187,7 +192,7 @@ export const PANEL = {
   firmware_release_stale: "Seznam z mezipaměti; obnovte kontrolu GitHubu",
   firmware_release_stale_blocked:
     "Před zápisem obnovte seznam verzí z mezipaměti.",
-  firmware_release_flash: "ZAPSAT VERZI",
+  firmware_release_flash: "ZAPSAT DO CÍLE",
   firmware_release_refresh: "OBNOVIT VERZE",
   firmware_release_local_title: "Místní HEX (pokročilé)",
   firmware_release_local_help:
