@@ -59,6 +59,17 @@ DISPLAY_FIELDS = (
         ),
     ),
     SettingField(
+        key="debug_allow_incompatible_firmware",
+        label="Debug: allow incompatible firmware",
+        type="boolean",
+        default=False,
+        help=(
+            "For development only. Allow flashing a published firmware whose "
+            "bus or OTA generation does not match the master. Known "
+            "mismatches are blocked unless this option is enabled."
+        ),
+    ),
+    SettingField(
         key="ui_scale",
         label="Preview scale (%)",
         type="number",

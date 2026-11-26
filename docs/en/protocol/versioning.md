@@ -21,8 +21,8 @@ either compatibility axis.
 
 ```text
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
-master   <bus>.<mqtt>.<release>       1.1.0.0    bus 1, mqtt 1, release 0.0
-HA       <mqtt>.<release>             1.2.19     mqtt 1, release 2.19
+master   <bus>.<mqtt>.<release>       1.1.0.1    bus 1, mqtt 1, release 0.1
+HA       <mqtt>.<release>             1.2.21     mqtt 1, release 2.21
 ```
 
 ## Checks
@@ -35,8 +35,14 @@ HA       <mqtt>.<release>             1.2.19     mqtt 1, release 2.19
   cancellation, or a module reset.
 - If the master predates the version protocol, the panel reports the version as
   unknown instead of assuming compatibility.
-- The master's bus generation is diagnostic only; Home Assistant never speaks the
-  RS485 protocol directly.
+- The master's bus generation is diagnostic only for display traffic; Home
+  Assistant never speaks the RS485 protocol directly. Published slave firmware
+  is the exception: HASC checks its manifest `fw_bus_compat` against the
+  master's `bus_compat` before allowing a flash.
+- HASC mirrors the bootloader generation as `OTA_PROTOCOL_VERSION` in
+  `custom_components/splitflap_os/ota.py`; `tests/test_versions.py` pins it to
+  the value shared with the master and slave bootloader. Publishing firmware
+  images does not change this number.
 
 ## What to bump
 

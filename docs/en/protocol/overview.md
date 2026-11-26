@@ -53,7 +53,7 @@ Canonical shape (abridged):
 {
   "state": "online",
   "text": "HELLO",
-  "version": "1.1.0.0",
+  "version": "1.1.0.1",
   "bus_compat": 1,
   "mqtt_compat": 1,
   "compat": 1,

@@ -95,11 +95,14 @@ modulů.
 
 ## OTA firmware modulů
 
-**Settings → System** obsahuje i OTA ovládání. Panel načte `firmware.hex` buildu
-`ATtiny1616_OTA`, ověří a rozdělí aplikační oblast a posílá ji přes
-`<prefix>/command/firmware`. Pokrok dorazí v objektu `ota` ve statusu a master
-během flashování blokuje zobrazování přibližně 20–25 sekund. Drátové detaily jsou
-v [OTA modulů](../protocol/ota.md).
+**Settings → System** obsahuje i OTA ovládání. Hlavní výběr zobrazuje publikované
+verze firmwaru modulu z GitHubu: nejprve stabilní tagy, pak nejnovější `dev`
+sestavení. Panel vybraný HEX stáhne až při zápisu, ověří kontrolní součet
+a kompatibilitu z manifestu, zkontroluje aplikační oblast a posílá ji přes
+`<prefix>/command/firmware`. Místně sestavený `firmware.hex` z buildu
+`ATtiny1616_OTA` zůstává dostupný v sekci **Místní HEX (pokročilé)**. Pokrok dorazí
+v objektu `ota` ve statusu a master během flashování blokuje zobrazování
+přibližně 20–25 sekund. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
 
 ## Poznámky k chování
 

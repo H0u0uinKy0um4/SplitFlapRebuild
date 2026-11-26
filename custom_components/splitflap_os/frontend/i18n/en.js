@@ -179,6 +179,51 @@ export const PANEL = {
   ota_reset_confirm:
     "Boot module {module} out of the bootloader into its current application?",
   ota_reset_requested: "Boot request sent for module {module}.",
+  firmware_release_select: "Firmware release",
+  firmware_release_none: "No published firmware yet",
+  firmware_release_loading: "Loading published firmware…",
+  firmware_release_select_hint: "Choose a published firmware release.",
+  firmware_release_built: "Built {built} from {commit}",
+  firmware_release_stale: "Cached list; refresh to check GitHub",
+  firmware_release_stale_blocked:
+    "Refresh the release list before flashing from a cached copy.",
+  firmware_release_flash: "FLASH RELEASE",
+  firmware_release_refresh: "REFRESH RELEASES",
+  firmware_release_local_title: "Local HEX (advanced)",
+  firmware_release_local_help:
+    "Use a locally built ATtiny1616_OTA firmware.hex instead of a published release.",
+  firmware_release_confirm:
+    "Flash module {module} with {version}? The display pauses for about 25 seconds.",
+  firmware_release_sent:
+    "Release {version} sent ({size} bytes, CRC-32 {crc}). The session is starting.",
+  firmware_release_channel_stable: "stable",
+  firmware_release_channel_dev: "dev",
+  firmware_release_compat_ok: "Compatibility checks passed",
+  firmware_release_compat_warn: "Compatibility warning",
+  firmware_release_compat_block: "Flashing is blocked",
+  firmware_release_unavailable: "Firmware releases are unavailable.",
+  firmware_release_not_found: "The selected firmware release no longer exists.",
+  firmware_release_manifest_invalid: "A published firmware manifest is invalid.",
+  firmware_release_checksum_mismatch:
+    "The downloaded firmware did not match its published checksum.",
+  firmware_release_image_invalid:
+    "The published firmware is not a valid slave application image.",
+  firmware_release_bus_mismatch:
+    "The firmware bus version does not match the master.",
+  firmware_release_ota_protocol_mismatch:
+    "The firmware OTA protocol does not match this integration.",
+  firmware_release_bootloader_mismatch:
+    "The firmware bootloader generation does not match this integration.",
+  firmware_release_module_bootloader_mismatch:
+    "The module reports a different bootloader generation.",
+  firmware_release_unknown_bus:
+    "The master bus version is unknown; compatibility was not confirmed.",
+  firmware_release_unknown_ota_protocol:
+    "The firmware OTA generation is unknown; compatibility was not confirmed.",
+  firmware_release_installed_bus_incompatible:
+    "The installed firmware reports an incompatible bus version.",
+  firmware_release_blocked: "A firmware compatibility mismatch blocks flashing.",
+  firmware_release_override_used: "The incompatible-firmware override is enabled.",
   compose_message_first: "Compose a message first",
   enter_drum_index: "Enter a drum index",
   drum_length_error: "The drum must be exactly 64 characters and contain no line breaks",
@@ -408,6 +453,7 @@ export const SETTINGS = {
     rows: "Frame rows (0 = auto)",
     cols: "Frame columns (0 = auto)",
     debug_ignore_module_limit: "Debug: ignore module limits",
+    debug_allow_incompatible_firmware: "Debug: allow incompatible firmware",
     ui_scale: "Preview scale (%)",
     theme: "Panel theme",
     timezone: "Timezone",
@@ -421,6 +467,8 @@ export const SETTINGS = {
     cols: "Physical frame width. Leave 0 to derive it from the display.",
     debug_ignore_module_limit:
       "For development only. Use the configured frame even when fewer modules are detected, and allow apps that need a larger board. Cells without a physical module are shown in the preview but are not sent to the master.",
+    debug_allow_incompatible_firmware:
+      "For development only. Allow flashing a published firmware whose bus or OTA generation does not match the master. Known mismatches are blocked unless this option is enabled.",
     ui_scale:
       "Scales the flap and module previews in the panel. 100% is the default; use a larger value for small displays.",
     theme:

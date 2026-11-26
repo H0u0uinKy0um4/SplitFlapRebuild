@@ -18,11 +18,12 @@ NAME: Final = "Split-Flap OS"
 # so the coordinator can compare it with the master's payload without parsing
 # the string.
 MQTT_COMPAT: Final = 1
-VERSION: Final = "1.2.19"
+VERSION: Final = "1.2.21"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
 CONF_DEBUG_IGNORE_MODULE_LIMIT: Final = "debug_ignore_module_limit"
+CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE: Final = "debug_allow_incompatible_firmware"
 DEFAULT_TOPIC_PREFIX: Final = "splitflap"
 DEFAULT_DEVICE_NAME: Final = "Split-Flap Display"
 
@@ -88,6 +89,8 @@ __all__ = [
     "MQTT_COMPAT",
     "CONF_NAME",
     "CONF_TOPIC_PREFIX",
+    "CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE",
+    "CONF_DEBUG_IGNORE_MODULE_LIMIT",
     "COORDINATOR_STORAGE_VERSION",
     "DEFAULT_DEVICE_NAME",
     "DEFAULT_DRUM",

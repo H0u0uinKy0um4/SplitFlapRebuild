@@ -1,7 +1,7 @@
 /** Apps tab: app launcher grid. */
 
-import { APP_ICONS } from "../../constants.js?v=1.2.19";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.19";
+import { APP_ICONS } from "../../constants.js?v=1.2.21";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.21";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -79,9 +79,11 @@ export const PanelMixin = (Base) =>
       const needRows = Math.max(1, Number(app.min_rows) || 1);
       const needCols = Math.max(1, Number(app.min_cols) || 1);
       const rows = Number(board && board.rows) || 0;
-      const minCols = Number(board && (board.minCols ?? board.min_cols)) || 0;
+      const minCols = Number(board && board.minCols) || 0;
       const layoutError =
-        board && board.error ? this._layoutErrorText(board.error) : "";
+        board && board.layoutError
+          ? this._layoutErrorText(board.layoutError)
+          : "";
       if (layoutError && (needRows > 1 || needCols > 1)) {
         return formatMessage(this._t("fix_layout_first"), { error: layoutError });
       }

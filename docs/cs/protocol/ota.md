@@ -41,9 +41,23 @@ Publikuje se uvnitř `<prefix>/status` jako `ota`:
 | `module` | int | Cílový modul během relace. |
 | `progress` | int | 0–100 během sběru nebo flashování. |
 | `received` | int | Dosud přijaté bajty obrazu. |
+| `bootloader_version` | int | Generace bootloaderu odpověděná při PINGu, pro diagnostiku odmítnuté relace. |
 | `error` | string | Přítomné, když relace selhala. |
 
 Neznámé stavy se převedou na `idle`; pole špatného typu se zahodí.
+
+## Publikované verze
+
+Repozitář modulu publikuje `firmware.hex` spolu s vygenerovaným manifestem
+`firmware.json` do GitHub Releases. Push do `master` aktualizuje průběžnou `dev`
+verzi; tagy vytvářejí neměnné stabilní verze. HASC oba typy zobrazí a HEX stáhne
+až při zápisu. Ověří SHA-256 z manifestu, znovu zkontroluje aplikační oblast
+a porovná `fw_bus_compat` z manifestu s `bus_compat` masteru a svou zrcadlenou
+generací OTA/bootloaderu.
+
+Známé tvrdé nesoulady zápis blokují. Neznámé kompatibilní údaje způsobí upozornění. Nastavení
+`Ladění: povolit nekompatibilní firmware` může pro vývoj známý nesoulad snížit
+na upozornění.
 
 ## Chování relace
 
@@ -55,7 +69,8 @@ k obnově.
 ## Rozhraní v Home Assistantu
 
 Pro OTA neexistuje služba. Panel používá WebSocket příkazy
-`splitflap_os/flash_firmware`, `splitflap_os/cancel_firmware` a
+`splitflap_os/flash_firmware`, `splitflap_os/list_firmware_releases`,
+`splitflap_os/flash_firmware_release`, `splitflap_os/cancel_firmware` a
 `splitflap_os/reset_firmware`. Topic je zde zdokumentovaný, protože je součástí
 MQTT kontraktu.
 

@@ -1,9 +1,14 @@
 /** Panel component logic. */
 
-import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.19";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.19";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.19";
-import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.19";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.21";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.21";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.21";
+import {
+  normalizeBoard,
+  normalizeLayoutError,
+  normalizeSnapshot,
+} from "../snapshot-adapter.js?v=1.2.21";
+import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.21";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -29,6 +34,9 @@ export const PanelMixin = (Base) => class extends Base {
     this._inspectorModule = null;
     this._otaBusy = false;
     this._otaSize = 0;
+    this._firmwareReleases = null;
+    this._releasesLoaded = false;
+    this._releasesLoading = false;
     this._settingsBuilt = false;
     this._settingsDirty = false;
     this._charSignature = "";
@@ -178,7 +186,9 @@ export const PanelMixin = (Base) => class extends Base {
 
   _setState(state) {
     if (!state || !state.engine || !state.coordinator) return;
-    this._state = state;
+    // One adapter resolves aliases, geometry and layout errors before any
+    // view reads the snapshot.
+    this._state = normalizeSnapshot(state, { stockDrum: DEFAULT_DRUM });
     this._connected = true;
     this._renderAll();
   }
@@ -216,6 +226,16 @@ export const PanelMixin = (Base) => class extends Base {
 
   _coordinator() {
     return this._state ? this._state.coordinator : null;
+  }
+
+  _compat() {
+    return (this._state && this._state.compatInfo) || {
+      local: null,
+      masterMqtt: null,
+      masterBus: null,
+      ok: null,
+      missing: true,
+    };
   }
 
   _moduleFor(moduleId) {
@@ -258,63 +278,36 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   _layoutErrorText(error) {
-    let text = String(error || "");
-    if (!text) return "";
-    text = text.replace(
-      /Row layout must contain whole numbers, not ([^\n]+)/g,
-      (_match, value) =>
-        formatMessage(this._t("layout_err_whole_numbers"), { value })
-    );
-    text = text.replace(
-      /Row layout counts must be greater than zero/g,
-      () => this._t("layout_err_positive")
-    );
-    text = text.replace(
-      /Row layout has (\d+) row\(s\) but the frame is (\d+) row\(s\)/g,
-      (_match, count, frame) =>
-        formatMessage(this._t("layout_err_row_mismatch"), {
-          count: this._plural("rows", Number(count)),
-          frame: this._plural("rows", Number(frame)),
-        })
-    );
-    text = text.replace(
-      /Row layout needs at least (\d+) columns but the frame has (\d+)/g,
-      (_match, needed, frame) =>
-        formatMessage(this._t("layout_err_columns"), {
-          needed: this._plural("columns", Number(needed)),
-          frame: this._plural("columns", Number(frame)),
-        })
-    );
-    text = text.replace(
-      /Row layout describes (\d+) module\(s\) but (\d+) were detected/g,
-      (_match, layout, detected) =>
-        formatMessage(this._t("layout_err_describes"), {
-          layout: this._plural("modules", Number(layout)),
-          detected: this._plural("modules", Number(detected)),
-        })
-    );
-    text = text.replace(
-      /Row layout does not fit inside the frame/g,
-      () => this._t("layout_err_no_fit")
-    );
-    text = text.replace(
-      /Layout leaves (\d+) blank cell\(s\); at most one row \((\d+)\) is allowed(?:\. Set a row layout such as 3,3,1\.)?/g,
-      (_match, blank, row) =>
-        formatMessage(this._t("layout_err_blank"), {
-          blank: this._plural("blank_cells", Number(blank)),
-          row: Number(row),
-        })
-    );
-    text = text.replace(
-      /The (\d+)×(\d+) frame only fits (\d+) of (\d+) detected module\(s\)/g,
-      (_match, rows, cols, capacity, detected) =>
-        formatMessage(this._t("layout_err_capacity"), {
-          frame: `${rows}×${cols}`,
-          capacity: this._plural("modules", Number(capacity)),
-          detected: this._plural("modules", Number(detected)),
-        })
-    );
-    return text;
+    const info = normalizeLayoutError(error);
+    if (!info) return "";
+    const params = { ...(info.params || {}) };
+    switch (info.code) {
+      case "layout_err_row_mismatch":
+        params.count = this._plural("rows", params.count);
+        params.frame = this._plural("rows", params.frame);
+        break;
+      case "layout_err_columns":
+        params.needed = this._plural("columns", params.needed);
+        params.frame = this._plural("columns", params.frame);
+        break;
+      case "layout_err_describes":
+        params.layout = this._plural("modules", params.layout);
+        params.detected = this._plural("modules", params.detected);
+        break;
+      case "layout_err_blank":
+        params.blank = this._plural("blank_cells", params.blank);
+        break;
+      case "layout_err_capacity":
+        params.frame = `${params.rows}×${params.cols}`;
+        params.capacity = this._plural("modules", params.capacity);
+        params.detected = this._plural("modules", params.detected);
+        break;
+      case "raw":
+        return params.text;
+      default:
+        break;
+    }
+    return formatMessage(this._t(info.code), params);
   }
 
   _styleOptions() {
@@ -440,43 +433,16 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   _board() {
+    if (this._state && this._state.board) return this._state.board;
     const engine = this._engine();
-    const board = (engine && engine.board) || {};
-    const cols = Math.max(1, Number(board.cols) || 15);
-    const rows = Math.max(1, Number(board.rows) || 1);
-    let rowCounts = Array.isArray(board.row_counts) ? board.row_counts.map((n) => Number(n) || 0) : [];
-    if (rowCounts.length !== rows) rowCounts = Array(rows).fill(cols);
-    let rowOffsets = Array.isArray(board.row_offsets)
-      ? board.row_offsets.map((n) => Math.max(0, Number(n) || 0))
-      : [];
-    if (rowOffsets.length !== rows) {
-      rowOffsets = rowCounts.map((count) => Math.max(0, Math.floor((cols - count) / 2)));
-    }
-    return {
-      rows,
-      cols,
-      modules: Number(board.module_count) || 0,
-      rowCounts,
-      rowOffsets,
-      minCols: Number(board.min_cols) || 0,
-      layoutModuleCount: Number(board.layout_module_count) || 0,
-      debugModuleLimit: Boolean(board.debug_module_limit),
-      error: board.error || "",
-    };
+    return normalizeBoard((engine && engine.board) || {}, []);
   }
 
   _lines() {
     const engine = this._engine();
-    const board = this._board();
-    const lines =
-      engine && engine.display && Array.isArray(engine.display.lines)
-        ? engine.display.lines
-        : [];
-    const out = [];
-    for (let row = 0; row < board.rows; row += 1) {
-      out.push(String(lines[row] || "").padEnd(board.cols, " ").slice(0, board.cols));
-    }
-    return out;
+    return engine && engine.display && Array.isArray(engine.display.lines)
+      ? engine.display.lines
+      : [];
   }
 
 };

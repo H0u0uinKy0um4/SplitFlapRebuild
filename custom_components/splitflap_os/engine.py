@@ -27,6 +27,7 @@ from homeassistant.helpers.storage import Store
 from .apps import AppContext, AppRegistry, load_apps
 from .const import (
     ANIMATION_ORDERS,
+    CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE,
     CONF_DEBUG_IGNORE_MODULE_LIMIT,
     DOMAIN,
     ENGINE_STORAGE_VERSION,
@@ -209,6 +210,14 @@ class AppEngine:
         """Whether debug mode lets apps use a frame larger than the hardware."""
 
         return _as_bool(self.settings.get(CONF_DEBUG_IGNORE_MODULE_LIMIT, False))
+
+    @property
+    def debug_allow_incompatible_firmware(self) -> bool:
+        """Whether OTA may ignore published compatibility mismatches."""
+
+        return _as_bool(
+            self.settings.get(CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE, False)
+        )
 
     @property
     def layout(self) -> Layout:

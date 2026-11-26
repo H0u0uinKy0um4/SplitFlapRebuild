@@ -20,8 +20,8 @@ Master obě strany propojuje, takže nese obě čísla. Protokol bootloaderu OTA
 
 ```text
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
-master   <bus>.<mqtt>.<vydání>        1.1.0.0    bus 1, mqtt 1, vydání 0.0
-HA       <mqtt>.<vydání>              1.2.19     mqtt 1, vydání 2.19
+master   <bus>.<mqtt>.<vydání>        1.1.0.1    bus 1, mqtt 1, vydání 0.1
+HA       <mqtt>.<vydání>              1.2.21     mqtt 1, vydání 2.21
 ```
 
 ## Kontroly
@@ -34,8 +34,13 @@ HA       <mqtt>.<vydání>              1.2.19     mqtt 1, vydání 2.19
   modulu.
 - Pokud master verzi vůbec nehlásí, panel ji označí jako neznámou a nebude
   předpokládat kompatibilitu.
-- Generace sběrnice masteru je jen diagnostická; Home Assistant RS485 protokol
-  přímo nikdy nemluví.
+- Generace sběrnice masteru je pro běžný provoz jen diagnostická; Home Assistant
+  RS485 protokol přímo nikdy nemluví. Publikovaný firmware modulu je výjimka:
+  HASC před zápisem porovná `fw_bus_compat` z manifestu s `bus_compat` masteru.
+- HASC sdílí generaci bootloaderu jako `OTA_PROTOCOL_VERSION` v
+  `custom_components/splitflap_os/ota.py`; `tests/test_versions.py` ji připíná
+  k hodnotě sdílené s masterem a bootloaderem modulu. Publikování obrazů
+  firmwaru toto číslo nemění.
 
 ## Co zvyšovat
 

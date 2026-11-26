@@ -95,11 +95,14 @@ module snapshot.
 
 ## Slave-module OTA
 
-**Settings → System** also exposes the OTA controls. The panel reads an
-`ATtiny1616_OTA` `firmware.hex`, validates and slices the application region,
-and streams it over `<prefix>/command/firmware`. Progress arrives in the `ota`
-status object, and the master blocks display traffic for roughly 20–25 seconds
-while flashing. The wire details are in
+**Settings → System** also exposes the OTA controls. The primary selector lists
+published Slave firmware releases from GitHub: stable tags first, then the
+latest `dev` build. The panel downloads the selected HEX on demand, verifies its
+manifest checksum and compatibility, validates the application region, and
+streams it over `<prefix>/command/firmware`. A locally built `ATtiny1616_OTA`
+`firmware.hex` remains available under **Local HEX (advanced)**. Progress arrives
+in the `ota` status object, and the master blocks display traffic for roughly
+20–25 seconds while flashing. The wire details are in
 [slave OTA](../protocol/ota.md).
 
 ## Behaviour notes

@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.19";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.19";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.21";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.21";
 
 const checkedSettingValue = (value) =>
   value === true ||
@@ -95,17 +95,32 @@ export const PanelMixin = (Base) =>
                   <input id="otaModule" type="number" min="1" max="255" step="1" list="otaModuleList" placeholder="1">
                   <datalist id="otaModuleList"></datalist>
                 </label>
-                <label class="field" style="flex:2 1 240px">
-                  <span>${this._t('firmware_file')}</span>
-                  <input id="otaFile" type="file" accept=".hex,text/plain">
+                <label class="field" style="flex:2 1 260px">
+                  <span>${this._t('firmware_release_select')}</span>
+                  <select id="firmwareRelease"><option value="">${this._t('firmware_release_none')}</option></select>
                 </label>
               </div>
+              <div class="muted" id="firmwareReleaseInfo" style="margin-top:8px">${this._t('firmware_release_loading')}</div>
               <div class="muted" id="otaInstalled" style="margin-top:8px"></div>
               <div class="actions">
-                <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                <button class="btn secondary" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
+                <button class="btn secondary" data-action="refresh-firmware-releases">${this._t('firmware_release_refresh')}</button>
                 <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
                 <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
               </div>
+              <details style="margin-top:12px">
+                <summary>${this._t('firmware_release_local_title')}</summary>
+                <p class="muted" style="margin:6px 0">
+                  ${this._t('firmware_release_local_help')}
+                </p>
+                <div class="row" style="align-items:flex-end">
+                  <label class="field" style="flex:2 1 240px">
+                    <span>${this._t('firmware_file')}</span>
+                    <input id="otaFile" type="file" accept=".hex,text/plain">
+                  </label>
+                  <button class="btn secondary" data-action="flash-firmware">${this._t('flash_firmware')}</button>
+                </div>
+              </details>
               <div class="ota-progress"><span id="otaBar"></span></div>
               <div class="muted" id="otaStatus" style="margin-top:8px">${this._t('ota_state_idle')}</div>
             </div>
@@ -409,21 +424,9 @@ export const PanelMixin = (Base) =>
       const moduleId = input ? String(input.value || "").trim() : "";
       const module = moduleId ? this._moduleFor(moduleId) : null;
       const version = module && module.fw_version ? String(module.fw_version) : "";
-      // fw_bus_compat/fw_bus_compatible are the bus-side values; the old
-      // fw_compat/fw_compatible names remain as aliases for older masters.
-      const compat =
-        module && module.fw_bus_compat != null
-          ? module.fw_bus_compat
-          : module && module.fw_compat != null
-            ? module.fw_compat
-            : null;
-      const compatible =
-        module && module.fw_bus_compatible !== undefined
-          ? module.fw_bus_compatible
-          : module
-            ? module.fw_compatible
-            : undefined;
-      const coordinator = this._coordinator() || {};
+      const compat = module && module.fw_bus_compat != null ? module.fw_bus_compat : null;
+      const compatible = module ? module.fw_bus_compatible : undefined;
+      const info = this._compat();
       if (!version) {
         node.textContent = this._t("firmware_installed_unknown");
       } else if (compatible === false) {
@@ -431,9 +434,7 @@ export const PanelMixin = (Base) =>
           version,
           compat,
           expected:
-            coordinator.master_bus_compat == null
-              ? this._t("unknown")
-              : coordinator.master_bus_compat,
+            info.masterBus == null ? this._t("unknown") : info.masterBus,
         });
       } else if (compat != null) {
         node.textContent = formatMessage(this._t("firmware_installed_compat"), {
@@ -445,6 +446,95 @@ export const PanelMixin = (Base) =>
           version,
         });
       }
+    }
+
+    _firmwareReleaseLabel(release) {
+      const channel = String(release.channel || "stable");
+      const channelLabel = this._t(`firmware_release_channel_${channel}`);
+      const commit = String(release.source_commit || "").slice(0, 7);
+      return `${release.version || "—"} · ${channelLabel}${
+        commit ? ` · ${commit}` : ""
+      }`;
+    }
+
+    _selectedFirmwareRelease() {
+      const select = this.shadowRoot.getElementById("firmwareRelease");
+      const data = this._firmwareReleases;
+      const releases = (data && data.releases) || [];
+      return releases.find((release) => release.tag === select.value) || null;
+    }
+
+    _renderFirmwareReleaseInfo() {
+      const node = this.shadowRoot.getElementById("firmwareReleaseInfo");
+      if (!node) return;
+      const data = this._firmwareReleases;
+      if (!data || !Array.isArray(data.releases)) {
+        node.textContent = this._t("firmware_release_loading");
+        return;
+      }
+      if (!data.releases.length) {
+        node.textContent = this._t("firmware_release_none");
+        return;
+      }
+      const release = this._selectedFirmwareRelease();
+      if (!release) {
+        node.textContent = this._t("firmware_release_select_hint");
+        return;
+      }
+      const parts = [
+        formatMessage(this._t("firmware_release_built"), {
+          built: release.built_at || this._t("unknown"),
+          commit: String(release.source_commit || "").slice(0, 7) || "—",
+        }),
+      ];
+      if (data.stale) parts.push(this._t("firmware_release_stale"));
+      const compat = release.compatibility || {};
+      if (compat.level) {
+        parts.push(this._t(`firmware_release_compat_${compat.level}`));
+      }
+      for (const code of compat.codes || []) {
+        parts.push(this._t(code));
+      }
+      node.textContent = parts.join(" — ");
+    }
+
+    _renderFirmwareReleases() {
+      const select = this.shadowRoot.getElementById("firmwareRelease");
+      if (!select) return;
+      const data = this._firmwareReleases;
+      const releases = (data && data.releases) || [];
+      const signature = [
+        data && data.stale ? "stale" : "fresh",
+        ...releases.map(
+          (release) =>
+            `${release.tag}:${release.version}:${release.published_at}:${release.compatibility?.level}`
+        ),
+      ].join("|");
+      if (select.dataset.signature !== signature) {
+        const previous = select.value;
+        select.innerHTML = releases.length
+          ? releases
+              .map(
+                (release) =>
+                  `<option value="${escapeAttr(release.tag)}">${escapeHtml(
+                    this._firmwareReleaseLabel(release)
+                  )}</option>`
+              )
+              .join("")
+          : `<option value="">${escapeHtml(
+              this._t("firmware_release_none")
+            )}</option>`;
+        select.dataset.signature = signature;
+        if (releases.some((release) => release.tag === previous)) {
+          select.value = previous;
+        } else {
+          const preferred =
+            releases.find((release) => release.channel === "stable") ||
+            releases[0];
+          if (preferred) select.value = preferred.tag;
+        }
+      }
+      this._renderFirmwareReleaseInfo();
     }
 
     _renderOta() {
@@ -484,6 +574,15 @@ export const PanelMixin = (Base) =>
         '[data-action="reset-firmware"]'
       );
       if (resetBtn) resetBtn.disabled = active || this._otaBusy;
+      const flashReleaseBtn = this.shadowRoot.querySelector(
+        '[data-action="flash-release-firmware"]'
+      );
+      const flashLocalBtn = this.shadowRoot.querySelector(
+        '[data-action="flash-firmware"]'
+      );
+      const busy = active || this._otaBusy;
+      if (flashReleaseBtn) flashReleaseBtn.disabled = busy;
+      if (flashLocalBtn) flashLocalBtn.disabled = busy;
 
       let percent = null;
       if (typeof ota.progress === "number") {
@@ -527,6 +626,7 @@ export const PanelMixin = (Base) =>
       const coordinator = this._coordinator();
       const engine = this._engine();
       const board = this._board();
+      const info = this._compat();
       const parts = [
         `${this._t("mqtt_prefix")}: ${coordinator.prefix || "—"}`,
         `${this._t("master")}: ${this._t(
@@ -536,18 +636,12 @@ export const PanelMixin = (Base) =>
           coordinator.master_version || this._t("unknown")
         }`,
         `${this._t("bus_compatibility")}: ${
-          coordinator.master_bus_compat == null
-            ? this._t("unknown")
-            : coordinator.master_bus_compat
+          info.masterBus == null ? this._t("unknown") : info.masterBus
         }`,
         `${this._t("mqtt_compatibility")}: ${
-          coordinator.master_mqtt_compat == null
-            ? this._t("unknown")
-            : coordinator.master_mqtt_compat
+          info.masterMqtt == null ? this._t("unknown") : info.masterMqtt
         } (${this._t("integration")}: ${
-          coordinator.mqtt_compat == null
-            ? this._t("unknown")
-            : coordinator.mqtt_compat
+          info.local == null ? this._t("unknown") : info.local
         })`,
         `${this._t("last_status")}: ${
           coordinator.last_status || this._t("never")

@@ -386,6 +386,37 @@ async def websocket_flash_firmware(hass: HomeAssistant, connection, msg) -> None
 
 
 @websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/list_firmware_releases",
+        vol.Optional("refresh", default=False): bool,
+    }
+)
+@websocket_api.async_response
+async def websocket_list_firmware_releases(
+    hass: HomeAssistant, connection, msg
+) -> None:
+    """List validated Slave firmware releases from public GitHub Releases."""
+
+    await _run_command(hass, connection, msg, "list_firmware_releases")
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/flash_firmware_release",
+        vol.Required("release"): vol.All(str, vol.Length(min=1, max=128)),
+        vol.Required("module"): vol.Coerce(int),
+    }
+)
+@websocket_api.async_response
+async def websocket_flash_firmware_release(
+    hass: HomeAssistant, connection, msg
+) -> None:
+    """Download, verify and flash one published Slave firmware release."""
+
+    await _run_command(hass, connection, msg, "flash_firmware_release")
+
+
+@websocket_api.websocket_command(
     {vol.Required("type"): f"{DOMAIN}/cancel_firmware"}
 )
 @websocket_api.async_response
@@ -436,6 +467,8 @@ COMMANDS = (
     websocket_backup,
     websocket_restore,
     websocket_flash_firmware,
+    websocket_list_firmware_releases,
+    websocket_flash_firmware_release,
     websocket_cancel_firmware,
     websocket_reset_firmware,
 )

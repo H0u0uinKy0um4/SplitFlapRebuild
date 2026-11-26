@@ -1,8 +1,8 @@
 /** Shared panel chrome: header, tabs, modal shells, banners and toasts. */
 
-import { DOMAIN, VERSION } from "../constants.js?v=1.2.19";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.19";
-import { PANEL_STYLES } from "../styles.js?v=1.2.19";
+import { DOMAIN, VERSION } from "../constants.js?v=1.2.21";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.21";
+import { PANEL_STYLES } from "../styles.js?v=1.2.21";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -192,6 +192,14 @@ export const PanelMixin = (Base) =>
       this._renderCalibration();
       this._renderSettings();
       this._renderOta();
+      this._renderFirmwareReleases();
+      if (
+        this._subtabs.settings === "system" &&
+        !this._releasesLoaded &&
+        !this._releasesLoading
+      ) {
+        void this._loadFirmwareReleases();
+      }
       this._renderConnectionInfo();
     }
 
@@ -303,15 +311,8 @@ export const PanelMixin = (Base) =>
 
       const compat = this.shadowRoot.getElementById("compatMeta");
       if (compat) {
-        // Prefer what the master reports; fall back to the generation this
-        // integration expects so the badge is meaningful before the first
-        // versioned status payload arrives.
-        const master = coordinator.master_mqtt_compat;
-        const local =
-          coordinator.mqtt_compat != null
-            ? coordinator.mqtt_compat
-            : coordinator.compat;
-        const shown = master != null ? master : local;
+        const info = this._compat();
+        const shown = info.masterMqtt != null ? info.masterMqtt : info.local;
         compat.textContent = shown != null ? `MQTT ${shown}` : "MQTT —";
       }
     }
@@ -354,28 +355,17 @@ export const PanelMixin = (Base) =>
         banner.classList.add("hidden");
         return;
       }
-      // mqtt_compat_ok is false for a reported mismatch, null when the master
-      // predates the version protocol. Never treat "unknown" as compatible.
-      // "compat_ok"/"compat" are aliases emitted for older panel builds.
-      const mqttOk =
-        coordinator.mqtt_compat_ok !== undefined
-          ? coordinator.mqtt_compat_ok
-          : coordinator.compat_ok;
-      if (mqttOk === false) {
+      // The adapter resolves alias spellings; null still means "unknown".
+      const info = this._compat();
+      if (info.ok === false) {
         banner.classList.remove("hidden");
         text.textContent = formatMessage(this._t("compat_mismatch"), {
-          master:
-            coordinator.master_mqtt_compat != null
-              ? coordinator.master_mqtt_compat
-              : coordinator.master_compat,
-          local:
-            coordinator.mqtt_compat != null
-              ? coordinator.mqtt_compat
-              : coordinator.compat,
+          master: info.masterMqtt,
+          local: info.local,
         });
         return;
       }
-      if (mqttOk === null) {
+      if (info.ok === null) {
         banner.classList.remove("hidden");
         text.textContent = this._t("compat_missing");
         return;

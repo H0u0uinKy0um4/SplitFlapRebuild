@@ -179,6 +179,51 @@ export const PANEL = {
   ota_reset_confirm:
     "Spustit modul {module} z bootloaderu do stávající aplikace?",
   ota_reset_requested: "Požadavek na spuštění modulu {module} odeslán.",
+  firmware_release_select: "Firmwareová verze",
+  firmware_release_none: "Zatím žádný publikovaný firmware",
+  firmware_release_loading: "Načítání publikovaného firmwaru…",
+  firmware_release_select_hint: "Vyberte publikovanou verzi firmwaru.",
+  firmware_release_built: "Sestaveno {built} z revize {commit}",
+  firmware_release_stale: "Seznam z mezipaměti; obnovte kontrolu GitHubu",
+  firmware_release_stale_blocked:
+    "Před zápisem obnovte seznam verzí z mezipaměti.",
+  firmware_release_flash: "ZAPSAT VERZI",
+  firmware_release_refresh: "OBNOVIT VERZE",
+  firmware_release_local_title: "Místní HEX (pokročilé)",
+  firmware_release_local_help:
+    "Použít místně sestavený firmware.hex ze sestavení ATtiny1616_OTA místo publikované verze.",
+  firmware_release_confirm:
+    "Zapsat do modulu {module} verzi {version}? Displej bude na přibližně 25 sekund pozastaven.",
+  firmware_release_sent:
+    "Verze {version} odeslána ({size} bajtů, CRC-32 {crc}). Relace se spouští.",
+  firmware_release_channel_stable: "stabilní",
+  firmware_release_channel_dev: "vývojová",
+  firmware_release_compat_ok: "Kontroly kompatibility prošly",
+  firmware_release_compat_warn: "Upozornění na kompatibilitu",
+  firmware_release_compat_block: "Zápis je blokován",
+  firmware_release_unavailable: "Firmwareové verze nejsou dostupné.",
+  firmware_release_not_found: "Vybraná firmwareová verze už neexistuje.",
+  firmware_release_manifest_invalid: "Publikovaný manifest firmwaru je neplatný.",
+  firmware_release_checksum_mismatch:
+    "Stažený firmware neodpovídá publikovanému kontrolnímu součtu.",
+  firmware_release_image_invalid:
+    "Publikovaný firmware není platný obraz aplikace modulu.",
+  firmware_release_bus_mismatch:
+    "Verze sběrnice firmwaru neodpovídá masteru.",
+  firmware_release_ota_protocol_mismatch:
+    "OTA protokol firmwaru neodpovídá této integraci.",
+  firmware_release_bootloader_mismatch:
+    "Generace bootloaderu firmwaru neodpovídá této integraci.",
+  firmware_release_module_bootloader_mismatch:
+    "Modul hlásí jinou generaci bootloaderu.",
+  firmware_release_unknown_bus:
+    "Verze sběrnice masteru není známá; kompatibilita nebyla potvrzena.",
+  firmware_release_unknown_ota_protocol:
+    "Generace OTA firmwaru není známá; kompatibilita nebyla potvrzena.",
+  firmware_release_installed_bus_incompatible:
+    "Nainstalovaný firmware hlásí nekompatibilní verzi sběrnice.",
+  firmware_release_blocked: "Nesoulad kompatibility firmwaru blokuje zápis.",
+  firmware_release_override_used: "Je zapnuté přepsání nekompatibilního firmwaru.",
   compose_message_first: "Nejprve slož zprávu",
   enter_drum_index: "Zadej index bubnu",
   drum_length_error: "Buben musí mít přesně 64 znaků a nesmí obsahovat zalomení řádku",
@@ -409,6 +454,7 @@ export const SETTINGS = {
     rows: "Řádky rámu (0 = auto)",
     cols: "Sloupce rámu (0 = auto)",
     debug_ignore_module_limit: "Ladění: ignorovat limity modulů",
+    debug_allow_incompatible_firmware: "Ladění: povolit nekompatibilní firmware",
     ui_scale: "Měřítko náhledu (%)",
     theme: "Motiv panelu",
     timezone: "Časové pásmo",
@@ -422,6 +468,8 @@ export const SETTINGS = {
     cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
     debug_ignore_module_limit:
       "Pouze pro vývoj. Použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace vyžadující větší tabuli. Buňky bez fyzického modulu se zobrazí v náhledu, ale neodesílají se masteru.",
+    debug_allow_incompatible_firmware:
+      "Pouze pro vývoj. Povolí zápis publikovaného firmwaru, jehož sběrnice nebo generace OTA neodpovídá masteru. Známé nesoulady jsou blokovány, pokud tato volba není zapnutá.",
     ui_scale:
       "Škáluje náhledy lístků a modulů v panelu. 100 % je výchozí; pro malé displeje použij větší hodnotu.",
     theme:

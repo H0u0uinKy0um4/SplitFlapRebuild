@@ -18,6 +18,7 @@ from .const import (
 from .coordinator import SplitFlapCoordinator
 from .engine import AppEngine
 from .panel import async_register_panel, async_unregister_panel
+from .release_client import create_release_catalog
 from .runtime import iter_runtimes
 from .services import async_register_services, async_unregister_services
 from .websocket_api import async_register_websocket_api
@@ -51,6 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "entry": entry,
             "coordinator": coordinator,
             "engine": engine,
+            "release_catalog": create_release_catalog(hass),
         }
 
         await async_register_services(hass)

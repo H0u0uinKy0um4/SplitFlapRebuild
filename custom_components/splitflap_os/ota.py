@@ -46,6 +46,12 @@ OTA_STATES_ACTIVE: Final = frozenset(
     }
 )
 
+# Bootloader framing generation. Mirrors OTA_PROTOCOL_VERSION in the master's
+# include/Version.h and BOOTLOADER_VERSION in the slave's
+# bootloader/src/protocol.h. Kept here so HASC can validate published firmware
+# images without asking the master to expose a second version field.
+OTA_PROTOCOL_VERSION: Final = 1
+
 # Actions accepted on <prefix>/command/firmware (see the master's
 # include/ota/SlaveFlasher.h for the full JSON schema).
 FIRMWARE_ACTION_BEGIN: Final = "begin"
@@ -74,9 +80,10 @@ def normalize_ota(raw: Any) -> dict[str, Any]:
 
     Published by the master on ``<prefix>/status`` as ``"ota"``: ``state``
     (one of :data:`OTA_STATES`) plus ``module``, ``progress`` (0-100),
-    ``received`` (image bytes while collecting) and ``error`` when a
-    session failed. Unknown fields and values of the wrong type are
-    dropped rather than trusted; an unknown state falls back to ``idle``.
+    ``received`` (image bytes while collecting), ``bootloader_version``
+    after a bootloader PING, and ``error`` when a session failed. Unknown
+    fields and values of the wrong type are dropped rather than trusted;
+    an unknown state falls back to ``idle``.
     """
 
     if not isinstance(raw, dict):
@@ -85,7 +92,7 @@ def normalize_ota(raw: Any) -> dict[str, Any]:
     ota: dict[str, Any] = {
         "state": state if state in OTA_STATES else OTA_STATE_IDLE
     }
-    for field in ("module", "progress", "received"):
+    for field in ("module", "progress", "received", "bootloader_version"):
         value = raw.get(field)
         if isinstance(value, int) and not isinstance(value, bool):
             ota[field] = value

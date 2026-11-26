@@ -1,52 +1,12 @@
 /** Tuning tab: module matrix, commands, map, auto-tune, teach and drum. */
 
-import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.19";
+import { COLOR_CODES, DEFAULT_DRUM } from "../../constants.js?v=1.2.21";
 import {
   escapeAttr,
   escapeHtml,
   formatMessage,
   numberText,
-} from "../../utils.js?v=1.2.19";
-
-/**
- * Build the grid used for physical-module views.
- *
- * Debug mode renders a larger virtual canvas, but tuning must keep showing the
- * modules that actually answered the scan. In that case the detected modules
- * are packed into a compact grid instead of following the virtual canvas.
- */
-const moduleGrid = (board, modules) => {
-  const frameCols = Math.max(1, Number(board.cols) || 1);
-  // A debug frame can be much wider than the scanned board. Use a compact
-  // width for hardware views so the real modules stay visible and clickable.
-  const cols = board.debugModuleLimit
-    ? Math.max(1, Math.min(frameCols, modules.length || 1))
-    : frameCols;
-  const rows = board.debugModuleLimit
-    ? Math.max(1, Math.ceil(modules.length / cols))
-    : Math.max(
-        Math.max(1, Number(board.rows) || 1),
-        Math.ceil(modules.length / cols) || 1
-      );
-  const counts = [];
-  let remaining = modules.length;
-  for (let row = 0; row < rows; row += 1) {
-    const configured = Number(board.rowCounts[row]) || 0;
-    const count = board.debugModuleLimit
-      ? Math.min(cols, Math.max(0, remaining))
-      : row < board.rows
-        ? Math.max(0, Math.min(cols, configured))
-        : Math.min(cols, Math.max(0, remaining));
-    counts.push(count);
-    remaining -= count;
-  }
-  return {
-    cols,
-    rows,
-    counts,
-    offsets: counts.map((count) => Math.max(0, Math.floor((cols - count) / 2))),
-  };
-};
+} from "../../utils.js?v=1.2.21";
 
 export const PanelMixin = (Base) =>
   class extends Base {
@@ -265,7 +225,7 @@ export const PanelMixin = (Base) =>
       const meta = this.shadowRoot.getElementById("matrixMeta");
 
       if (matrix) {
-        const grid = moduleGrid(board, modules);
+        const grid = board.hardware;
         let html = "";
         let slotBase = 0;
         for (let row = 0; row < grid.rows; row += 1) {
@@ -285,9 +245,7 @@ export const PanelMixin = (Base) =>
               this._selectedModule !== null &&
               String(this._selectedModule) === String(module.id);
             const flap =
-              module.displayed_flap != null
-                ? module.displayed_flap
-                : module.flap || " ";
+              module.displayed_flap != null ? module.displayed_flap : " ";
             const offline = module.online === false;
             html += `
             <button class="mod${selected ? " selected" : ""}${offline ? " offline" : ""}"
@@ -395,17 +353,10 @@ export const PanelMixin = (Base) =>
       }
 
       const values = {
-        statFlap:
-          selected.displayed_flap != null
-            ? selected.displayed_flap
-            : selected.flap,
-        statActual:
-          selected.actual_flap != null ? selected.actual_flap : selected.flap,
+        statFlap: selected.displayed_flap,
+        statActual: selected.actual_flap,
         statStep: selected.current_step,
-        statIndex:
-          selected.display_flap_index != null
-            ? selected.display_flap_index
-            : selected.flap_index,
+        statIndex: selected.display_flap_index,
         statOffset: selected.home_offset,
         statTotal: selected.total_steps,
         statFirmware: selected.fw_version,
@@ -417,10 +368,7 @@ export const PanelMixin = (Base) =>
 
       if (this._inspectorModule !== String(selected.id)) {
         this._inspectorModule = String(selected.id);
-        const index =
-          selected.display_flap_index != null
-            ? selected.display_flap_index
-            : selected.flap_index;
+        const index = selected.display_flap_index;
         const set = (id, value) => {
           const node = this.shadowRoot.getElementById(id);
           if (node) node.value = value == null ? "" : String(value);
@@ -461,16 +409,10 @@ export const PanelMixin = (Base) =>
       const drum =
         Array.isArray(module.effective_drum) && module.effective_drum.length
           ? module.effective_drum
-          : Array.isArray(module.flap_list) && module.flap_list.length
-            ? module.flap_list
-            : DEFAULT_DRUM.split("");
+          : DEFAULT_DRUM.split("");
       const positions = module.map_of_positions || {};
       const currentIndex =
-        module.display_flap_index != null
-          ? Number(module.display_flap_index)
-          : module.flap_index != null
-            ? Number(module.flap_index)
-            : -1;
+        module.display_flap_index != null ? Number(module.display_flap_index) : -1;
       const signature = [
         String(module.id),
         drum.join(""),
@@ -516,16 +458,10 @@ export const PanelMixin = (Base) =>
       const drum =
         Array.isArray(module.effective_drum) && module.effective_drum.length
           ? module.effective_drum
-          : Array.isArray(module.flap_list) && module.flap_list.length
-            ? module.flap_list
-            : DEFAULT_DRUM.split("");
+          : DEFAULT_DRUM.split("");
       const positions = module.map_of_positions || {};
       const currentIndex =
-        module.display_flap_index != null
-          ? Number(module.display_flap_index)
-          : module.flap_index != null
-            ? Number(module.flap_index)
-            : -1;
+        module.display_flap_index != null ? Number(module.display_flap_index) : -1;
 
       node.innerHTML = drum
         .map((char, index) => {
@@ -729,7 +665,7 @@ export const PanelMixin = (Base) =>
       let gridHtml = "";
       let slotBase = 0;
       const chosen = new Set(at.selected.map(String));
-      const grid = moduleGrid(board, modules);
+      const grid = board.hardware;
       for (let row = 0; row < grid.rows; row += 1) {
         const count = grid.counts[row];
         const offset = grid.offsets[row];

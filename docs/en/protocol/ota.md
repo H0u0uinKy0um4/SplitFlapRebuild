@@ -41,9 +41,23 @@ Published inside `<prefix>/status` as `ota`:
 | `module` | int | Target module during a session. |
 | `progress` | int | 0–100 while collecting or flashing. |
 | `received` | int | Image bytes collected so far. |
+| `bootloader_version` | int | Bootloader generation answered during a PING, while diagnosing a refused session. |
 | `error` | string | Present when the session failed. |
 
 Unknown states fall back to `idle`; fields of the wrong type are dropped.
+
+## Published releases
+
+The Slave repository publishes `firmware.hex` plus a generated `firmware.json`
+manifest to GitHub Releases. Pushes to `master` update a rolling `dev` release;
+tags create immutable stable releases. HASC lists both and downloads the HEX
+only when a release is flashed. It verifies the manifest SHA-256, validates the
+application region again, and checks the manifest's `fw_bus_compat` against the
+master's `bus_compat` plus its mirrored OTA/bootloader generation.
+
+Known hard mismatches block the flash. Unknown compatibility facts warn. The
+`Debug: allow incompatible firmware` setting can downgrade a known mismatch to
+a warning for development.
 
 ## Session behaviour
 
@@ -55,7 +69,8 @@ is rejected. A module stuck in the bootloader no longer answers the ASCII scan, 
 ## Home Assistant surface
 
 There is no service for OTA. The panel uses the WebSocket commands
-`splitflap_os/flash_firmware`, `splitflap_os/cancel_firmware`, and
+`splitflap_os/flash_firmware`, `splitflap_os/list_firmware_releases`,
+`splitflap_os/flash_firmware_release`, `splitflap_os/cancel_firmware`, and
 `splitflap_os/reset_firmware`. The topic is documented here because it is part of
 the MQTT contract.
 

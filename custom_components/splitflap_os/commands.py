@@ -12,9 +12,13 @@ from typing import Any, Awaitable, Callable, Mapping
 
 try:  # package import (Home Assistant)
     from .firmware import image_from_hex
+    from .firmware_releases import FirmwareReleaseError, check_compatibility
+    from .ota import OTA_PROTOCOL_VERSION
     from .positions import normalize_position_map
 except ImportError:  # direct import in the host tests (component dir on sys.path)
     from firmware import image_from_hex
+    from firmware_releases import FirmwareReleaseError, check_compatibility
+    from ota import OTA_PROTOCOL_VERSION
     from positions import normalize_position_map
 
 INVALID_REQUEST = "invalid_request"
@@ -185,6 +189,76 @@ async def _flash_firmware(args: dict[str, Any], runtime: Mapping[str, Any]) -> A
     return await runtime["coordinator"].async_flash_image(args["module"], image)
 
 
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _release_catalog(runtime: Mapping[str, Any]) -> Any:
+    catalog = runtime.get("release_catalog")
+    if catalog is None:
+        raise FirmwareReleaseError("firmware_release_unavailable")
+    return catalog
+
+
+def _allow_incompatible(runtime: Mapping[str, Any]) -> bool:
+    engine = runtime.get("engine")
+    if engine is None:
+        return False
+    return _as_bool(
+        engine.settings.get("debug_allow_incompatible_firmware", False)
+    )
+
+
+async def _list_firmware_releases(
+    args: dict[str, Any], runtime: Mapping[str, Any]
+) -> Any:
+    coordinator = runtime["coordinator"]
+    return await _release_catalog(runtime).list(
+        refresh=args["refresh"],
+        master_bus_compat=coordinator.master_bus_compat,
+        allow_incompatible=_allow_incompatible(runtime),
+    )
+
+
+async def _flash_firmware_release(
+    args: dict[str, Any], runtime: Mapping[str, Any]
+) -> Any:
+    coordinator = runtime["coordinator"]
+    catalog = _release_catalog(runtime)
+    allow_incompatible = _allow_incompatible(runtime)
+
+    # Always re-read the manifest: the rolling dev asset can change between
+    # opening the panel and pressing Flash.
+    release = await catalog.get(args["release"], refresh=True)
+    ota = coordinator.snapshot().get("ota") or {}
+    bootloader_version = (
+        ota.get("bootloader_version")
+        if ota.get("module") == args["module"]
+        else None
+    )
+    module = coordinator.module_snapshot(str(args["module"]))
+    compatibility = check_compatibility(
+        release,
+        master_bus_compat=coordinator.master_bus_compat,
+        module_bus_compatible=module.get("fw_bus_compatible"),
+        module_bootloader_version=bootloader_version,
+        allow_incompatible=allow_incompatible,
+        ota_protocol_version=OTA_PROTOCOL_VERSION,
+    )
+    if compatibility.blocked:
+        raise FirmwareReleaseError(compatibility.codes[0])
+
+    image = await catalog.fetch_image(release)
+    result = await coordinator.async_flash_image(args["module"], image)
+    return {
+        **result,
+        "release": release.as_dict(),
+        "compatibility": compatibility.as_dict(),
+    }
+
+
 COMMANDS: dict[str, Command] = {
     "send_text": Command(
         (
@@ -274,6 +348,14 @@ COMMANDS: dict[str, Command] = {
     "flash_firmware": Command(
         (Field("module", "int"), Field("hex", "str")),
         _flash_firmware,
+    ),
+    "list_firmware_releases": Command(
+        (Field("refresh", "bool", False),),
+        _list_firmware_releases,
+    ),
+    "flash_firmware_release": Command(
+        (Field("release", "str"), Field("module", "int")),
+        _flash_firmware_release,
     ),
     "cancel_firmware": Command((), _call("coordinator", "async_firmware_cancel")),
     "reset_firmware": Command(

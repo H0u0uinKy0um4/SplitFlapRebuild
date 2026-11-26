@@ -21,6 +21,7 @@ python3 tests/test_layout.py
 python3 tests/test_positions.py
 python3 tests/test_translations.py
 python3 tests/test_ota.py
+python3 tests/test_firmware_releases.py
 python3 tests/test_versions.py
 ```
 

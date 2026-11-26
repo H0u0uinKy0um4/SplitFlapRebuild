@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.19";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.19";
+import { formatMessage } from "../utils.js?v=1.2.21";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.21";
 
 export const PanelMixin = (Base) => class extends Base {
   _onInput(event) {
@@ -52,6 +52,9 @@ export const PanelMixin = (Base) => class extends Base {
     if (target.id === "moduleDrumSelect") {
       this._updateModuleDrumPreview();
     }
+    if (target.id === "firmwareRelease") {
+      this._renderFirmwareReleaseInfo();
+    }
     if (target.dataset && target.dataset.setting) {
       this._applyFieldVisibility(
         target.closest(".settings-groups, #modalFields")
@@ -70,6 +73,9 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "subtab":
         this._setSubtab(target.dataset.group, target.dataset.sub);
+        if (target.dataset.group === "settings" && target.dataset.sub === "system") {
+          void this._loadFirmwareReleases();
+        }
         break;
       case "refresh":
         await this._loadState();
@@ -161,6 +167,12 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "flash-firmware":
         await this._flashFirmware();
+        break;
+      case "flash-release-firmware":
+        await this._flashReleaseFirmware();
+        break;
+      case "refresh-firmware-releases":
+        await this._loadFirmwareReleases(true);
         break;
       case "cancel-firmware":
         await this._cancelFirmware();
@@ -954,6 +966,76 @@ export const PanelMixin = (Base) => class extends Base {
       this._otaSize = Number(result && result.size) || 0;
       this._toast(
         formatMessage(this._t("ota_sent"), {
+          size: this._otaSize,
+          crc: (result && result.crc32) || "—",
+        })
+      );
+    } catch (err) {
+      /* _send already reported the error. */
+    } finally {
+      this._otaBusy = false;
+      this._renderOta();
+    }
+  }
+
+  async _loadFirmwareReleases(refresh = false) {
+    if (this._releasesLoading && !refresh) return;
+    this._releasesLoading = true;
+    this._renderFirmwareReleaseInfo();
+    try {
+      this._firmwareReleases = await this._send("list_firmware_releases", {
+        refresh: Boolean(refresh),
+      });
+      this._releasesLoaded = true;
+    } catch (err) {
+      /* _send already reported the error. */
+      if (!this._releasesLoaded) {
+        this._firmwareReleases = { releases: [] };
+      }
+    } finally {
+      this._releasesLoading = false;
+      this._renderFirmwareReleases();
+    }
+  }
+
+  async _flashReleaseFirmware() {
+    const releases = (this._firmwareReleases && this._firmwareReleases.releases) || [];
+    const release = this._selectedFirmwareRelease();
+    if (!release) {
+      this._toast(this._t("firmware_release_select_hint"), "warn");
+      return;
+    }
+    if (this._firmwareReleases.stale) {
+      this._toast(this._t("firmware_release_stale_blocked"), "warn");
+      return;
+    }
+    const compat = release.compatibility || {};
+    if (compat.level === "block") {
+      this._toast(this._t("firmware_release_blocked"), "warn");
+      return;
+    }
+    const moduleId = this._otaModuleId();
+    if (moduleId == null) {
+      this._toast(this._t("ota_no_module"), "warn");
+      return;
+    }
+    const confirmText = formatMessage(this._t("firmware_release_confirm"), {
+      module: moduleId,
+      version: release.version || "—",
+    });
+    if (!window.confirm(confirmText)) return;
+
+    this._otaBusy = true;
+    this._renderOta();
+    try {
+      const result = await this._send("flash_firmware_release", {
+        release: release.tag,
+        module: moduleId,
+      });
+      this._otaSize = Number(result && result.size) || 0;
+      this._toast(
+        formatMessage(this._t("firmware_release_sent"), {
+          version: release.version || "—",
           size: this._otaSize,
           crc: (result && result.crc32) || "—",
         })
