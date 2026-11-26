@@ -1,7 +1,7 @@
 /** Panel component logic. */
 
-import { formatMessage } from "../utils.js?v=1.2.21";
-import { DEFAULT_DRUM } from "../constants.js?v=1.2.21";
+import { formatMessage } from "../utils.js?v=1.2.22";
+import { DEFAULT_DRUM } from "../constants.js?v=1.2.22";
 
 export const PanelMixin = (Base) => class extends Base {
   _onInput(event) {
@@ -170,6 +170,12 @@ export const PanelMixin = (Base) => class extends Base {
         break;
       case "flash-release-firmware":
         await this._flashReleaseFirmware();
+        break;
+      case "flash-release-firmware-all":
+        await this._flashReleaseFirmwareAll();
+        break;
+      case "boot-all-firmware":
+        await this._bootAllFirmware();
         break;
       case "refresh-firmware-releases":
         await this._loadFirmwareReleases(true);
@@ -896,6 +902,14 @@ export const PanelMixin = (Base) => class extends Base {
   }
 
   async _cancelFirmware() {
+    // A bulk job owns the shared OTA session. Its cancel also stops the queue,
+    // so the same button must reach the flow instead of only aborting the
+    // current module and letting the queue continue with the next one.
+    const bulk = this._bulkOta ? this._bulkOta.view() : null;
+    if (bulk && bulk.running) {
+      await this._bulkOta.act("cancel");
+      return;
+    }
     await this._send("cancel_firmware");
     this._toast(this._t("ota_cancel_requested"));
   }
@@ -998,22 +1012,28 @@ export const PanelMixin = (Base) => class extends Base {
     }
   }
 
-  async _flashReleaseFirmware() {
-    const releases = (this._firmwareReleases && this._firmwareReleases.releases) || [];
+  /** Shared release validation for single and bus-wide flashing. */
+  _flashableRelease() {
     const release = this._selectedFirmwareRelease();
     if (!release) {
       this._toast(this._t("firmware_release_select_hint"), "warn");
-      return;
+      return null;
     }
-    if (this._firmwareReleases.stale) {
+    if (this._firmwareReleases && this._firmwareReleases.stale) {
       this._toast(this._t("firmware_release_stale_blocked"), "warn");
-      return;
+      return null;
     }
     const compat = release.compatibility || {};
     if (compat.level === "block") {
       this._toast(this._t("firmware_release_blocked"), "warn");
-      return;
+      return null;
     }
+    return release;
+  }
+
+  async _flashReleaseFirmware() {
+    const release = this._flashableRelease();
+    if (!release) return;
     const moduleId = this._otaModuleId();
     if (moduleId == null) {
       this._toast(this._t("ota_no_module"), "warn");
@@ -1046,6 +1066,41 @@ export const PanelMixin = (Base) => class extends Base {
       this._otaBusy = false;
       this._renderOta();
     }
+  }
+
+  async _flashReleaseFirmwareAll() {
+    const release = this._flashableRelease();
+    if (!release) return;
+    const ids = this._bulkOta ? this._bulkOta.targets("flash_all") : [];
+    if (!ids.length) {
+      this._toast(this._t("firmware_release_no_modules"), "warn");
+      return;
+    }
+    const confirmText = formatMessage(this._t("firmware_release_confirm_all"), {
+      count: ids.length,
+      version: release.version || "—",
+    });
+    if (!window.confirm(confirmText)) return;
+    // The flow publishes its own progress and completion toasts through the
+    // injected notify adapter; no duplicate toast belongs here.
+    await this._bulkOta.act("flash_all", {
+      release: release.tag,
+      version: release.version || "—",
+    });
+  }
+
+  async _bootAllFirmware() {
+    const ids = this._bulkOta ? this._bulkOta.targets("boot_all") : [];
+    if (!ids.length) {
+      this._toast(this._t("firmware_release_no_modules"), "warn");
+      return;
+    }
+    const confirmText = formatMessage(
+      this._t("firmware_release_boot_all_confirm"),
+      { count: ids.length }
+    );
+    if (!window.confirm(confirmText)) return;
+    await this._bulkOta.act("boot_all");
   }
 
   async _downloadBackup() {

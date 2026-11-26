@@ -1,14 +1,15 @@
 /** Panel component logic. */
 
-import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.21";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.21";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.21";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=1.2.22";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=1.2.22";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=1.2.22";
 import {
   normalizeBoard,
   normalizeLayoutError,
   normalizeSnapshot,
-} from "../snapshot-adapter.js?v=1.2.21";
-import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.21";
+} from "../snapshot-adapter.js?v=1.2.22";
+import { createCalibrationFlow } from "./calibration-flow.js?v=1.2.22";
+import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=1.2.22";
 
 
 export const PanelMixin = (Base) => class extends Base {
@@ -63,6 +64,17 @@ export const PanelMixin = (Base) => class extends Base {
       },
       colors: COLOR_CODES,
       stockDrum: DEFAULT_DRUM,
+    });
+
+    // Bulk boot/flash keeps the same adapter shape: the panel only supplies
+    // adapters and renders the progress model it gets back.
+    this._bulkOta = createBulkOtaFlow({
+      snapshot: () => this._state,
+      send: (type, payload) => this._send(type, payload),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      notify: (key, params, level) =>
+        this._toast(formatMessage(this._t(key), params || {}), level),
+      render: () => this._renderOta(),
     });
 
     try {

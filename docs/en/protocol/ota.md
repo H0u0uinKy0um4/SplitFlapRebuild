@@ -66,6 +66,18 @@ master refuses display, scan, update, and calibrate commands, and a second uploa
 is rejected. A module stuck in the bootloader no longer answers the ASCII scan, so
 `reset` is the recovery path.
 
+### Bus-wide operations
+
+The panel's **FLASH ALL MODULES** and **BOOT ALL INTO APP** buttons reuse the
+same single-session path. Flash-all walks the modules detected by the last scan
+in ascending id order. Boot-all additionally walks every id in the configured
+module range plus the last OTA target, because a module stuck in the bootloader
+no longer answers the scan. The master rejects concurrent sessions, so commands
+are sent strictly one module at a time. A flash advances only after the master
+reports `done` (or `idle` after an active phase) for that module. A failed,
+cancelled, or timed-out session stops the queue immediately; **Cancel** aborts
+the active module and the remaining queue. No master firmware change is needed.
+
 ## Home Assistant surface
 
 There is no service for OTA. The panel uses the WebSocket commands

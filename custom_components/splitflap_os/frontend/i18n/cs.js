@@ -224,6 +224,29 @@ export const PANEL = {
     "Nainstalovaný firmware hlásí nekompatibilní verzi sběrnice.",
   firmware_release_blocked: "Nesoulad kompatibility firmwaru blokuje zápis.",
   firmware_release_override_used: "Je zapnuté přepsání nekompatibilního firmwaru.",
+  firmware_release_flash_all: "ZAPSAT VŠECHNY MODULY",
+  firmware_release_boot_all: "SPUSTIT VŠECHNY DO APLIKACE",
+  firmware_release_confirm_all:
+    "Zapsat verzi {version} do všech {count} nalezených modulů? Moduly se zapisují postupně, displej zůstane pozastavený do konce fronty.",
+  firmware_release_boot_all_confirm:
+    "Spustit všech {count} cílových modulů z bootloaderu do aplikace? Moduly se zpracovávají postupně.",
+  firmware_release_bulk_progress: "Hromadná operace ({kind}): {done}/{total} — {module}",
+  firmware_release_bulk_kind_flash: "zápis",
+  firmware_release_bulk_kind_reset: "spuštění",
+  firmware_release_bulk_done: "Hromadná operace OTA dokončena: zpracováno {count} modulů.",
+  firmware_release_bulk_failed: "Hromadná operace OTA selhala: {error}",
+  firmware_release_bulk_cancelled:
+    "Hromadná operace OTA zrušena; žádné další moduly nebyly zapsány.",
+  firmware_release_bulk_cancel_requested:
+    "Požadavek na zrušení hromadné operace odeslán; aktivní modul bude přerušen.",
+  firmware_release_bulk_running: "Hromadná operace OTA už běží.",
+  firmware_release_bulk_idle: "Žádná hromadná operace OTA neběží.",
+  firmware_release_session_active:
+    "OTA relace už probíhá. Nejprve počkejte na její dokončení nebo ji zrušte.",
+  firmware_release_flash_failed: "Modul oznámil selhání zápisu.",
+  firmware_release_flash_timeout: "Čekání na OTA relaci modulu vypršelo.",
+  firmware_release_bulk_error: "Hromadnou operaci OTA se nepodařilo pokračovat.",
+  firmware_release_no_modules: "Nebyly nalezeny žádné moduly. Nejprve spusťte prohledání sběrnice.",
   compose_message_first: "Nejprve slož zprávu",
   enter_drum_index: "Zadej index bubnu",
   drum_length_error: "Buben musí mít přesně 64 znaků a nesmí obsahovat zalomení řádku",

@@ -21,7 +21,7 @@ Master obě strany propojuje, takže nese obě čísla. Protokol bootloaderu OTA
 ```text
 modul    <bus>.<vydání>               1.0.1      bus 1, vydání 0.1
 master   <bus>.<mqtt>.<vydání>        1.1.0.1    bus 1, mqtt 1, vydání 0.1
-HA       <mqtt>.<vydání>              1.2.21     mqtt 1, vydání 2.21
+HA       <mqtt>.<vydání>              1.2.22     mqtt 1, vydání 2.22
 ```
 
 ## Kontroly

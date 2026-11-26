@@ -102,8 +102,17 @@ manifest checksum and compatibility, validates the application region, and
 streams it over `<prefix>/command/firmware`. A locally built `ATtiny1616_OTA`
 `firmware.hex` remains available under **Local HEX (advanced)**. Progress arrives
 in the `ota` status object, and the master blocks display traffic for roughly
-20–25 seconds while flashing. The wire details are in
-[slave OTA](../protocol/ota.md).
+20–25 seconds while flashing.
+
+The same card also offers **FLASH ALL MODULES** and **BOOT ALL INTO APP**.
+Flash-all walks the detected modules in ascending id order. Boot-all also walks
+every id in the configured module range plus the last OTA target, so modules
+that dropped off the scan while in the bootloader can be recovered. Only one OTA
+session can exist at a time, so the panel
+runs the queue strictly sequentially: the next flash starts only after the
+previous module reports completion. A failed or cancelled module stops the queue,
+and **Cancel** aborts the whole job. The progress line shows the current module
+and completed count. The wire details are in [slave OTA](../protocol/ota.md).
 
 ## Behaviour notes
 

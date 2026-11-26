@@ -22,7 +22,7 @@ either compatibility axis.
 ```text
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
 master   <bus>.<mqtt>.<release>       1.1.0.1    bus 1, mqtt 1, release 0.1
-HA       <mqtt>.<release>             1.2.21     mqtt 1, release 2.21
+HA       <mqtt>.<release>             1.2.22     mqtt 1, release 2.22
 ```
 
 ## Checks

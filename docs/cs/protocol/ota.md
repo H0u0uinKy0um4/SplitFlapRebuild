@@ -66,6 +66,18 @@ odmítá příkazy display, scan, update a calibrate a druhý upload se odmítne
 uvíznutý v bootloaderu už neodpovídá na ASCII sken, takže `reset` je cesta
 k obnově.
 
+### Hromadné operace na sběrnici
+
+Tlačítka **ZAPSAT VŠECHNY MODULY** a **SPUSTIT VŠECHNY DO APLIKACE** používají
+stejnou cestu s jednou relací. Hromadný zápis prochází moduly nalezené posledním
+skenem ve vzestupném pořadí id. Hromadné spuštění navíc zahrne každé id v
+nakonfigurovaném rozsahu modulů a poslední OTA cíl, protože modul uvíznutý v
+bootloaderu už na sken neodpovídá. Master současné relace odmítá, proto se
+příkazy odesílají striktně jeden modul za druhým. Zápis pokračuje jen po tom, co
+master pro daný modul oznámí `done` (případně `idle` po aktivní fázi). Selhání,
+zrušení nebo vypršení relace frontu okamžitě zastaví; **Zrušit** přeruší aktivní
+modul i zbylou frontu. Není nutná žádná změna firmwaru masteru.
+
 ## Rozhraní v Home Assistantu
 
 Pro OTA neexistuje služba. Panel používá WebSocket příkazy

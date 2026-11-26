@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=1.2.21";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.21";
+import { DOMAIN, VERSION } from "../../constants.js?v=1.2.22";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=1.2.22";
 
 const checkedSettingValue = (value) =>
   value === true ||
@@ -104,10 +104,13 @@ export const PanelMixin = (Base) =>
               <div class="muted" id="otaInstalled" style="margin-top:8px"></div>
               <div class="actions">
                 <button class="btn secondary" data-action="flash-release-firmware">${this._t('firmware_release_flash')}</button>
+                <button class="btn secondary" data-action="flash-release-firmware-all">${this._t('firmware_release_flash_all')}</button>
                 <button class="btn secondary" data-action="refresh-firmware-releases">${this._t('firmware_release_refresh')}</button>
                 <button class="btn secondary" data-action="cancel-firmware" disabled>${this._t('cancel')}</button>
                 <button class="btn secondary" data-action="reset-firmware">${this._t('ota_reset')}</button>
+                <button class="btn secondary" data-action="boot-all-firmware">${this._t('firmware_release_boot_all')}</button>
               </div>
+              <div class="muted" id="otaBulkStatus" style="margin-top:8px"></div>
               <details style="margin-top:12px">
                 <summary>${this._t('firmware_release_local_title')}</summary>
                 <p class="muted" style="margin:6px 0">
@@ -563,26 +566,36 @@ export const PanelMixin = (Base) =>
       const active = ["collecting", "entering", "flashing", "verifying"].includes(
         state
       );
+      const bulk = this._bulkOta ? this._bulkOta.view() : { running: false };
+      const busy = active || this._otaBusy || bulk.running;
       const cancelBtn = this.shadowRoot.querySelector(
         '[data-action="cancel-firmware"]'
       );
       // Keep cancel clickable for any non-idle state (including failed /
       // cancelled) so a stuck session can always be aborted, not just while
-      // an active phase is reported.
-      if (cancelBtn) cancelBtn.disabled = !(this._otaBusy || state !== "idle");
+      // an active phase is reported. A bulk job routes the same button to
+      // its own cancel so the whole queue stops, not only one module.
+      if (cancelBtn) cancelBtn.disabled = !(busy || state !== "idle");
       const resetBtn = this.shadowRoot.querySelector(
         '[data-action="reset-firmware"]'
       );
-      if (resetBtn) resetBtn.disabled = active || this._otaBusy;
+      if (resetBtn) resetBtn.disabled = busy;
       const flashReleaseBtn = this.shadowRoot.querySelector(
         '[data-action="flash-release-firmware"]'
       );
       const flashLocalBtn = this.shadowRoot.querySelector(
         '[data-action="flash-firmware"]'
       );
-      const busy = active || this._otaBusy;
+      const flashAllBtn = this.shadowRoot.querySelector(
+        '[data-action="flash-release-firmware-all"]'
+      );
+      const bootAllBtn = this.shadowRoot.querySelector(
+        '[data-action="boot-all-firmware"]'
+      );
       if (flashReleaseBtn) flashReleaseBtn.disabled = busy;
       if (flashLocalBtn) flashLocalBtn.disabled = busy;
+      if (flashAllBtn) flashAllBtn.disabled = busy;
+      if (bootAllBtn) bootAllBtn.disabled = busy;
 
       let percent = null;
       if (typeof ota.progress === "number") {
@@ -602,6 +615,43 @@ export const PanelMixin = (Base) =>
         const track = bar.parentElement;
         if (track) track.classList.toggle("hidden", !showProgress);
         bar.style.width = showProgress && percent != null ? `${percent}%` : "0%";
+      }
+
+      const bulkStatus = this.shadowRoot.getElementById("otaBulkStatus");
+      if (bulkStatus) {
+        if (!bulk.state || bulk.state === "idle") {
+          bulkStatus.textContent = "";
+        } else if (bulk.state === "running") {
+          const kind = this._t(
+            bulk.kind === "reset"
+              ? "firmware_release_bulk_kind_reset"
+              : "firmware_release_bulk_kind_flash"
+          );
+          const module = bulk.module != null
+            ? formatMessage(this._t("ota_module"), { module: bulk.module })
+            : this._t("unknown");
+          bulkStatus.textContent = formatMessage(
+            this._t("firmware_release_bulk_progress"),
+            {
+              kind,
+              done: bulk.done,
+              total: bulk.total,
+              module: bulk.version ? `${module} · ${bulk.version}` : module,
+            }
+          );
+        } else if (bulk.state === "done") {
+          bulkStatus.textContent = formatMessage(
+            this._t("firmware_release_bulk_done"),
+            { count: bulk.done }
+          );
+        } else if (bulk.state === "failed") {
+          bulkStatus.textContent = formatMessage(
+            this._t("firmware_release_bulk_failed"),
+            { error: this._t(bulk.error || "firmware_release_bulk_error") }
+          );
+        } else if (bulk.state === "cancelled") {
+          bulkStatus.textContent = this._t("firmware_release_bulk_cancelled");
+        }
       }
 
       const status = this.shadowRoot.getElementById("otaStatus");

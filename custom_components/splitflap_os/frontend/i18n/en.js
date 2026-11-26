@@ -224,6 +224,29 @@ export const PANEL = {
     "The installed firmware reports an incompatible bus version.",
   firmware_release_blocked: "A firmware compatibility mismatch blocks flashing.",
   firmware_release_override_used: "The incompatible-firmware override is enabled.",
+  firmware_release_flash_all: "FLASH ALL MODULES",
+  firmware_release_boot_all: "BOOT ALL INTO APP",
+  firmware_release_confirm_all:
+    "Flash all {count} detected modules with {version}? Modules are flashed one at a time and the display stays paused until the queue finishes.",
+  firmware_release_boot_all_confirm:
+    "Boot all {count} target modules out of the bootloader into their applications? Modules are processed one at a time.",
+  firmware_release_bulk_progress: "Bulk {kind}: {done}/{total} — {module}",
+  firmware_release_bulk_kind_flash: "flash",
+  firmware_release_bulk_kind_reset: "boot",
+  firmware_release_bulk_done: "Bulk OTA finished: {count} module(s) processed.",
+  firmware_release_bulk_failed: "Bulk OTA failed: {error}",
+  firmware_release_bulk_cancelled:
+    "Bulk OTA cancelled; no further modules were flashed.",
+  firmware_release_bulk_cancel_requested:
+    "Bulk cancel requested; the active module will be aborted.",
+  firmware_release_bulk_running: "A bulk OTA job is already running.",
+  firmware_release_bulk_idle: "No bulk OTA job is running.",
+  firmware_release_session_active:
+    "An OTA session is already active. Wait for it to finish or cancel it first.",
+  firmware_release_flash_failed: "The module reported a failed flash.",
+  firmware_release_flash_timeout: "Timed out waiting for the module flash session.",
+  firmware_release_bulk_error: "The bulk OTA job could not continue.",
+  firmware_release_no_modules: "No modules detected. Run a bus scan first.",
   compose_message_first: "Compose a message first",
   enter_drum_index: "Enter a drum index",
   drum_length_error: "The drum must be exactly 64 characters and contain no line breaks",

@@ -102,7 +102,16 @@ a kompatibilitu z manifestu, zkontroluje aplikační oblast a posílá ji přes
 `<prefix>/command/firmware`. Místně sestavený `firmware.hex` z buildu
 `ATtiny1616_OTA` zůstává dostupný v sekci **Místní HEX (pokročilé)**. Pokrok dorazí
 v objektu `ota` ve statusu a master během flashování blokuje zobrazování
-přibližně 20–25 sekund. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
+přibližně 20–25 sekund.
+
+Stejná karta nabízí i **ZAPSAT VŠECHNY MODULY** a **SPUSTIT VŠECHNY DO APLIKACE**.
+Hromadný zápis prochází nalezené moduly ve vzestupném pořadí id. Hromadné spuštění
+zahrnuje navíc každé id v nakonfigurovaném rozsahu a poslední OTA cíl, aby bylo
+možné obnovit moduly, které v bootloaderu přestaly odpovídat na sken. Master
+dovoluje jen jednu OTA relaci, proto panel frontu zpracovává striktně postupně:
+další zápis začne až po dokončení předchozího modulu. Selhání nebo zrušení modulu
+frontu zastaví a **Zrušit** přeruší celou operaci. Řádek průběhu ukazuje aktuální
+modul a počet dokončených. Drátové detaily jsou v [OTA modulů](../protocol/ota.md).
 
 ## Poznámky k chování
 
