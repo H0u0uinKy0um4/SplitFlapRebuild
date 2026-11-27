@@ -22,12 +22,12 @@ either compatibility axis.
 ```text
 slave    <bus>.<release>              1.0.1      bus 1, release 0.1
 master   <bus>.<mqtt>.<release>       1.2.0.0    bus 1, mqtt 2, release 0.0
-HA       <mqtt>.<release>             2.0.2      mqtt 2, release 0.2
+HA       <mqtt>.<release>             2.0.3      mqtt 2, release 0.3
 ```
 
 The MQTT generation 2 release is coordinated across the three repositories
 with the tag `mqtt-compat-2`. The master release is `1.2.0.0`; Home Assistant is
-`2.0.2`. Slave firmware does not carry an MQTT generation.
+`2.0.3`. Slave firmware does not carry an MQTT generation.
 
 ## Checks
 

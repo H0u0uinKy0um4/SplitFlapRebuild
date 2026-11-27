@@ -45,8 +45,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     engine = AppEngine(hass, entry, coordinator)
 
     try:
-        await coordinator.async_setup()
+        # Load settings first so a saved simulator flag can suppress even the
+        # startup `sync` publish. The coordinator still owns all MQTT state.
         await engine.async_setup()
+        await coordinator.async_setup()
 
         domain_data[entry.entry_id] = {
             "entry": entry,

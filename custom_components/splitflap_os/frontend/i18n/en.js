@@ -68,6 +68,7 @@ export const PANEL = {
   display_group_developer: "Developer Flags",
   display_hint_debug_ignore_module_limit:
     "Preview larger frame than detected hardware",
+  display_hint_debug_simulate_modules: "Virtual modules (0 = real hardware)",
   display_hint_debug_allow_incompatible_firmware:
     "Bypass bus/OTA compatibility check",
   app_settings: "App settings",
@@ -129,6 +130,9 @@ export const PANEL = {
   waiting_state: "Waiting for state…",
   layout_error_short: "LAYOUT ERROR",
   debug_badge: "DEBUG",
+  sim_badge: "SIM",
+  simulation_hardware_blocked:
+    "Simulation is active; hardware controls are disabled until it is turned off.",
   compose_placeholder: "Type a message — new lines become rows",
   apps_help:
     "Tap an app to launch it. Use the gear to edit the settings that app reads.",
@@ -548,6 +552,7 @@ export const SETTINGS = {
     rows: "Frame rows (0 = auto)",
     cols: "Frame columns (0 = auto)",
     debug_ignore_module_limit: "Debug: ignore module limits",
+    debug_simulate_modules: "Debug: simulate modules (0 = off)",
     debug_allow_incompatible_firmware: "Debug: allow incompatible firmware",
     ui_scale: "Preview scale (%)",
     theme: "Panel theme",
@@ -562,6 +567,8 @@ export const SETTINGS = {
     cols: "Physical frame width. Leave 0 to derive it from the display.",
     debug_ignore_module_limit:
       "For development only. Use the configured frame even when fewer modules are detected, and allow apps that need a larger board. Cells without a physical module are shown in the preview but are not sent to the master.",
+    debug_simulate_modules:
+      "For development only. Pretend this many modules are connected: the panel previews that board and apps are checked against it, even when the real master reports fewer. All MQTT commands are suppressed while simulation is on, so real hardware does not move or flash. Scan, calibration and firmware controls are disabled.",
     debug_allow_incompatible_firmware:
       "For development only. Allow flashing a published firmware whose bus or OTA generation does not match the master. Known mismatches are blocked unless this option is enabled.",
     ui_scale:

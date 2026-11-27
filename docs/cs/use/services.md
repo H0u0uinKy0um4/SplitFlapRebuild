@@ -17,6 +17,11 @@ skripty; panel používá WebSocket příkazy.
 | `save_playlist` / `delete_playlist` / `run_saved_playlist` | Správa pojmenovaných playlistů. |
 | `set_settings` | Sloučí a uloží nastavení. |
 
+Když je aktivní `debug_simulate_modules`, služby pro zobrazení a aplikace dál
+aktualizují virtuální náhled, ale všechny hardwarové služby (`sync`, `scan`,
+`update`, `calibrate`, `home_all`, `record_all` a firmware) skončí oznámením o
+simulaci místo odeslání MQTT.
+
 ## send_text
 
 | Pole | Výchozí | Význam |

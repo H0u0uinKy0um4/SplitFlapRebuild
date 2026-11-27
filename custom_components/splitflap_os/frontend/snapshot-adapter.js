@@ -161,10 +161,14 @@ export const normalizeBoard = (raw, modules) => {
   }
 
   const error = typeof board.error === "string" ? board.error : "";
+  const simulatedModules = Number(board.simulated_modules) || 0;
   const normalized = {
     rows,
     cols,
     modules: Number(firstNonNull(board.module_count, board.modules_count)) || 0,
+    realModules:
+      Number(firstNonNull(board.real_module_count, board.modules_count)) || 0,
+    simulatedModules,
     rowCounts,
     rowOffsets,
     minCols: Number(firstNonNull(board.min_cols, board.minCols)) || 0,
@@ -289,8 +293,14 @@ const normalizeCoordinator = (raw, state, stockDrum) => {
     (module) => normalizeModule(module, stockDrum)
   );
   const compatInfo = normalizeCompat(state || {}, coordinator);
+  const simulation = coordinator.simulation || {};
   return {
     ...coordinator,
+    simulation: {
+      enabled: Boolean(simulation.enabled),
+      module_count: Number(simulation.module_count) || 0,
+      real_module_count: Number(simulation.real_module_count) || 0,
+    },
     modules,
     modules_count:
       Number(firstNonNull(coordinator.modules_count, modules.length)) || 0,

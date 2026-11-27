@@ -43,6 +43,7 @@ const FIELDS = [
   { key: "ui_scale", type: "number" },
   { key: "page_delay", type: "number" },
   { key: "debug_ignore_module_limit", type: "boolean" },
+  { key: "debug_simulate_modules", type: "number" },
   { key: "debug_allow_incompatible_firmware", type: "boolean" },
 ];
 
@@ -80,6 +81,7 @@ test("one backend group becomes the three mock sections", () => {
   ]);
   assert.deepEqual(groups[2].fields.map((field) => field.key), [
     "debug_ignore_module_limit",
+    "debug_simulate_modules",
     "debug_allow_incompatible_firmware",
   ]);
   assert.equal(groups[0].columns, 3);
@@ -105,4 +107,5 @@ test("generated markup keeps every input and the toggle switch seams", () => {
   assert.match(markup, /settings-slider/);
   assert.match(markup, /display_hint_row_counts/);
   assert.match(markup, /display_hint_debug_ignore_module_limit/);
+  assert.match(markup, /display_hint_debug_simulate_modules/);
 });

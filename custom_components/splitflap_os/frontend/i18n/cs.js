@@ -68,6 +68,7 @@ export const PANEL = {
   display_group_developer: "Vývojářské volby",
   display_hint_debug_ignore_module_limit:
     "Náhled většího rámu než detekovaný hardware",
+  display_hint_debug_simulate_modules: "Virtuální moduly (0 = skutečný hardware)",
   display_hint_debug_allow_incompatible_firmware:
     "Obcházet kontrolu kompatibility sběrnice/OTA",
   app_settings: "Nastavení aplikací",
@@ -129,6 +130,9 @@ export const PANEL = {
   waiting_state: "Čekání na stav…",
   layout_error_short: "CHYBA ROZLOŽENÍ",
   debug_badge: "LADĚNÍ",
+  sim_badge: "SIM",
+  simulation_hardware_blocked:
+    "Simulace je aktivní; ovládání hardwaru je až do jejího vypnutí zakázané.",
   compose_placeholder: "Napiš zprávu — nové řádky začnou novou řadu",
   apps_help:
     "Kliknutím na aplikaci ji spustíte. Ozubeným kolečkem upravíte nastavení, která aplikace čte.",
@@ -550,6 +554,7 @@ export const SETTINGS = {
     rows: "Řádky rámu (0 = auto)",
     cols: "Sloupce rámu (0 = auto)",
     debug_ignore_module_limit: "Ladění: ignorovat limity modulů",
+    debug_simulate_modules: "Ladění: simulovat moduly (0 = vypnuto)",
     debug_allow_incompatible_firmware: "Ladění: povolit nekompatibilní firmware",
     ui_scale: "Měřítko náhledu (%)",
     theme: "Motiv panelu",
@@ -564,6 +569,8 @@ export const SETTINGS = {
     cols: "Fyzická šířka rámu. Nech 0 pro automatický odhad z displeje.",
     debug_ignore_module_limit:
       "Pouze pro vývoj. Použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace vyžadující větší tabuli. Buňky bez fyzického modulu se zobrazí v náhledu, ale neodesílají se masteru.",
+    debug_simulate_modules:
+      "Pouze pro vývoj. Předstírá připojení zadaného počtu modulů: panel zobrazí takovou tabuli a aplikace se kontrolují podle ní, i když master hlásí méně modulů. Po dobu simulace se potlačí všechny MQTT příkazy, aby se skutečný hardware nehýbal ani nepřepisoval. Skenování, kalibrace a OTA jsou zakázané.",
     debug_allow_incompatible_firmware:
       "Pouze pro vývoj. Povolí zápis publikovaného firmwaru, jehož sběrnice nebo generace OTA neodpovídá masteru. Známé nesoulady jsou blokovány, pokud tato volba není zapnutá.",
     ui_scale:

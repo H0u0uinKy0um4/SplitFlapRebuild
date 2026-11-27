@@ -41,6 +41,9 @@ Always confirm the exact IDs in **Settings → Devices & services → Entities**
   status payload with modules arrives.
 - **Sync state** republishes the master's state and EEPROM snapshot; **Refresh
   modules** updates the known modules without a full bus scan.
+- While the offline simulator is active, the module-count sensor and status
+  entity show the virtual count and `online`. Text and app entities still update
+  the preview, but hardware buttons do not publish MQTT commands.
 
 ## See also
 

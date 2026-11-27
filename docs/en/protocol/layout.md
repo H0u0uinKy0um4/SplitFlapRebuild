@@ -89,6 +89,31 @@ an incomplete board. When enabled:
 Structural configuration errors still apply. The panel shows a **DEBUG** badge
 while the switch is on. Disable it before normal use.
 
+## Offline module simulator
+
+The display setting `debug_simulate_modules` (`0`–`255`, default `0`) is a
+stronger development aid. A non-zero value always overrides the detected count,
+even when the master reports real modules. The integration builds virtual module
+IDs `1…N` and resolves the frame the same way as for real hardware: `45` gives
+`3 × 15`, `100` gives `5 × 20`, and `row_counts` still controls short rows. App
+providers are checked against that simulated frame, so large-board apps can be
+developed with only a couple of physical modules.
+
+While simulation is active:
+
+- the panel shows a **SIM N** badge and renders the virtual board;
+- every MQTT command is suppressed at the coordinator's single publish seam,
+  so no module moves, scans, calibrates, or flashes;
+- scan, sync, update, calibration, home/record, firmware and master firmware
+  commands fail with a simulation notice;
+- live status payloads are ignored, and the last real module state is restored
+  when the setting returns to `0`.
+
+The existing `debug_ignore_module_limit` switch is independent: leave it on if
+you also want every app card enabled regardless of the simulated board size.
+Set `rows`, `cols`, or `row_counts` when the automatic frame is not the one you
+want to test.
+
 ## Coordinate system and position maps
 
 - The slave counts `pos` from the hall entering edge.

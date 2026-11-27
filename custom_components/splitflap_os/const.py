@@ -6,7 +6,15 @@ from typing import Final
 
 from homeassistant.const import Platform
 
-from .layout import COLOR_CODES, COLOR_MAP, DEFAULT_DRUM, FLAP_COUNT, PHYSICAL_COLOR_CODES
+from .layout import (
+    COLOR_CODES,
+    COLOR_MAP,
+    DEFAULT_DRUM,
+    FLAP_COUNT,
+    MAX_SIMULATED_MODULES,
+    PHYSICAL_COLOR_CODES,
+    SIMULATION_ACTIVE_MESSAGE,
+)
 
 DOMAIN: Final = "splitflap_os"
 NAME: Final = "Split-Flap OS"
@@ -18,11 +26,12 @@ NAME: Final = "Split-Flap OS"
 # so the coordinator can compare it with the master's payload without parsing
 # the string.
 MQTT_COMPAT: Final = 2
-VERSION: Final = "2.0.2"
+VERSION: Final = "2.0.3"
 
 CONF_TOPIC_PREFIX: Final = "topic_prefix"
 CONF_NAME: Final = "name"
 CONF_DEBUG_IGNORE_MODULE_LIMIT: Final = "debug_ignore_module_limit"
+CONF_DEBUG_SIMULATE_MODULES: Final = "debug_simulate_modules"
 CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE: Final = "debug_allow_incompatible_firmware"
 DEFAULT_TOPIC_PREFIX: Final = "splitflap"
 DEFAULT_DEVICE_NAME: Final = "Split-Flap Display"
@@ -95,6 +104,7 @@ __all__ = [
     "CONF_TOPIC_PREFIX",
     "CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE",
     "CONF_DEBUG_IGNORE_MODULE_LIMIT",
+    "CONF_DEBUG_SIMULATE_MODULES",
     "COORDINATOR_STORAGE_VERSION",
     "DEFAULT_DEVICE_NAME",
     "DEFAULT_DRUM",
@@ -105,6 +115,7 @@ __all__ = [
     "FRONTEND_DIR",
     "FRONTEND_FILENAME",
     "FRONTEND_URL_PATH",
+    "MAX_SIMULATED_MODULES",
     "NAME",
     "OFFLINE_TIMEOUT_SECONDS",
     "PANEL_ELEMENT",
@@ -112,6 +123,7 @@ __all__ = [
     "PANEL_TITLE",
     "PANEL_URL_PATH",
     "PLATFORMS",
+    "SIMULATION_ACTIVE_MESSAGE",
     "STORAGE_SAVE_DELAY",
     "STORAGE_VERSION",
     "VERSION",

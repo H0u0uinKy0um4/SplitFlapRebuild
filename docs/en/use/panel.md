@@ -63,6 +63,7 @@ grid, preferences a two-column grid, and developer options are switch rows.
 | `row_counts` | One comma-separated module count per physical row, for example `3,3,1`. Blank means automatic. |
 | `rows`, `cols` | Frame dimensions. `0` derives them from the detected module count. |
 | `debug_ignore_module_limit` | Debug switch: use the configured frame even when fewer modules are detected, and allow apps that normally need a larger board. Default `false`. |
+| `debug_simulate_modules` | Debug number `0`–`255`: pretend that many modules are connected. `0` uses real hardware. Default `0`. |
 | `debug_allow_incompatible_firmware` | Debug switch: allow flashing firmware whose bus or OTA generation does not match the master. Default `false`. |
 | `ui_scale` | Preview scale in percent (`50`–`200`, default `100`). |
 | `theme` | `auto` (follow Home Assistant), `light`, or `dark`. |
@@ -75,6 +76,14 @@ renders the whole configured canvas and app cards are enabled, but cells without
 a physical module are skipped when commands are published. Turn it off again
 before using the display normally. See
 [debug override](../protocol/layout.md#debug-override).
+
+With `debug_simulate_modules` set above `0`, the status line also shows a **SIM**
+badge with the virtual count. The panel previews that many modules even if the
+master is offline or reports only two. Apps are checked against the simulated
+frame, so providers that need 45–100 modules can be developed on a small bench
+setup. While simulation is active, all MQTT commands are suppressed and scan,
+calibration and firmware controls fail with a notice; the real module state is
+restored when the count returns to `0`.
 
 ### Apps sub-tab
 

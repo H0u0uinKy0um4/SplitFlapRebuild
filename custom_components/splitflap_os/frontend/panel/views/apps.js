@@ -1,7 +1,7 @@
 /** Apps tab: app launcher grid. */
 
-import { APP_ICONS } from "../../constants.js?v=2.0.2";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=2.0.2";
+import { APP_ICONS } from "../../constants.js?v=2.0.3";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=2.0.3";
 
 export const PanelMixin = (Base) =>
   class extends Base {

@@ -89,6 +89,30 @@ Když je zapnuté:
 Strukturální chyby nastavení platí dál. Panel po dobu zapnutí zobrazí odznak
 **LADĚNÍ**. Před běžným použitím přepínač vypněte.
 
+## Offline simulátor modulů
+
+Nastavení `debug_simulate_modules` (`0`–`255`, výchozí `0`) je silnější vývojová
+pomůcka. Nenulová hodnota vždy přebije zjištěný počet, i když master hlásí
+skutečné moduly. Integrace vytvoří virtuální ID modulů `1…N` a rám vyřeší
+stejně jako u hardwaru: `45` dá `3 × 15`, `100` dá `5 × 20` a `row_counts`
+dál určuje krátké řady. Poskytovatelé aplikací se kontrolují proti simulovanému
+rámu, takže aplikace pro velkou tabuli lze vyvíjet s několika fyzickými moduly.
+
+Po dobu simulace:
+
+- panel zobrazí odznak **SIM N** a vykreslí virtuální tabuli;
+- každý MQTT příkaz se potlačí na jediném odesílacím místě v coordinatoru, takže
+  se žádný modul nehýbe, neskenuje, nekalibruje ani nepřepisuje;
+- příkazy scan, sync, update, kalibrace, home/record, firmware a OTA masteru
+  skončí oznámením o simulaci;
+- živé stavové payloady se ignorují a po návratu nastavení na `0` se obnoví
+  poslední skutečný stav modulů.
+
+Existující přepínač `debug_ignore_module_limit` je nezávislý: ponechte jej
+zapnutý, pokud chcete mít povolené všechny karty aplikací bez ohledu na velikost
+simulované tabule. Když automatický rám nevyhovuje, nastavte `rows`, `cols`
+nebo `row_counts`.
+
 ## Souřadnicový systém a mapy pozic
 
 - Modul počítá `pos` od náběžné hrany hall senzoru.

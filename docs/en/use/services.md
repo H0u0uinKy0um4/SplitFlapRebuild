@@ -17,6 +17,11 @@ scripts; the panel uses WebSocket commands instead.
 | `save_playlist` / `delete_playlist` / `run_saved_playlist` | Manage named playlists. |
 | `set_settings` | Merge and persist settings. |
 
+While `debug_simulate_modules` is active, display/app services still update the
+virtual preview, but every hardware service (`sync`, `scan`, `update`,
+`calibrate`, `home_all`, `record_all`, and firmware services) fails with a
+simulation notice instead of publishing MQTT.
+
 ## send_text
 
 | Field | Default | Meaning |

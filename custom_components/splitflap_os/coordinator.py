@@ -70,6 +70,7 @@ class SplitFlapCoordinator:
             .rstrip("/")
         )
         self.signal = signal_update(entry.entry_id)
+        self._pre_simulation_status: str | None = None
 
         # Transport-level state stays here; everything derived from the
         # master's status payload lives in the HA-free ModuleStatus module.
@@ -118,7 +119,44 @@ class SplitFlapCoordinator:
         )
 
     @property
+    def simulation_enabled(self) -> bool:
+        return bool(getattr(self.status, "simulated", False))
+
+    @property
+    def simulated_module_count(self) -> int:
+        return int(getattr(self.status, "simulated_count", 0))
+
+    @property
+    def real_modules_count(self) -> int:
+        fallback = getattr(self.status, "modules_count", 0)
+        return int(getattr(self.status, "real_modules_count", fallback))
+
+    @callback
+    def set_simulation(self, count: int | str | None) -> None:
+        """Switch the offline simulator on (count > 0) or off (0)."""
+
+        was_simulated = self.simulation_enabled
+        self.status.set_simulated(count)
+        if self.simulation_enabled:
+            if not was_simulated:
+                self._pre_simulation_status = str(
+                    self.data.get("status", "offline")
+                )
+            self.data = {**self.data, "status": "simulated"}
+        elif was_simulated:
+            # Restore the transport status that was in force before the
+            # simulator took over; a fresh heartbeat may not arrive for a while.
+            self.data = {
+                **self.data,
+                "status": self._pre_simulation_status or "offline",
+            }
+            self._pre_simulation_status = None
+        self._notify()
+
+    @property
     def online(self) -> bool:
+        if self.simulation_enabled:
+            return True
         return str(self.data.get("status", "offline")).lower() == "online"
 
     @property
@@ -206,11 +244,12 @@ class SplitFlapCoordinator:
         return self.status.module_snapshot(module_id, master_online=self.online)
 
     def snapshot(self) -> dict[str, Any]:
+        simulated = self.simulation_enabled
         return self.status.snapshot(
             prefix=self.prefix,
             online=self.online,
-            status=str(self.data.get("status", "offline")),
-            text=str(self.data.get("text") or ""),
+            status="simulated" if simulated else str(self.data.get("status", "offline")),
+            text="" if simulated else str(self.data.get("text") or ""),
             last_status=self.data.get("last_status"),
             restored=bool(self.data.get("restored", False)),
             mqtt_compat=MQTT_COMPAT,
@@ -295,12 +334,16 @@ class SplitFlapCoordinator:
     # ------------------------------------------------------------------
     @callback
     def _handle_status_payload(self, payload: dict[str, Any]) -> None:
+        if self.simulation_enabled:
+            # The simulator owns the board entirely; do not let a live master
+            # heartbeat overwrite virtual state or transport status.
+            return
         data = dict(self.data)
         state_text = str(payload.get("state", "online")).lower()
         online = state_text not in {"offline", "unavailable", "disconnected"}
         data["status"] = "online" if online else "offline"
 
-        if online and isinstance(payload.get("text"), str):
+        if online and not self.simulation_enabled and isinstance(payload.get("text"), str):
             data["text"] = payload["text"]
 
         # Version aliases, module identity, flap derivation, drum priority and
@@ -331,7 +374,7 @@ class SplitFlapCoordinator:
         @callback
         def _timeout(_now) -> None:
             self._offline_timer = None
-            if not self.online:
+            if self.simulation_enabled or not self.online:
                 return
             _LOGGER.warning(
                 "No status from Split-Flap (%s) for %ss; marking offline",
@@ -351,6 +394,9 @@ class SplitFlapCoordinator:
     # MQTT publish
     # ------------------------------------------------------------------
     async def _publish(self, command: str, payload: dict[str, Any]) -> None:
+        if self.simulation_enabled:
+            _LOGGER.debug("Simulation active; suppressing %s command", command)
+            return
         topic = f"{self.prefix}/{COMMAND_TOPICS[command]}"
         await mqtt.async_publish(self.hass, topic, json.dumps(payload))
         _LOGGER.debug("Published to %s: %s", topic, payload)
@@ -501,6 +547,13 @@ class SplitFlapCoordinator:
                 raise ValueError(
                     "drum must be a 64-character string without line breaks"
                 )
+
+        if self.simulation_enabled:
+            # The publish is suppressed by _publish; do not wait for a readback
+            # from hardware that was never asked to write anything.
+            if action_norm == "drum_write" and valid_drum(drum):
+                return {"ok": True, "verified": True}
+            return None
 
         await self._publish("calibrate", payload)
 

@@ -1,7 +1,7 @@
 /** Settings tab: display/app settings, drums, OTA and system info. */
 
-import { DOMAIN, VERSION } from "../../constants.js?v=2.0.2";
-import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=2.0.2";
+import { DOMAIN, VERSION } from "../../constants.js?v=2.0.3";
+import { escapeAttr, escapeHtml, formatMessage } from "../../utils.js?v=2.0.3";
 
 const checkedSettingValue = (value) =>
   value === true ||
@@ -14,12 +14,14 @@ const checkedSettingValue = (value) =>
 const DISPLAY_GEOMETRY_KEYS = new Set(["row_counts", "rows", "cols"]);
 const DISPLAY_DEVELOPER_KEYS = new Set([
   "debug_ignore_module_limit",
+  "debug_simulate_modules",
   "debug_allow_incompatible_firmware",
 ]);
 const DISPLAY_FIELD_HINTS = {
   row_counts: "display_hint_row_counts",
   ui_scale: "display_hint_ui_scale",
   debug_ignore_module_limit: "display_hint_debug_ignore_module_limit",
+  debug_simulate_modules: "display_hint_debug_simulate_modules",
   debug_allow_incompatible_firmware:
     "display_hint_debug_allow_incompatible_firmware",
 };

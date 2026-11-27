@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from .apps.common import SettingField
+from .layout import MAX_SIMULATED_MODULES
 
 DISPLAY_FIELDS = (
     SettingField(
@@ -56,6 +57,23 @@ DISPLAY_FIELDS = (
             "modules are detected, and allow apps that need a larger board. "
             "Cells without a physical module are shown in the preview but are "
             "not sent to the master."
+        ),
+    ),
+    SettingField(
+        key="debug_simulate_modules",
+        label="Debug: simulate modules (0 = off)",
+        type="number",
+        default=0,
+        minimum=0,
+        maximum=MAX_SIMULATED_MODULES,
+        step=1,
+        help=(
+            "For development only. Pretend this many modules are connected: "
+            "the panel previews that board and apps are checked against it, "
+            "even when the real master reports fewer. All MQTT commands are "
+            "suppressed while simulation is on, so real hardware does not "
+            "move or flash. Scan, calibration and firmware controls are "
+            "disabled."
         ),
     ),
     SettingField(

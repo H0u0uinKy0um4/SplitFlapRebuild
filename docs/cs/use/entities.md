@@ -40,6 +40,9 @@ Přesné ID si vždy ověřte v **Nastavení → Zařízení a služby → Entit
   payload s moduly.
 - **Sync state** znovu publikuje stav masteru a snímek EEPROM; **Refresh modules**
   obnoví známé moduly bez plného skenu sběrnice.
+- Po dobu offline simulátoru zobrazuje senzor počtu modulů a entita statusu
+  virtuální počet a `online`. Textová entita a aplikace dál aktualizují náhled,
+  ale hardwarová tlačítka neodesílají MQTT příkazy.
 
 ## Viz také
 

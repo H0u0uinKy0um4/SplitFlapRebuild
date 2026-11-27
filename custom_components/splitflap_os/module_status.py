@@ -13,12 +13,12 @@ import re
 from typing import Any, Callable
 
 try:  # package import (Home Assistant)
-    from .layout import DEFAULT_DRUM
+    from .layout import DEFAULT_DRUM, coerce_simulated_count
     from .master_ota import empty_master_ota, normalize_master_ota
     from .ota import OTA_STATE_IDLE, normalize_ota
     from .positions import normalize_position_map
 except ImportError:  # direct import in the host tests (component dir on sys.path)
-    from layout import DEFAULT_DRUM
+    from layout import DEFAULT_DRUM, coerce_simulated_count
     from master_ota import empty_master_ota, normalize_master_ota
     from ota import OTA_STATE_IDLE, normalize_ota
     from positions import normalize_position_map
@@ -320,6 +320,8 @@ class ModuleStatus:
         self._master_mqtt_compat: int | None = None
         #: Characters the integration has asked the display to show.
         self.desired_chars: dict[str, str] = {}
+        self._simulated_count = 0
+        self._real_state: dict[str, Any] | None = None
 
     # ------------------------------------------------------------------
     # Views used by the coordinator, engine and entities
@@ -335,6 +337,77 @@ class ModuleStatus:
     @property
     def modules_count(self) -> int:
         return self._modules_count or len(self._modules)
+
+    @property
+    def simulated_count(self) -> int:
+        return self._simulated_count
+
+    @property
+    def simulated(self) -> bool:
+        return self._simulated_count > 0
+
+    @property
+    def real_modules_count(self) -> int:
+        """Count to use when simulation is switched off."""
+
+        if self._simulated_count and self._real_state is not None:
+            return int(self._real_state.get("modules_count", 0))
+        return self.modules_count
+
+    def set_simulated(self, count: object) -> None:
+        """Replace the module set with virtual modules, or restore the real one.
+
+        Live status payloads are ignored while simulation is on. The last real
+        module state is kept aside so switching simulation off restores it
+        without waiting for the next heartbeat.
+        """
+
+        cleaned = coerce_simulated_count(count)
+        if cleaned == self._simulated_count:
+            return
+        if not self._simulated_count:
+            self._real_state = {
+                "modules": dict(self._modules),
+                "modules_count": self._modules_count,
+                "desired_chars": dict(self.desired_chars),
+            }
+        if cleaned == 0:
+            saved = self._real_state or {}
+            self._modules = dict(saved.get("modules") or {})
+            self._modules_count = int(saved.get("modules_count") or 0)
+            self.desired_chars = dict(saved.get("desired_chars") or {})
+            self._real_state = None
+            self._simulated_count = 0
+            return
+
+        drum = list(DEFAULT_DRUM)
+        if self._drum_provider is not None:
+            candidate = self._drum_provider()
+            if valid_drum(candidate):
+                drum = list(candidate)
+
+        self._simulated_count = cleaned
+        self._modules_count = cleaned
+        self.desired_chars = {str(index): " " for index in range(1, cleaned + 1)}
+        self._modules = {
+            str(index): {
+                "id": index,
+                "state": "online",
+                "online": True,
+                "busy": False,
+                "flap": " ",
+                "flap_list": list(drum),
+                "current_index": 0,
+                "current_step": 0,
+                "home_offset": 0,
+                "total_steps": 2048,
+                "position_known": True,
+                "auto_homing": True,
+                "map_of_positions": {},
+                "fw_version": "SIM",
+            }
+            for index in range(1, cleaned + 1)
+        }
 
     @property
     def ota(self) -> dict[str, Any]:
@@ -413,6 +486,7 @@ class ModuleStatus:
                 "flap": actual_flap,
                 "state": _module_state(module),
                 "online": bool(module.get("online", True)) and master_online,
+                "simulated": self._simulated_count > 0,
             }
         )
         return module
@@ -423,6 +497,8 @@ class ModuleStatus:
     def ingest(self, payload: dict[str, Any], *, online: bool) -> None:
         """Fold one raw master status payload into the normalized state."""
 
+        if self._simulated_count:
+            return
         if online:
             version = payload.get("version")
             if isinstance(version, str) and version.strip():
@@ -464,6 +540,8 @@ class ModuleStatus:
     def restore(self, stored: Any) -> bool:
         """Load persisted normalized state; return False when there is none."""
 
+        if self._simulated_count:
+            return False
         if not isinstance(stored, dict):
             return False
         modules = _normalize_modules(stored.get("modules"))
@@ -481,10 +559,17 @@ class ModuleStatus:
         return True
 
     def persisted(self) -> dict[str, Any]:
+        source = self._real_state if self._simulated_count else None
+        if source is None:
+            source = {
+                "modules": self._modules,
+                "modules_count": self._modules_count,
+                "desired_chars": self.desired_chars,
+            }
         return {
-            "modules": dict(self._modules),
-            "modules_count": self.modules_count,
-            "desired_chars": dict(self.desired_chars),
+            "modules": dict(source.get("modules") or {}),
+            "modules_count": int(source.get("modules_count") or 0),
+            "desired_chars": dict(source.get("desired_chars") or {}),
         }
 
     # ------------------------------------------------------------------
@@ -513,6 +598,11 @@ class ModuleStatus:
             ],
             "modules_count": self.modules_count,
             "desired_chars": dict(self.desired_chars),
+            "simulation": {
+                "enabled": self._simulated_count > 0,
+                "module_count": self._simulated_count,
+                "real_module_count": self.real_modules_count,
+            },
             "last_status": last_status,
             "restored": bool(restored),
             # mqtt_compat is this integration's generation; compat/compat_ok

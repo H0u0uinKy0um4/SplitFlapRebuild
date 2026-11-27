@@ -22,6 +22,7 @@ try:  # package import (Home Assistant)
         check_master_compatibility,
         check_master_versions,
     )
+    from .layout import SIMULATION_ACTIVE_MESSAGE
     from .master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from .ota import OTA_PROTOCOL_VERSION
     from .positions import normalize_position_map
@@ -35,6 +36,7 @@ except ImportError:  # direct import in the host tests (component dir on sys.pat
         check_master_compatibility,
         check_master_versions,
     )
+    from layout import SIMULATION_ACTIVE_MESSAGE
     from master_ota import MASTER_OTA_MAX_SIZE, master_mqtt_from_version
     from ota import OTA_PROTOCOL_VERSION
     from positions import normalize_position_map
@@ -504,6 +506,28 @@ COMMANDS: dict[str, Command] = {
 }
 
 
+#: Commands that address the master or a slave module. Display-preview
+#: commands stay available during simulation because their MQTT publish is
+#: suppressed while the panel state still advances.
+SIMULATOR_BLOCKED_COMMANDS: frozenset[str] = frozenset(
+    {
+        "calibrate",
+        "scan",
+        "sync",
+        "update",
+        "home_all",
+        "record_all",
+        "flash_firmware",
+        "flash_firmware_release",
+        "cancel_firmware",
+        "reset_firmware",
+        "flash_master_firmware",
+        "flash_master_firmware_release",
+        "cancel_master_firmware",
+    }
+)
+
+
 async def execute_command(
     name: str,
     data: Mapping[str, Any],
@@ -517,6 +541,15 @@ async def execute_command(
     if command is None:
         err = ValueError(f"unknown command: {name}")
         return CommandOutcome(error=INVALID_REQUEST, message=str(err), exception=err)
+
+    coordinator = runtime.get("coordinator")
+    if (
+        name in SIMULATOR_BLOCKED_COMMANDS
+        and coordinator is not None
+        and getattr(coordinator, "simulation_enabled", False) is True
+    ):
+        err = RuntimeError(SIMULATION_ACTIVE_MESSAGE)
+        return CommandOutcome(error=COMMAND_FAILED, message=str(err), exception=err)
 
     try:
         args = _arguments(command.fields, data)

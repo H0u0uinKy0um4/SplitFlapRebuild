@@ -64,6 +64,7 @@ mřížku, předvolby dvousloupcovou a vývojářské možnosti jsou přepínač
 | `row_counts` | Počet modulů v každé fyzické řadě oddělený čárkou, například `3,3,1`. Prázdná hodnota znamená automaticky. |
 | `rows`, `cols` | Rozměry rámu. `0` je odvodí z počtu zjištěných modulů. |
 | `debug_ignore_module_limit` | Ladící přepínač: použije nastavený rám, i když je nalezeno méně modulů, a povolí aplikace, které obvykle potřebují větší tabuli. Výchozí `false`. |
+| `debug_simulate_modules` | Ladící číslo `0`–`255`: předstírá připojení zadaného počtu modulů. `0` použije skutečný hardware. Výchozí `0`. |
 | `debug_allow_incompatible_firmware` | Ladící přepínač: povolí zápis firmwaru, jehož generace sběrnice nebo OTA neodpovídá masteru. Výchozí `false`. |
 | `ui_scale` | Měřítko náhledu v procentech (`50`–`200`, výchozí `100`). |
 | `theme` | `auto` (podle Home Assistantu), `light` nebo `dark`. |
@@ -75,6 +76,13 @@ Když je ladění zapnuté, stavový řádek zobrazí odznak **LADĚNÍ**. Panel
 celý nastavený rám a karty aplikací jsou povolené, ale buňky bez fyzického modulu
 se při odesílání příkazů přeskočí. Před běžným použitím displeje ladění znovu
 vypněte. Viz [ladící přepínač](../protocol/layout.md#ladici-prepinac).
+
+Když je `debug_simulate_modules` vyšší než `0`, stavový řádek navíc zobrazí
+odznak **SIM** s virtuálním počtem. Panel zobrazí zadaný počet modulů, i když je
+master offline nebo hlásí jen dva. Aplikace se kontrolují proti simulovanému
+rámu, takže poskytovatele vyžadující 45–100 modulů lze vyvíjet na malém stole.
+Po dobu simulace se potlačí všechny MQTT příkazy a skenování, kalibrace a OTA
+skončí oznámením. Po návratu počtu na `0` se obnoví skutečný stav modulů.
 
 ### Záložka Apps
 

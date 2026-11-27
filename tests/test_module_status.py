@@ -244,7 +244,7 @@ class StateFlowTests(unittest.TestCase):
         snapshot = panel_snapshot(status)
         for key in (
             "prefix", "online", "status", "text", "modules", "modules_count",
-            "desired_chars", "last_status", "restored", "mqtt_compat",
+            "desired_chars", "simulation", "last_status", "restored", "mqtt_compat",
             "master_version", "master_bus_compat", "master_mqtt_compat",
             "mqtt_compat_ok", "compat", "master_compat", "compat_ok", "ota",
             "master_ota", "master_ip",
@@ -253,6 +253,49 @@ class StateFlowTests(unittest.TestCase):
         self.assertEqual(snapshot["compat"], 1)
         self.assertEqual(snapshot["master_compat"], 1)
         self.assertEqual(snapshot["compat_ok"], True)
+
+    def test_simulation_replaces_and_restores_real_modules(self) -> None:
+        status = module_status.ModuleStatus()
+        status.ingest(raw_payload(), online=True)
+        status.desired_chars["1"] = "A"
+
+        status.set_simulated(45)
+        self.assertEqual(status.modules_count, 45)
+        self.assertEqual(status.module_ids[:2], ["1", "2"])
+        self.assertEqual(status.module_ids[-1], "45")
+        self.assertEqual(status.real_modules_count, 1)
+        self.assertTrue(status.simulated)
+        self.assertEqual(
+            panel_snapshot(status)["simulation"],
+            {"enabled": True, "module_count": 45, "real_module_count": 1},
+        )
+
+        status.desired_chars["1"] = "Z"
+        status.ingest(raw_payload(), online=True)
+        self.assertEqual(status.modules_count, 45)
+        self.assertEqual(status.desired_chars["1"], "Z")
+        module = panel_snapshot(status)["modules"][0]
+        self.assertTrue(module["simulated"])
+        self.assertEqual(module["displayed_flap"], "Z")
+        self.assertEqual(status.persisted()["modules_count"], 1)
+
+        status.set_simulated(0)
+        self.assertEqual(status.modules_count, 1)
+        self.assertEqual(status.module_ids, ["1"])
+        self.assertEqual(status.desired_chars, {"1": "A"})
+        self.assertFalse(status.simulated)
+
+    def test_changing_simulated_count_rebuilds_from_real_state(self) -> None:
+        status = module_status.ModuleStatus()
+        status.ingest(raw_payload(), online=True)
+        status.set_simulated(45)
+        status.set_simulated(100)
+
+        self.assertEqual(status.modules_count, 100)
+        self.assertEqual(status.module_ids[-1], "100")
+        self.assertEqual(status.real_modules_count, 1)
+        status.set_simulated(0)
+        self.assertEqual(status.modules_count, 1)
 
 
 if __name__ == "__main__":

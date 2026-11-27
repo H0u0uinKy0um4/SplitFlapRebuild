@@ -22,6 +22,14 @@ FLAP_COUNT = len(DEFAULT_DRUM)
 
 #: Lower-case flaps that are physically coloured tiles on the stock drum.
 PHYSICAL_COLOR_CODES = "roygbpw"
+
+#: Upper bound for the offline module simulator. It matches the master's
+#: 1-based module-id range, so every virtual module has a plausible id.
+MAX_SIMULATED_MODULES = 255
+
+#: Shared wording for command adapters that refuse hardware access while the
+#: offline simulator is active.
+SIMULATION_ACTIVE_MESSAGE = "Simulation is active; hardware commands are disabled"
 #: All colour codes including software-only additions for custom drums.
 COLOR_CODES = "roygbpwcm"
 
@@ -142,6 +150,16 @@ def _as_dimension(value: int | str | None) -> int:
         return max(0, int(value or 0))
     except (TypeError, ValueError):
         return 0
+
+
+def coerce_simulated_count(value: object) -> int:
+    """Return a safe simulator module count; ``0`` disables simulation."""
+
+    try:
+        count = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(MAX_SIMULATED_MODULES, count))
 
 
 def parse_row_counts(value: object) -> tuple[int, ...]:

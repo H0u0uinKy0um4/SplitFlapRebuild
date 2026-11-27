@@ -8,7 +8,7 @@ module updates travel over the RS485 bootloader. Home Assistant never speaks
 RS485 and does not use the manual ArduinoOTA port.
 
 Master self-update requires master firmware with `mqtt_compat` 2 (for example
-`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.2`). Older masters keep
+`1.2.0.0`) and this integration's `MQTT_COMPAT` 2 (`2.0.3`). Older masters keep
 handling display and slave OTA normally; the Master OTA card still appears but
 the compatibility gate warns or blocks a flash.
 

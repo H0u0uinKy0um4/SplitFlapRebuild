@@ -1,17 +1,32 @@
 /** Panel component logic. */
 
-import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=2.0.2";
-import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=2.0.2";
-import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.2";
+import { COLOR_CODES, DEFAULT_DRUM, DOMAIN, STYLES } from "../constants.js?v=2.0.3";
+import { PANEL_I18N, SETTINGS_I18N } from "../i18n/index.js?v=2.0.3";
+import { escapeAttr, escapeHtml, formatMessage } from "../utils.js?v=2.0.3";
 import {
   normalizeBoard,
   normalizeLayoutError,
   normalizeSnapshot,
-} from "../snapshot-adapter.js?v=2.0.2";
-import { createCalibrationFlow } from "./calibration-flow.js?v=2.0.2";
-import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=2.0.2";
-import { createMasterOtaFlow } from "./master-ota-flow.js?v=2.0.2";
+} from "../snapshot-adapter.js?v=2.0.3";
+import { createCalibrationFlow } from "./calibration-flow.js?v=2.0.3";
+import { createBulkOtaFlow } from "./bulk-ota-flow.js?v=2.0.3";
+import { createMasterOtaFlow } from "./master-ota-flow.js?v=2.0.3";
 
+const SIMULATOR_BLOCKED_COMMANDS = new Set([
+  "calibrate",
+  "scan",
+  "sync",
+  "update",
+  "home_all",
+  "record_all",
+  "flash_firmware",
+  "flash_firmware_release",
+  "cancel_firmware",
+  "reset_firmware",
+  "flash_master_firmware",
+  "flash_master_firmware_release",
+  "cancel_master_firmware",
+]);
 
 export const PanelMixin = (Base) => class extends Base {
   constructor() {
@@ -230,6 +245,17 @@ export const PanelMixin = (Base) => class extends Base {
   async _send(type, payload = {}) {
     if (!this._hass || !this._hass.connection) {
       throw new Error(this._t("not_connected"));
+    }
+    if (
+      SIMULATOR_BLOCKED_COMMANDS.has(type) &&
+      this._state &&
+      this._state.coordinator &&
+      this._state.coordinator.simulation &&
+      this._state.coordinator.simulation.enabled
+    ) {
+      const message = this._t("simulation_hardware_blocked");
+      this._toast(message, "warning");
+      throw new Error(message);
     }
     try {
       return await this._hass.connection.sendMessagePromise({

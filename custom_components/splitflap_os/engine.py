@@ -29,6 +29,7 @@ from .const import (
     ANIMATION_ORDERS,
     CONF_DEBUG_ALLOW_INCOMPATIBLE_FIRMWARE,
     CONF_DEBUG_IGNORE_MODULE_LIMIT,
+    CONF_DEBUG_SIMULATE_MODULES,
     DOMAIN,
     ENGINE_STORAGE_VERSION,
     STORAGE_SAVE_DELAY,
@@ -39,6 +40,7 @@ from .coordinator import SplitFlapCoordinator
 from .layout import (
     Layout,
     app_fits,
+    coerce_simulated_count,
     compose_board,
     estimate_rotation_seconds,
     format_lines,
@@ -178,7 +180,15 @@ class AppEngine:
             except (TypeError, ValueError):
                 self.playlist_delay = 5.0
 
+        # Apply the saved simulator flag before the first panel snapshot. The
+        # coordinator then owns the virtual module set and the MQTT safety
+        # guard; no hardware command is published while it is active.
+        self.coordinator.set_simulation(self.debug_simulate_modules)
+        self._layout_cache_key = None
+        self._layout_cache = None
+
     async def async_unload(self) -> None:
+        self.coordinator.set_simulation(0)
         await self.async_stop(notify=False)
         await self._cancel_idle_notifications()
         try:
@@ -210,6 +220,14 @@ class AppEngine:
         """Whether debug mode lets apps use a frame larger than the hardware."""
 
         return _as_bool(self.settings.get(CONF_DEBUG_IGNORE_MODULE_LIMIT, False))
+
+    @property
+    def debug_simulate_modules(self) -> int:
+        """Number of virtual modules to simulate; ``0`` disables simulation."""
+
+        return coerce_simulated_count(
+            self.settings.get(CONF_DEBUG_SIMULATE_MODULES, 0)
+        )
 
     @property
     def debug_allow_incompatible_firmware(self) -> bool:
@@ -338,6 +356,8 @@ class AppEngine:
                 "rows": rows,
                 "cols": cols,
                 "module_count": self.coordinator.modules_count,
+                "real_module_count": self.coordinator.real_modules_count,
+                "simulated_modules": self.debug_simulate_modules,
                 "debug_module_limit": self.debug_ignore_module_limit,
                 **{
                     key: value
@@ -401,6 +421,8 @@ class AppEngine:
                 cleaned[key] = ",".join(str(count) for count in counts)
             elif key == CONF_DEBUG_IGNORE_MODULE_LIMIT:
                 cleaned[key] = _as_bool(value)
+            elif key == CONF_DEBUG_SIMULATE_MODULES:
+                cleaned[key] = coerce_simulated_count(value)
             elif key == "ui_scale":
                 try:
                     cleaned[key] = max(50, min(200, int(float(value))))
@@ -424,9 +446,13 @@ class AppEngine:
 
         candidate = {**self.settings, **cleaned}
         debug = _as_bool(candidate.get(CONF_DEBUG_IGNORE_MODULE_LIMIT, False))
-        layout_keys = {"rows", "cols", "row_counts"}
+        simulated = coerce_simulated_count(
+            candidate.get(CONF_DEBUG_SIMULATE_MODULES, 0)
+        )
+        module_count = simulated or self.coordinator.real_modules_count
+        layout_keys = {"rows", "cols", "row_counts", CONF_DEBUG_SIMULATE_MODULES}
         layout = resolve_layout(
-            self.coordinator.modules_count,
+            module_count,
             candidate.get("rows", 0),
             candidate.get("cols", 0),
             candidate.get("row_counts", ""),
@@ -436,6 +462,7 @@ class AppEngine:
             raise ValueError(layout.error)
 
         self.settings.update(cleaned)
+        self.coordinator.set_simulation(simulated)
         self._layout_cache_key = None
         self._layout_cache = None
         self._cache.clear()
@@ -834,9 +861,9 @@ class AppEngine:
         layout = self.layout
         module_ids = self.coordinator.module_ids
         if not module_ids:
-            if self.debug_ignore_module_limit:
-                # Debug mode must never invent hardware that has not answered a
-                # scan; virtual frame cells stay preview-only.
+            if self.debug_ignore_module_limit or self.coordinator.simulation_enabled:
+                # Debug and simulator modes never invent hardware ids for
+                # publishing; virtual frame cells stay preview-only.
                 module_ids = []
             else:
                 # Before the first scan, assume the stock 1-based ids.  The

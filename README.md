@@ -64,7 +64,7 @@ Home Assistant                         ESP32 master                 Slaves
 | --- | --- | --- | --- |
 | Slave | `<bus>.<release>` | `1.0.1` | RS485 bus |
 | Master | `<bus>.<mqtt>.<release>` | `1.2.0.0` | bus + MQTT |
-| Home Assistant | `<mqtt>.<release>` | `2.0.2` | MQTT |
+| Home Assistant | `<mqtt>.<release>` | `2.0.3` | MQTT |
 
 A mismatch in `mqtt_compat` shows a warning but does not stop display traffic.
 Master self-update additionally requires both the integration's and the

@@ -8,7 +8,7 @@ aktualizace modulů běží přes RS485 bootloader. Home Assistant nikdy nemluv�
 RS485 a nepoužívá ruční ArduinoOTA port.
 
 Aktualizace masteru vyžaduje firmware masteru s `mqtt_compat` 2 (například
-`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.2`). Starší mastery dál
+`1.2.0.0`) a tuto integraci s `MQTT_COMPAT` 2 (`2.0.3`). Starší mastery dál
 normálně zobrazují a aktualizují moduly; karta OTA masteru se zobrazí, ale
 kompatibilita může varovat nebo zápis zablokovat.
 
